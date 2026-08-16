@@ -28,7 +28,7 @@ export function BackToTop() {
       aria-label={t.common.backToTop}
       title={t.common.backToTop}
       tabIndex={visible ? 0 : -1}
-      className={`fixed bottom-24 left-5.5 z-[60] flex h-13 w-13 items-center justify-center rounded-full bg-ink text-white shadow-[0_10px_26px_rgba(22,33,62,0.28)] transition-all duration-300 hover:scale-108 hover:bg-accent ${
+      className={`fixed right-5.5 bottom-72 z-[60] flex h-13 w-13 items-center justify-center rounded-full bg-ink text-white shadow-[0_10px_26px_rgba(22,33,62,0.28)] transition-all duration-300 hover:scale-108 hover:bg-accent ${
         visible ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-3 opacity-0"
       }`}
     >
