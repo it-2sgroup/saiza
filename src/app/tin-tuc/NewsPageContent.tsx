@@ -9,7 +9,7 @@ export function NewsPageContent() {
   const { t } = useLanguage();
 
   return (
-    <Container className="pt-18 pb-24">
+    <Container className="pt-32 pb-24">
       <div className="mb-12 flex max-w-[680px] flex-col gap-4">
         <span className="text-xs font-semibold tracking-[0.18em] text-accent uppercase">{t.newsPage.eyebrow}</span>
         <h1 className="text-[clamp(34px,4vw,54px)] leading-[1.1] font-medium tracking-[-0.02em]">

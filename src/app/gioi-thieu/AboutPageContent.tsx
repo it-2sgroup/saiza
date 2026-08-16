@@ -11,7 +11,7 @@ export function AboutPageContent() {
 
   return (
     <>
-      <Container className="grid grid-cols-[repeat(auto-fit,minmax(360px,1fr))] items-center gap-14 pt-18 pb-16">
+      <Container className="grid grid-cols-[repeat(auto-fit,minmax(360px,1fr))] items-center gap-14 pt-32 pb-16">
         <div className="flex flex-col gap-4.5">
           <span className="text-xs font-semibold tracking-[0.18em] text-accent uppercase">
             {t.aboutPage.eyebrow}

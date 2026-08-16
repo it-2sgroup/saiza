@@ -13,7 +13,7 @@ export function ContactPageContent() {
 
   return (
     <>
-      <Container className="grid grid-cols-[repeat(auto-fit,minmax(340px,1fr))] gap-14 pt-18 pb-24">
+      <Container className="grid grid-cols-[repeat(auto-fit,minmax(340px,1fr))] gap-14 pt-32 pb-24">
         <div className="flex flex-col gap-4.5">
           <span className="text-xs font-semibold tracking-[0.18em] text-accent uppercase">
             {t.contactPage.eyebrow}

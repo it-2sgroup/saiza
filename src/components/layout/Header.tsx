@@ -23,7 +23,7 @@ export function Header() {
   }, []);
 
   return (
-    <header className="sticky top-0 z-50">
+    <header className="fixed inset-x-0 top-0 z-50">
       <Container className={`transition-[padding] duration-300 ${scrolled ? "py-3" : "py-5"}`}>
         <div
           className={`flex items-center gap-7 rounded-full border border-white/50 bg-white/70 px-5 py-2.5 shadow-[0_8px_30px_rgba(22,33,62,0.10)] backdrop-blur-xl transition-shadow duration-300 ${

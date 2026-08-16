@@ -10,7 +10,7 @@ export function PartnersPageContent() {
 
   return (
     <>
-      <Container className="max-w-[820px] pt-18 pb-14">
+      <Container className="max-w-[820px] pt-32 pb-14">
         <div className="flex flex-col gap-4.5">
           <span className="text-xs font-semibold tracking-[0.18em] text-accent uppercase">
             {t.partnersPage.eyebrow}

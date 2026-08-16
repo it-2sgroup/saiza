@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function ProductsPage() {
   return (
-    <Container as="section" className="pt-18 pb-24">
+    <Container as="section" className="pt-32 pb-24">
       <ProductsPageContent />
     </Container>
   );
