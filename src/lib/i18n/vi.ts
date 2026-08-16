@@ -4,6 +4,7 @@ export const vi: Dictionary = {
   common: {
     pauseCarousel: "Tạm dừng cuộn",
     playCarousel: "Tiếp tục cuộn",
+    backToTop: "Về đầu trang",
   },
   meta: {
     title: "SAIZA — Sáng tạo khác biệt, dẫn đầu thị trường",

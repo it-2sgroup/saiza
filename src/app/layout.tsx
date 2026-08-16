@@ -5,6 +5,7 @@ import { LanguageProvider } from "@/lib/i18n/LanguageProvider";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { FloatingContact } from "@/components/layout/FloatingContact";
+import { BackToTop } from "@/components/layout/BackToTop";
 import { BottomCta } from "@/components/shared/BottomCta";
 import { vi } from "@/lib/i18n/vi";
 
@@ -29,6 +30,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <BottomCta />
           <Footer />
           <FloatingContact />
+          <BackToTop />
         </LanguageProvider>
       </body>
     </html>

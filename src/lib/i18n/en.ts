@@ -4,6 +4,7 @@ export const en: Dictionary = {
   common: {
     pauseCarousel: "Pause carousel",
     playCarousel: "Resume carousel",
+    backToTop: "Back to top",
   },
   meta: {
     title: "SAIZA — Creative by difference, leading the market",

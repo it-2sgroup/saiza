@@ -17,6 +17,7 @@ export type Dictionary = {
   common: {
     pauseCarousel: string;
     playCarousel: string;
+    backToTop: string;
   };
   meta: {
     title: string;
