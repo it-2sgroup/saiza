@@ -14,7 +14,7 @@ const HERO_IMAGES = [
 const ROTATE_INTERVAL_MS = 4800;
 
 export function Hero() {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const [activeIdx, setActiveIdx] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -107,6 +107,33 @@ export function Hero() {
             </button>
           ))}
         </div>
+      </div>
+
+      <div
+        className="animate-soft-in absolute top-32 right-8 z-10 hidden w-44 flex-col gap-1 rounded-3xl border border-white/25 bg-white/10 p-5 text-white shadow-[0_20px_50px_rgba(9,26,27,0.35)] backdrop-blur-xl [animation-delay:1.6s] lg:flex"
+        aria-hidden="true"
+      >
+        <span className="text-[40px] leading-none font-semibold tracking-[-0.02em]">
+          {locale === "vi" ? "99,99%" : "99.99%"}
+        </span>
+        <span className="text-[13px] leading-snug text-white/70">{t.home.stats.antibacterial}</span>
+      </div>
+
+      <div className="animate-soft-in absolute bottom-7 left-1/2 z-10 hidden -translate-x-1/2 flex-col items-center gap-2 text-white/60 [animation-delay:1.8s] md:flex">
+        <span className="text-[11px] tracking-[0.2em] uppercase">Cuộn xuống</span>
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="animate-bounce"
+        >
+          <path d="M12 5v14M5 12l7 7 7-7" />
+        </svg>
       </div>
     </section>
   );
