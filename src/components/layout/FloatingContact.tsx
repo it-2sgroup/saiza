@@ -20,8 +20,8 @@ const BUTTONS = [
   {
     href: "https://m.me/2sgroup",
     title: "Nhắn tin Messenger",
-    bg: "border border-line bg-white text-ink hover:bg-ink hover:text-white",
-    ring: "bg-line",
+    bg: "bg-ink-2 hover:bg-ink",
+    ring: "bg-ink-2",
     delay: "1.1s",
     external: true,
     path: "M22 2L11 13 M22 2l-7 20-4-9-9-4z",
