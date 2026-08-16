@@ -49,6 +49,10 @@ export const en: Dictionary = {
       "Full product declaration certificates",
       "Transparent distributor policy",
     ],
+    promo: {
+      eyebrow: "Special offers",
+      title: "Featured promotions",
+    },
     videos: {
       eyebrow: "Product videos",
       title: "See SAIZA in action",

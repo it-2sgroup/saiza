@@ -49,6 +49,10 @@ export const vi: Dictionary = {
       "Đầy đủ chứng nhận công bố sản phẩm",
       "Chính sách đại lý minh bạch",
     ],
+    promo: {
+      eyebrow: "Ưu đãi",
+      title: "Khuyến mãi nổi bật",
+    },
     videos: {
       eyebrow: "Video sản phẩm",
       title: "Xem SAIZA hoạt động thực tế",
