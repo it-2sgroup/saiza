@@ -9,6 +9,8 @@ const HERO_IMAGES = [
   "/images/banner-kitchen-bathroom.png",
   "/images/banner-product-closeup.png",
   "/images/banner-warehouse.png",
+  "/images/banner-saiza-clean-promo.jpg",
+  "/images/banner-silky-clean-promo.jpg",
 ];
 
 const ROTATE_INTERVAL_MS = 4800;

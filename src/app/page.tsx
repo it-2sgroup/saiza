@@ -3,7 +3,6 @@ import { StatsBar } from "@/components/home/StatsBar";
 import { TrustStrip } from "@/components/home/TrustStrip";
 import { ProductVideos } from "@/components/home/ProductVideos";
 import { ProductCarousel } from "@/components/home/ProductCarousel";
-import { PromoBanners } from "@/components/home/PromoBanners";
 import { WhyUs } from "@/components/home/WhyUs";
 import { KolSection } from "@/components/home/KolSection";
 import { NewsPreview } from "@/components/home/NewsPreview";
@@ -17,7 +16,6 @@ export default function HomePage() {
       <TrustStrip />
       <ProductVideos />
       <ProductCarousel />
-      <PromoBanners />
       <WhyUs />
       <KolSection />
       <NewsPreview />

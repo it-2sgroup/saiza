@@ -55,10 +55,6 @@ export type Dictionary = {
       safeIngredients: string;
     };
     trust: string[];
-    promo: {
-      eyebrow: string;
-      title: string;
-    };
     videos: {
       eyebrow: string;
       title: string;
