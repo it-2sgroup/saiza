@@ -1,6 +1,10 @@
 import type { Dictionary } from "./types";
 
 export const en: Dictionary = {
+  common: {
+    pauseCarousel: "Pause carousel",
+    playCarousel: "Resume carousel",
+  },
   meta: {
     title: "2S Group — Creative by difference, leading the market",
     description:

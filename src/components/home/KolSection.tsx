@@ -1,25 +1,34 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { Container } from "@/components/ui/Container";
 import { SectionHeading } from "@/components/ui/SectionHeading";
+import { MarqueeToggle } from "@/components/ui/MarqueeToggle";
 import { kolList } from "@/lib/data/kol";
 
 export function KolSection() {
   const { t } = useLanguage();
+  const [paused, setPaused] = useState(false);
   const loopedKol = [...kolList, ...kolList];
 
   return (
     <Container className="py-30">
-      <SectionHeading
-        eyebrow={t.home.kol.eyebrow}
-        title={t.home.kol.title}
-        subtitle={t.home.kol.subtitle}
-        className="mb-12"
-      />
+      <div className="mb-12 flex flex-wrap items-end justify-between gap-8">
+        <SectionHeading eyebrow={t.home.kol.eyebrow} title={t.home.kol.title} subtitle={t.home.kol.subtitle} />
+        <MarqueeToggle
+          paused={paused}
+          onToggle={() => setPaused((p) => !p)}
+          pauseLabel={t.common.pauseCarousel}
+          playLabel={t.common.playCarousel}
+        />
+      </div>
       <div className="scrollbar-hide overflow-hidden">
-        <div className="marquee-track animate-marquee-fast flex w-max gap-4.5" style={{ perspective: "700px" }}>
+        <div
+          className="marquee-track animate-marquee-fast flex w-max gap-4.5"
+          style={{ perspective: "700px", ...(paused ? { animationPlayState: "paused" } : {}) }}
+        >
           {loopedKol.map((kol, i) => (
             <figure
               key={`${kol.name}-${i}`}

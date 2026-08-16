@@ -1,14 +1,17 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { Container } from "@/components/ui/Container";
 import { SectionHeading } from "@/components/ui/SectionHeading";
+import { MarqueeToggle } from "@/components/ui/MarqueeToggle";
 import { products } from "@/lib/data/products";
 
 export function ProductCarousel() {
   const { t } = useLanguage();
+  const [paused, setPaused] = useState(false);
   const loopedProducts = [...products, ...products];
 
   return (
@@ -19,13 +22,24 @@ export function ProductCarousel() {
           title={t.home.catalog.title}
           subtitle={t.home.catalog.subtitle}
         />
-        <Link href="/san-pham" className="border-b border-line pb-1 text-[14.5px] font-semibold text-accent">
-          {t.home.catalog.viewAll}
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link href="/san-pham" className="border-b border-line pb-1 text-[14.5px] font-semibold text-accent">
+            {t.home.catalog.viewAll}
+          </Link>
+          <MarqueeToggle
+            paused={paused}
+            onToggle={() => setPaused((p) => !p)}
+            pauseLabel={t.common.pauseCarousel}
+            playLabel={t.common.playCarousel}
+          />
+        </div>
       </div>
 
       <div className="scrollbar-hide overflow-hidden py-1.5 pb-6.5">
-        <div className="marquee-track animate-marquee flex w-max gap-5.5">
+        <div
+          className="marquee-track animate-marquee flex w-max gap-5.5"
+          style={paused ? { animationPlayState: "paused" } : undefined}
+        >
           {loopedProducts.map((product, i) => {
             const copy = t.products[product.id];
             return (

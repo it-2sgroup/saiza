@@ -14,6 +14,10 @@ export type NewsCopy = {
 };
 
 export type Dictionary = {
+  common: {
+    pauseCarousel: string;
+    playCarousel: string;
+  };
   meta: {
     title: string;
     description: string;

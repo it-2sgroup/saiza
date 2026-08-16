@@ -1,6 +1,10 @@
 import type { Dictionary } from "./types";
 
 export const vi: Dictionary = {
+  common: {
+    pauseCarousel: "Tạm dừng cuộn",
+    playCarousel: "Tiếp tục cuộn",
+  },
   meta: {
     title: "2S Group — Sáng tạo khác biệt, dẫn đầu thị trường",
     description:

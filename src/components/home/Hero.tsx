@@ -19,6 +19,8 @@ export function Hero() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReducedMotion) return;
     timerRef.current = setInterval(() => {
       setActiveIdx((idx) => (idx + 1) % HERO_IMAGES.length);
     }, ROTATE_INTERVAL_MS);
@@ -93,11 +95,16 @@ export function Hero() {
               key={idx}
               type="button"
               aria-label={`Slide ${idx + 1}`}
+              aria-current={idx === activeIdx}
               onClick={() => setActiveIdx(idx)}
-              className={`h-2 rounded-full transition-all duration-300 ${
-                idx === activeIdx ? "w-5.5 bg-white" : "w-2 bg-white/55"
-              }`}
-            />
+              className="flex items-center justify-center p-2.5"
+            >
+              <span
+                className={`block h-2 rounded-full transition-all duration-300 ${
+                  idx === activeIdx ? "w-5.5 bg-white" : "w-2 bg-white/55"
+                }`}
+              />
+            </button>
           ))}
         </div>
       </div>
