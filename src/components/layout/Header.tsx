@@ -115,6 +115,7 @@ function LanguageToggle({
       <button
         type="button"
         onClick={() => setLocale("vi")}
+        aria-pressed={locale === "vi"}
         className={`rounded-full px-[11px] py-[5px] ${locale === "vi" ? "bg-ink text-white" : "text-ink-2"}`}
       >
         VI
@@ -122,6 +123,7 @@ function LanguageToggle({
       <button
         type="button"
         onClick={() => setLocale("en")}
+        aria-pressed={locale === "en"}
         className={`rounded-full px-[11px] py-[5px] ${locale === "en" ? "bg-ink text-white" : "text-ink-2"}`}
       >
         EN

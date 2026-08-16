@@ -45,11 +45,13 @@ export function FloatingContact() {
           key={button.title}
           href={button.href}
           title={button.title}
+          aria-label={button.title}
           target={button.external ? "_blank" : undefined}
           rel={button.external ? "noopener" : undefined}
           className={`relative flex h-13 w-13 items-center justify-center rounded-full text-white shadow-[0_10px_26px_rgba(18,41,42,0.28)] transition-transform duration-300 hover:scale-108 ${button.bg}`}
         >
           <span
+            aria-hidden="true"
             className={`absolute inset-0 animate-pulse-ring rounded-full ${button.ring}`}
             style={{ animationDelay: button.delay }}
           />

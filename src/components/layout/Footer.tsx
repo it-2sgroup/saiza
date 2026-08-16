@@ -47,6 +47,7 @@ export function Footer() {
                 key={social.title}
                 href={social.href}
                 title={social.title}
+                aria-label={social.title}
                 className="flex h-9.5 w-9.5 items-center justify-center rounded-full border border-white/20 transition-colors hover:border-accent-2 hover:bg-accent-2"
               >
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -59,6 +60,7 @@ export function Footer() {
               target="_blank"
               rel="noopener"
               title="TikTok"
+              aria-label="TikTok"
               className="flex h-9.5 w-9.5 items-center justify-center rounded-full border border-white/20 transition-colors hover:border-accent-2 hover:bg-accent-2"
             >
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -111,7 +113,7 @@ export function Footer() {
         </div>
       </Container>
 
-      <Container className="flex flex-wrap justify-between gap-2.5 border-t border-white/12 pt-5.5 pb-9 text-[12.5px] text-white/45">
+      <Container className="flex flex-wrap justify-between gap-2.5 border-t border-white/12 pt-5.5 pb-9 text-[12.5px] text-white/60">
         <span>{t.footer.copyright}</span>
         <span>{t.footer.credit}</span>
       </Container>

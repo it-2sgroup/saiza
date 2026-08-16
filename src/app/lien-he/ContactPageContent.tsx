@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { Container } from "@/components/ui/Container";
 import { ActionButton } from "@/components/ui/Button";
+import { FormField } from "@/components/ui/FormField";
 import { OfficeLocations } from "@/components/shared/OfficeLocations";
 
 export function ContactPageContent() {
@@ -52,29 +53,11 @@ export function ContactPageContent() {
         >
           <h2 className="text-[22px] font-semibold">{t.contactPage.formTitle}</h2>
           <p className="text-[14.5px] leading-[1.65] text-ink-2">{t.contactPage.formSubtitle}</p>
-          <input
-            required
-            placeholder={t.contactPage.placeholders.name}
-            className="rounded-xl border border-line bg-paper px-4 py-3.5 text-[15px] text-ink outline-none focus:border-accent"
-          />
-          <input
-            placeholder={t.contactPage.placeholders.phone}
-            className="rounded-xl border border-line bg-paper px-4 py-3.5 text-[15px] text-ink outline-none focus:border-accent"
-          />
-          <input
-            type="email"
-            placeholder={t.contactPage.placeholders.email}
-            className="rounded-xl border border-line bg-paper px-4 py-3.5 text-[15px] text-ink outline-none focus:border-accent"
-          />
-          <input
-            placeholder={t.contactPage.placeholders.region}
-            className="rounded-xl border border-line bg-paper px-4 py-3.5 text-[15px] text-ink outline-none focus:border-accent"
-          />
-          <textarea
-            rows={4}
-            placeholder={t.contactPage.placeholders.message}
-            className="resize-y rounded-xl border border-line bg-paper px-4 py-3.5 text-[15px] text-ink outline-none focus:border-accent"
-          />
+          <FormField id="contact-name" label={t.contactPage.placeholders.name} required />
+          <FormField id="contact-phone" label={t.contactPage.placeholders.phone} type="tel" />
+          <FormField id="contact-email" label={t.contactPage.placeholders.email} type="email" />
+          <FormField id="contact-region" label={t.contactPage.placeholders.region} />
+          <FormField id="contact-message" label={t.contactPage.placeholders.message} multiline />
           <ActionButton type="submit" variant="accent" className="text-center">
             {t.contactPage.submit}
           </ActionButton>
