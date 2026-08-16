@@ -129,7 +129,7 @@ export function Hero() {
           <span className="text-[40px] leading-none font-semibold tracking-[-0.02em]">
             {locale === "vi" ? "99,99%" : "99.99%"}
           </span>
-          <span className="text-[13px] leading-snug text-white/70">{t.home.stats.antibacterial}</span>
+          <span className="text-[13px] leading-snug text-white/70">{t.home.hero.antibacterialBadge}</span>
         </div>
       )}
 

@@ -3,10 +3,52 @@
 import { useEffect, useRef, useState } from "react";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { Container } from "@/components/ui/Container";
+import { SectionHeading } from "@/components/ui/SectionHeading";
+import { realStats, type RealStatId } from "@/lib/data/realStats";
+import type { Locale } from "@/lib/i18n/types";
 
-const TARGETS = [6, 99.99, 3, 100] as const;
-const COUNT_DURATION_MS = 1400;
+const COUNT_DURATION_MS = 1600;
 const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
+
+const ICON_PATHS: Record<RealStatId, React.ReactNode> = {
+  orders: (
+    <>
+      <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
+      <path d="M3 6h18" />
+      <path d="M16 10a4 4 0 0 1-8 0" />
+    </>
+  ),
+  units: (
+    <>
+      <path d="M21 8 12 3 3 8l9 5 9-5Z" />
+      <path d="M3 8v8l9 5 9-5V8" />
+      <path d="M12 13v8" />
+    </>
+  ),
+  views: (
+    <>
+      <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z" />
+      <circle cx="12" cy="12" r="3" />
+    </>
+  ),
+  lives: (
+    <>
+      <circle cx="12" cy="12" r="1.5" />
+      <path d="M8.5 8.5a5 5 0 0 0 0 7" />
+      <path d="M15.5 8.5a5 5 0 0 0 0 7" />
+      <path d="M5.3 5.3a9 9 0 0 0 0 13.4" />
+      <path d="M18.7 5.3a9 9 0 0 1 0 13.4" />
+    </>
+  ),
+  creators: (
+    <>
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </>
+  ),
+};
 
 function useCountUp() {
   const ref = useRef<HTMLElement>(null);
@@ -42,33 +84,63 @@ function useCountUp() {
   return { ref, progress };
 }
 
+function formatNumber(value: number, decimals: number, grouped: boolean, locale: Locale) {
+  const fixed = value.toFixed(decimals);
+  if (!grouped) return locale === "vi" ? fixed.replace(".", ",") : fixed;
+  const [intPart, decPart] = fixed.split(".");
+  const sep = locale === "vi" ? "." : ",";
+  const groupedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, sep);
+  return decPart ? `${groupedInt}${locale === "vi" ? "," : "."}${decPart}` : groupedInt;
+}
+
 export function StatsBar() {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const { ref, progress } = useCountUp();
 
-  const stats = [
-    { value: `${Math.round(TARGETS[0] * progress)}`, label: t.home.stats.productLines },
-    { value: `${(TARGETS[1] * progress).toFixed(2).replace(".", ",")}%`, label: t.home.stats.antibacterial },
-    { value: `${Math.round(TARGETS[2] * progress)}`, label: t.home.stats.marketplaces },
-    { value: `${Math.round(TARGETS[3] * progress)}%`, label: t.home.stats.safeIngredients },
-  ];
-
   return (
-    <section className="bg-paper" ref={ref}>
-      <Container className="flex flex-wrap justify-center gap-x-16 py-16">
-        {stats.map((stat, i) => (
-          <div
-            key={stat.label}
-            className={`flex flex-col gap-2 px-8 ${i > 0 ? "border-l border-line" : "pr-8 pl-0"} ${
-              i === stats.length - 1 ? "pr-0" : ""
-            }`}
-          >
-            <span className="font-medium text-[48px] tracking-[-0.03em] text-accent-2 tabular-nums">
-              {stat.value}
-            </span>
-            <span className="max-w-[16ch] text-[13px] leading-[1.5] text-ink-2">{stat.label}</span>
-          </div>
-        ))}
+    <section className="relative overflow-hidden bg-ink text-white" ref={ref}>
+      <div className="absolute top-0 right-0 left-0 h-[3px] bg-gradient-to-r from-accent-2 via-accent to-transparent" />
+      <Container className="py-24">
+        <SectionHeading
+          eyebrow={t.home.stats.eyebrow}
+          title={t.home.stats.title}
+          subtitle={t.home.stats.subtitle}
+          tone="light"
+          align="center"
+          className="mx-auto mb-16 max-w-[620px]"
+        />
+        <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 lg:grid-cols-5">
+          {realStats.map((stat) => {
+            const displayValue = formatNumber(stat.target * progress, stat.decimals, stat.grouped, locale);
+            const suffix = stat.id === "views" ? ` ${t.home.stats.million}` : "+";
+            return (
+              <div key={stat.id} className="flex flex-col items-center gap-4 text-center">
+                <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white/10 text-accent-2">
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    {ICON_PATHS[stat.id]}
+                  </svg>
+                </span>
+                <span className="font-medium text-[36px] tracking-[-0.02em] text-white tabular-nums">
+                  {displayValue}
+                  {suffix}
+                </span>
+                <span className="max-w-[18ch] text-[13.5px] leading-[1.5] text-white/62">
+                  {t.home.stats[stat.id]}
+                </span>
+              </div>
+            );
+          })}
+        </div>
       </Container>
     </section>
   );

@@ -47,12 +47,18 @@ export type Dictionary = {
       ctaPrimary: string;
       ctaSecondary: string;
       marketplaceNote: string;
+      antibacterialBadge: string;
     };
     stats: {
-      productLines: string;
-      antibacterial: string;
-      marketplaces: string;
-      safeIngredients: string;
+      eyebrow: string;
+      title: string;
+      subtitle: string;
+      million: string;
+      orders: string;
+      units: string;
+      views: string;
+      lives: string;
+      creators: string;
     };
     trust: string[];
     videos: {
