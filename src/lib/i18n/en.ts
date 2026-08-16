@@ -6,19 +6,19 @@ export const en: Dictionary = {
     playCarousel: "Resume carousel",
   },
   meta: {
-    title: "2S Group — Creative by difference, leading the market",
+    title: "SAIZA — Creative by difference, leading the market",
     description:
-      "2S Group develops and distributes SAIZA — a certified household cleaning range, available across leading e-commerce platforms and a nationwide distributor network.",
+      "SAIZA is a certified household cleaning brand, available across leading e-commerce platforms and a nationwide distributor network.",
   },
   topbar: {
     hotline: "Hotline  +84 946 010 818",
     email: "2sgrouprecruitment@gmail.com",
-    tagline: "Household cleaning distribution & e-commerce",
+    tagline: "Safe household cleaning brand for every home",
   },
   nav: {
     home: "Home",
     products: "Products",
-    about: "About 2S Group",
+    about: "About SAIZA",
     partners: "Partners & Distributors",
     news: "News",
     contact: "Contact",
@@ -31,7 +31,7 @@ export const en: Dictionary = {
       titleAccent: "safe",
       titleAfter: "for every Vietnamese home",
       subtitle:
-        "2S Group develops and distributes SAIZA — a certified household cleaning range, available across leading e-commerce platforms and a nationwide distributor network.",
+        "SAIZA is a certified household cleaning brand, available across leading e-commerce platforms and a nationwide distributor network.",
       ctaPrimary: "Browse products",
       ctaSecondary: "Become a distributor",
       marketplaceNote: "Available on Shopee · TikTok Shop · Lazada",
@@ -61,7 +61,7 @@ export const en: Dictionary = {
       viewDetails: "View details →",
     },
     whyUs: {
-      eyebrow: "Why 2S Group",
+      eyebrow: "Why SAIZA",
       title: "A solid platform for brands and distributors",
       items: [
         {
@@ -72,7 +72,7 @@ export const en: Dictionary = {
         {
           number: "02",
           title: "Proven reputation and experience",
-          desc: "Years in the industry have earned 2S Group the trust of customers and partners.",
+          desc: "Years in the industry have earned SAIZA the trust of customers and partners.",
         },
         {
           number: "03",
@@ -111,10 +111,10 @@ export const en: Dictionary = {
   },
   aboutPage: {
     eyebrow: "About us",
-    title: "About 2S Group",
+    title: "About SAIZA",
     paragraphs: [
-      "2S holds a leading position in the cleaning industry thanks to a modern e-commerce platform and solid resources. With a leading product range and a sustainable growth strategy, 2S keeps expanding market share, meeting market demand and maintaining a competitive edge.",
-      "Beyond being an online retailer, 2S is a launchpad that helps brands grow, bringing products to millions of consumers nationwide.",
+      "SAIZA holds a leading position in the cleaning industry thanks to a modern e-commerce platform and solid resources. With a leading product range and a sustainable growth strategy, SAIZA keeps expanding market share, meeting market demand and maintaining a competitive edge.",
+      "Beyond being a product line, SAIZA is a commitment to bringing safe cleaning solutions to millions of households nationwide.",
     ],
     vision: {
       title: "Vision",
@@ -136,7 +136,7 @@ export const en: Dictionary = {
   },
   partnersPage: {
     eyebrow: "Partners & Distributors",
-    title: "Partner with 2S Group",
+    title: "Partner with SAIZA",
     subtitle:
       "We are looking for distributors, dealers and online sellers nationwide. Clear pricing policy with full sales content support.",
     steps: [
@@ -189,8 +189,8 @@ export const en: Dictionary = {
     aboutHeading: "About",
     productsHeading: "Products",
     contactHeading: "Contact information",
-    copyright: "© 2026 2S Group. All rights reserved.",
-    credit: "Designed & operated by 2S Group",
+    copyright: "© 2026 SAIZA. All rights reserved.",
+    credit: "Designed & operated by SAIZA",
   },
   offices: {
     hcm: "Ho Chi Minh City office",
@@ -237,10 +237,10 @@ export const en: Dictionary = {
   },
   news: {
     strategy: {
-      title: "2S's development strategy for customers",
+      title: "SAIZA's development strategy for customers",
       excerptShort: "Improving service quality and expanding distribution amid competition.",
       excerptLong:
-        "In a fiercely competitive market, 2S continuously improves service quality and expands its distribution network.",
+        "In a fiercely competitive market, SAIZA continuously improves service quality and expands its distribution network.",
     },
     positioning: {
       title: "Affirming a pioneering position in the cleaning industry",
@@ -254,8 +254,8 @@ export const en: Dictionary = {
     },
     ecommerce: {
       title: "Leading the cleaning industry through e-commerce",
-      excerptShort: "E-commerce is the lever helping 2S expand market share.",
-      excerptLong: "E-commerce is the lever helping 2S expand market share nationwide.",
+      excerptShort: "E-commerce is the lever helping SAIZA expand market share.",
+      excerptLong: "E-commerce is the lever helping SAIZA expand market share nationwide.",
     },
   },
 };

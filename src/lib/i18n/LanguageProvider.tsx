@@ -6,7 +6,7 @@ import { vi } from "./vi";
 import { en } from "./en";
 
 const dictionaries: Record<Locale, Dictionary> = { vi, en };
-const STORAGE_KEY = "2sgroup-locale";
+const STORAGE_KEY = "saiza-locale";
 
 type LanguageContextValue = {
   locale: Locale;

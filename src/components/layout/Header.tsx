@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { NAV_ITEMS } from "@/lib/nav";
 import { Container } from "@/components/ui/Container";
 import { LinkButton } from "@/components/ui/Button";
+import { SaizaLogo } from "@/components/ui/SaizaLogo";
 
 export function Header() {
   const { t, locale, setLocale } = useLanguage();
@@ -29,20 +29,9 @@ export function Header() {
       }`}
     >
       <Container className="flex items-center gap-7 py-4">
-        <Link href="/" className="flex flex-shrink-0 items-center gap-3">
-          <span className="block h-11 w-11 flex-shrink-0 overflow-hidden rounded-[10px]">
-            <Image
-              src="https://2sgroup.vn/wp-content/uploads/2025/04/z6468514907637_ecd5cd7fff737752f6878aa68969247b-1-1024x1024.jpg"
-              alt="2S Group"
-              width={44}
-              height={44}
-              className="h-full w-full object-cover"
-            />
-          </span>
-          <span className="flex flex-col leading-[1.1]">
-            <span className="text-xl font-semibold tracking-[-0.01em]">2S Group</span>
-            <span className="text-[10px] tracking-[0.16em] text-ink-2 uppercase">Since 2023</span>
-          </span>
+        <Link href="/" className="flex flex-shrink-0 items-center gap-2.5">
+          <SaizaLogo className="text-2xl" />
+          <span className="mt-0.5 self-start text-[10px] tracking-[0.16em] text-ink-2 uppercase">Since 2023</span>
         </Link>
 
         <button

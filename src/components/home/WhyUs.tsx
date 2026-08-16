@@ -36,7 +36,7 @@ export function WhyUs() {
                   i === t.home.whyUs.items.length - 1 ? "border-b" : ""
                 }`}
               >
-                <span className="text-[15px] text-accent-2">{item.number}</span>
+                <span className="text-[15px] text-white/70">{item.number}</span>
                 <div className="flex flex-col gap-1.5">
                   <h3 className="text-[17px] font-semibold">{item.title}</h3>
                   <p className="text-[14.5px] leading-[1.7] text-white/66">{item.desc}</p>

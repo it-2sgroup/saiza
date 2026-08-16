@@ -1,14 +1,15 @@
 @import "tailwindcss";
 
 :root {
-  --color-ink: #12292a;
-  --color-ink-2: #42605d;
-  --color-paper: #f7f6f1;
+  /* SAIZA brand palette, derived from the logo's navy gradient wordmark */
+  --color-ink: #16213e; /* Navy 900 */
+  --color-ink-2: #4a5b78; /* muted slate-navy, body text */
+  --color-paper: #f7f8fa;
   --color-card: #ffffff;
-  --color-accent: oklch(0.56 0.1 182);
-  --color-accent-2: oklch(0.56 0.1 142);
-  --color-wash: oklch(0.96 0.02 175);
-  --color-line: rgba(18, 41, 42, 0.12);
+  --color-accent: #2a407a; /* Navy 700 — links, CTAs */
+  --color-accent-2: #4c6fae; /* Navy 500 — tags, stats, checkmarks */
+  --color-wash: #e8eef7; /* Navy 100 */
+  --color-line: rgba(22, 33, 62, 0.12);
   --radius-card: 18px;
 }
 

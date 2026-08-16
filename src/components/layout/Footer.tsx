@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { Container } from "@/components/ui/Container";
+import { SaizaLogo } from "@/components/ui/SaizaLogo";
 
 const PRODUCT_LINKS = [
   { key: "drum-cleaner", label: { vi: "Bột vệ sinh lồng giặt", en: "Drum cleaner" } },
@@ -31,14 +31,7 @@ export function Footer() {
       <Container className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-10 pt-19 pb-8">
         <div className="flex flex-col gap-4.5">
           <div className="flex items-center gap-3">
-            <Image
-              src="https://2sgroup.vn/wp-content/uploads/2025/04/z6468514907637_ecd5cd7fff737752f6878aa68969247b-1-1024x1024.jpg"
-              alt="2S Group"
-              width={46}
-              height={46}
-              className="rounded-xl border border-white/15 object-cover"
-            />
-            <span className="text-xl font-semibold tracking-[-0.01em] text-white">2S Group</span>
+            <SaizaLogo tone="light" className="text-2xl" />
           </div>
           <p className="max-w-[26ch] text-[15.5px] leading-[1.6] text-white/55 italic">{t.footer.tagline}</p>
           <div className="mt-1 flex gap-2.5">

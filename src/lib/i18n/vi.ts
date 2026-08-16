@@ -6,19 +6,19 @@ export const vi: Dictionary = {
     playCarousel: "Tiếp tục cuộn",
   },
   meta: {
-    title: "2S Group — Sáng tạo khác biệt, dẫn đầu thị trường",
+    title: "SAIZA — Sáng tạo khác biệt, dẫn đầu thị trường",
     description:
-      "2S Group phát triển và phân phối thương hiệu SAIZA — danh mục sản phẩm tẩy rửa gia dụng đạt chuẩn, phủ rộng trên các nền tảng thương mại điện tử hàng đầu và hệ thống đại lý toàn quốc.",
+      "SAIZA là thương hiệu sản phẩm tẩy rửa gia dụng đạt chuẩn, phủ rộng trên các nền tảng thương mại điện tử hàng đầu và hệ thống đại lý toàn quốc.",
   },
   topbar: {
     hotline: "Hotline  0946 010 818",
     email: "2sgrouprecruitment@gmail.com",
-    tagline: "Nhà phân phối & thương mại điện tử ngành tẩy rửa",
+    tagline: "Thương hiệu tẩy rửa gia dụng an toàn cho mọi nhà",
   },
   nav: {
     home: "Trang chủ",
     products: "Sản phẩm",
-    about: "Về 2S Group",
+    about: "Về SAIZA",
     partners: "Đối tác & Đại lý",
     news: "Tin tức",
     contact: "Liên hệ",
@@ -31,7 +31,7 @@ export const vi: Dictionary = {
       titleAccent: "an toàn",
       titleAfter: "cho mọi gia đình Việt",
       subtitle:
-        "2S Group phát triển và phân phối thương hiệu SAIZA — danh mục sản phẩm tẩy rửa gia dụng đạt chuẩn, phủ rộng trên các nền tảng thương mại điện tử hàng đầu và hệ thống đại lý toàn quốc.",
+        "SAIZA là thương hiệu sản phẩm tẩy rửa gia dụng đạt chuẩn, phủ rộng trên các nền tảng thương mại điện tử hàng đầu và hệ thống đại lý toàn quốc.",
       ctaPrimary: "Xem sản phẩm",
       ctaSecondary: "Trở thành đại lý",
       marketplaceNote: "Có mặt trên Shopee · TikTok Shop · Lazada",
@@ -61,7 +61,7 @@ export const vi: Dictionary = {
       viewDetails: "Xem chi tiết →",
     },
     whyUs: {
-      eyebrow: "Vì sao chọn 2S Group",
+      eyebrow: "Vì sao chọn SAIZA",
       title: "Nền tảng vững chắc cho thương hiệu và đại lý",
       items: [
         {
@@ -72,7 +72,7 @@ export const vi: Dictionary = {
         {
           number: "02",
           title: "Uy tín và kinh nghiệm vững chắc",
-          desc: "Nhiều năm hoạt động trong ngành, 2S Group đã xây dựng được lòng tin từ khách hàng và đối tác.",
+          desc: "Nhiều năm hoạt động trong ngành, SAIZA đã xây dựng được lòng tin từ khách hàng và đối tác.",
         },
         {
           number: "03",
@@ -112,10 +112,10 @@ export const vi: Dictionary = {
   },
   aboutPage: {
     eyebrow: "Về chúng tôi",
-    title: "Giới thiệu về 2S Group",
+    title: "Giới thiệu về SAIZA",
     paragraphs: [
-      "2S khẳng định vị thế dẫn đầu trong ngành tẩy rửa nhờ nền tảng thương mại điện tử hiện đại và tiềm lực vững chắc. Với danh mục sản phẩm hàng đầu và chiến lược phát triển bền vững, 2S không ngừng mở rộng thị phần, đáp ứng nhu cầu thị trường và duy trì lợi thế cạnh tranh.",
-      "Không chỉ là nhà bán lẻ trực tuyến, 2S còn là bệ phóng giúp các thương hiệu vươn xa, đưa sản phẩm đến hàng triệu người tiêu dùng trên cả nước.",
+      "SAIZA khẳng định vị thế dẫn đầu trong ngành tẩy rửa nhờ nền tảng thương mại điện tử hiện đại và tiềm lực vững chắc. Với danh mục sản phẩm hàng đầu và chiến lược phát triển bền vững, SAIZA không ngừng mở rộng thị phần, đáp ứng nhu cầu thị trường và duy trì lợi thế cạnh tranh.",
+      "Không chỉ là một dòng sản phẩm, SAIZA còn là cam kết mang giải pháp làm sạch an toàn đến hàng triệu gia đình trên khắp cả nước.",
     ],
     vision: {
       title: "Tầm nhìn",
@@ -137,7 +137,7 @@ export const vi: Dictionary = {
   },
   partnersPage: {
     eyebrow: "Đối tác & Đại lý",
-    title: "Hợp tác cùng 2S Group",
+    title: "Hợp tác cùng SAIZA",
     subtitle:
       "Chúng tôi tìm kiếm nhà phân phối, đại lý và nhà bán hàng trên các sàn thương mại điện tử trên toàn quốc. Chính sách giá rõ ràng, hỗ trợ hình ảnh và nội dung bán hàng đầy đủ.",
     steps: [
@@ -191,8 +191,8 @@ export const vi: Dictionary = {
     aboutHeading: "Giới thiệu",
     productsHeading: "Sản phẩm",
     contactHeading: "Thông tin liên hệ",
-    copyright: "© 2026 2S Group. All rights reserved.",
-    credit: "Thiết kế & vận hành bởi 2S Group",
+    copyright: "© 2026 SAIZA. All rights reserved.",
+    credit: "Thiết kế & vận hành bởi SAIZA",
   },
   offices: {
     hcm: "Văn phòng TP.HCM",
@@ -241,10 +241,10 @@ export const vi: Dictionary = {
   },
   news: {
     strategy: {
-      title: "Chiến lược phát triển của 2S cho khách hàng",
+      title: "Chiến lược phát triển của SAIZA cho khách hàng",
       excerptShort: "Nâng cao chất lượng dịch vụ và mở rộng hệ thống phân phối trong bối cảnh cạnh tranh.",
       excerptLong:
-        "Trong bối cảnh thị trường cạnh tranh khốc liệt, 2S không ngừng nâng cao chất lượng dịch vụ và mở rộng hệ thống phân phối.",
+        "Trong bối cảnh thị trường cạnh tranh khốc liệt, SAIZA không ngừng nâng cao chất lượng dịch vụ và mở rộng hệ thống phân phối.",
     },
     positioning: {
       title: "Khẳng định vị thế tiên phong trong ngành tẩy rửa",
@@ -259,8 +259,8 @@ export const vi: Dictionary = {
     },
     ecommerce: {
       title: "Dẫn đầu ngành tẩy rửa nhờ thương mại điện tử",
-      excerptShort: "Nền tảng thương mại điện tử là đòn bẩy giúp 2S mở rộng thị phần.",
-      excerptLong: "Nền tảng thương mại điện tử là đòn bẩy giúp 2S mở rộng thị phần trên toàn quốc.",
+      excerptShort: "Nền tảng thương mại điện tử là đòn bẩy giúp SAIZA mở rộng thị phần.",
+      excerptLong: "Nền tảng thương mại điện tử là đòn bẩy giúp SAIZA mở rộng thị phần trên toàn quốc.",
     },
   },
 };

@@ -28,7 +28,7 @@ export function AboutPageContent() {
         <div className="aspect-[4/3] overflow-hidden rounded-card bg-wash">
           <Image
             src="https://2sgroup.vn/wp-content/uploads/2025/04/102581-1024x682.jpg"
-            alt="2S Group"
+            alt="SAIZA"
             width={640}
             height={480}
             className="h-full w-full object-cover"

@@ -3,7 +3,7 @@ import { Container } from "@/components/ui/Container";
 import { ProductsPageContent } from "./ProductsPageContent";
 
 export const metadata: Metadata = {
-  title: "Sản phẩm | 2S Group",
+  title: "Sản phẩm | SAIZA",
 };
 
 export default function ProductsPage() {

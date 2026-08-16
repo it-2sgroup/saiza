@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { NewsPageContent } from "./NewsPageContent";
 
 export const metadata: Metadata = {
-  title: "Tin tức | 2S Group",
+  title: "Tin tức | SAIZA",
 };
 
 export default function NewsPage() {

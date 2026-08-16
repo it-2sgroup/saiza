@@ -3,7 +3,7 @@ import type { ButtonHTMLAttributes } from "react";
 
 const VARIANT_CLASSES = {
   dark: "bg-ink text-white hover:bg-accent",
-  light: "bg-white text-ink hover:bg-[oklch(0.86_0.09_160)]",
+  light: "bg-white text-ink hover:bg-[#D7E3F5]",
   outline: "border border-white/45 text-white hover:border-white hover:bg-white/10",
   accent: "bg-accent text-white hover:bg-ink",
 } as const;

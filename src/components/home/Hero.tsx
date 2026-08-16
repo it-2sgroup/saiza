@@ -42,7 +42,7 @@ export function Hero() {
         <Image
           key={src}
           src={src}
-          alt="2S Group"
+          alt="SAIZA"
           fill
           priority={idx === 0}
           className="animate-kenburns object-cover transition-opacity duration-[1.5s] ease-in-out"
@@ -65,7 +65,7 @@ export function Hero() {
             return (
               <span key={i} className="animate-word-up inline-block" style={{ animationDelay: delay }}>
                 {isAccent ? (
-                  <span className="text-[oklch(0.86_0.09_160)] italic">{word.accent}</span>
+                  <span className="text-[#8FB0F0] italic">{word.accent}</span>
                 ) : (
                   word
                 )}
