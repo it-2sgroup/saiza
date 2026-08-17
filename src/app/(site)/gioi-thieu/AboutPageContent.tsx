@@ -53,7 +53,7 @@ export function AboutPageContent() {
         </h2>
         <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4">
           {galleryImages.map((src) => (
-            <div key={src} className="aspect-[4/3] overflow-hidden rounded-2xl bg-wash">
+            <div className="aspect-[4/3] overflow-hidden rounded-[22px] bg-wash shadow-[0_10px_26px_rgba(22,33,62,0.07)] transition-transform duration-400 ease-soft hover:-translate-y-1" key={src}>
               <Image src={src} alt="" width={400} height={300} className="h-full w-full object-cover" />
             </div>
           ))}

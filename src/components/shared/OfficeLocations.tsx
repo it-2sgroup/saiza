@@ -16,7 +16,7 @@ export function OfficeLocations() {
             key={office.id}
             type="button"
             onClick={() => setActiveOffice(office.id)}
-            className={`rounded-full border border-line px-4.5 py-2.5 text-[13.5px] font-semibold transition-all duration-250 ${
+            className={`rounded-full border border-line px-4.5 py-2.5 text-[13.5px] font-semibold transition-all duration-300 ease-soft ${
               activeOffice === office.id ? "bg-ink text-white" : "text-ink-2"
             }`}
           >

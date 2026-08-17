@@ -65,7 +65,7 @@ export function Hero() {
           {t.home.hero.eyebrow}
         </span>
 
-        <h1 className="max-w-[15ch] text-[clamp(44px,6vw,88px)] leading-[1.0] font-medium tracking-[-0.03em] text-pretty">
+        <h1 className="max-w-[16ch] text-[clamp(44px,6vw,88px)] leading-[1.12] font-medium tracking-[-0.03em] text-pretty">
           {allWords.map((word, i) => {
             const isAccent = typeof word !== "string";
             const delay = `${0.15 + i * 0.12}s`;
@@ -76,10 +76,13 @@ export function Hero() {
                 ) : (
                   word
                 )}
-                {i < allWords.length - 1 ? " " : ""}
               </span>
             );
-          })}
+          }).reduce((acc, el, i) => {
+            if (i > 0) acc.push(" ");
+            acc.push(el);
+            return acc;
+          }, [] as React.ReactNode[])}
         </h1>
 
         <p className="animate-soft-in max-w-[540px] text-[17.5px] leading-[1.7] text-white/78 text-pretty [animation-delay:1.15s]">
@@ -95,25 +98,25 @@ export function Hero() {
           </LinkButton>
           <span className="ml-1.5 text-[13px] text-white/62">{t.home.hero.marketplaceNote}</span>
         </div>
-      </div>
 
-      <div className="absolute bottom-8 left-8 z-10 flex gap-2.5">
-        {HERO_SLIDES.map((_, idx) => (
-          <button
-            key={idx}
-            type="button"
-            aria-label={`Slide ${idx + 1}`}
-            aria-current={idx === activeIdx}
-            onClick={() => setActiveIdx(idx)}
-            className="flex items-center justify-center p-2.5"
-          >
-            <span
-              className={`block h-2 rounded-full transition-all duration-300 ${
-                idx === activeIdx ? "w-5.5 bg-white" : "w-2 bg-white/55"
-              }`}
-            />
-          </button>
-        ))}
+        <div className="animate-soft-in flex gap-2.5 [animation-delay:1.45s]">
+          {HERO_SLIDES.map((_, idx) => (
+            <button
+              key={idx}
+              type="button"
+              aria-label={`Slide ${idx + 1}`}
+              aria-current={idx === activeIdx}
+              onClick={() => setActiveIdx(idx)}
+              className="flex items-center justify-center p-2.5"
+            >
+              <span
+                className={`block h-2 rounded-full transition-all duration-300 ${
+                  idx === activeIdx ? "w-5.5 bg-white" : "w-2 bg-white/55"
+                }`}
+              />
+            </button>
+          ))}
+        </div>
       </div>
 
       <div

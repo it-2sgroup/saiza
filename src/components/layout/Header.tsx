@@ -31,7 +31,7 @@ export function Header() {
           }`}
         >
           <Link href="/" className="flex flex-shrink-0 items-center gap-2">
-            <SaizaLogo className="text-xl" />
+            <SaizaLogo className="h-6.5" />
             <span className="mt-0.5 hidden self-start text-[10px] tracking-[0.16em] text-ink-2 uppercase sm:block">
               Since 2023
             </span>

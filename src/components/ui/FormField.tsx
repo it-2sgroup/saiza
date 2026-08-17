@@ -8,7 +8,7 @@ type FormFieldProps = {
 };
 
 const fieldClasses =
-  "rounded-xl border border-line bg-paper px-4 py-3.5 text-[15px] text-ink outline-none focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/30";
+  "rounded-[16px] border border-line bg-paper px-4 py-3.5 text-[15px] text-ink outline-none transition-all duration-300 ease-soft focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/30";
 
 export function FormField({ id, label, type = "text", required, multiline, rows = 4 }: FormFieldProps) {
   return (

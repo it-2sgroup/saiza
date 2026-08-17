@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { Container } from "@/components/ui/Container";
 import { LinkButton } from "@/components/ui/Button";
+import { WaveDivider } from "@/components/ui/WaveDivider";
 
 export function PartnersPageContent() {
   const { t } = useLanguage();
@@ -32,6 +33,7 @@ export function PartnersPageContent() {
         ))}
       </Container>
 
+      <WaveDivider topClassName="bg-paper" fill="var(--color-ink)" />
       <section className="bg-ink text-white">
         <Container className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] items-center gap-12 py-18">
           <div className="flex flex-col gap-4">
@@ -52,6 +54,7 @@ export function PartnersPageContent() {
           </div>
         </Container>
       </section>
+      <WaveDivider topClassName="bg-ink" fill="var(--color-wash)" />
     </>
   );
 }

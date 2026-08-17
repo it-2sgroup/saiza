@@ -99,7 +99,7 @@ export function StatsBar() {
 
   return (
     <section className="relative overflow-hidden bg-ink text-white" ref={ref}>
-      <div className="absolute top-0 right-0 left-0 h-[3px] bg-gradient-to-r from-accent-2 via-accent to-transparent" />
+      <div className="absolute top-0 right-0 left-0 h-[3px] bg-gradient-to-r from-highlight via-accent-2 to-transparent" />
       <Container className="py-24">
         <SectionHeading
           eyebrow={t.home.stats.eyebrow}

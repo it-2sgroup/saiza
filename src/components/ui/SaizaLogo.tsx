@@ -1,16 +1,24 @@
+import Image from "next/image";
+
 type SaizaLogoProps = {
   className?: string;
   tone?: "dark" | "light";
 };
 
-export function SaizaLogo({ className = "", tone = "dark" }: SaizaLogoProps) {
-  const gradient = tone === "light" ? "from-white to-[#9FB8E8]" : "from-accent to-ink";
+const LOGO_ASPECT = 936 / 340;
+
+export function SaizaLogo({ className = "h-7", tone = "dark" }: SaizaLogoProps) {
+  const src = tone === "light" ? "/images/brand/saiza-logo-white.png" : "/images/brand/saiza-logo-navy.png";
 
   return (
-    <span
-      className={`bg-gradient-to-br ${gradient} bg-clip-text font-extrabold tracking-tight text-transparent italic ${className}`}
-    >
-      SAIZA
-    </span>
+    <Image
+      src={src}
+      alt="SAIZA"
+      width={936}
+      height={340}
+      priority
+      style={{ aspectRatio: LOGO_ASPECT }}
+      className={`w-auto object-contain ${className}`}
+    />
   );
 }

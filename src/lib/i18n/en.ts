@@ -22,6 +22,7 @@ export const en: Dictionary = {
     about: "About SAIZA",
     partners: "Partners & Distributors",
     news: "News",
+    careers: "Careers",
     contact: "Contact",
     cta: "Get in touch",
   },
@@ -171,6 +172,13 @@ export const en: Dictionary = {
     eyebrow: "News",
     title: "News & activities",
   },
+  careersPage: {
+    eyebrow: "Careers",
+    title: "Careers at SAIZA",
+    subtitle: "Join SAIZA in building a leading household cleaning brand.",
+    noResults: "There are no open positions right now. Please check back later.",
+    applyCta: "Apply now",
+  },
   contactPage: {
     eyebrow: "Contact",
     title: "Contact us",
@@ -193,6 +201,9 @@ export const en: Dictionary = {
   },
   footer: {
     tagline: "Innovation – convenience within reach!",
+    ctaTitle: "Ready to team up with SAIZA?",
+    ctaSubtitle: "Leave your details and our team will reach out within 24 business hours.",
+    ctaButton: "Contact us",
     aboutHeading: "About",
     productsHeading: "Products",
     contactHeading: "Contact information",
@@ -240,29 +251,6 @@ export const en: Dictionary = {
       name: "SU Refrigerator Cleaning Spray",
       descShort: "Gentle cleaning and deodorising, keeping food storage fresh.",
       descLong: "Safely cleans food storage compartments, deodorises and keeps the fridge fresh for longer.",
-    },
-  },
-  news: {
-    strategy: {
-      title: "SAIZA's development strategy for customers",
-      excerptShort: "Improving service quality and expanding distribution amid competition.",
-      excerptLong:
-        "In a fiercely competitive market, SAIZA continuously improves service quality and expands its distribution network.",
-    },
-    positioning: {
-      title: "Affirming a pioneering position in the cleaning industry",
-      excerptShort: "Positioning SAIZA within a fast-growing FMCG market.",
-      excerptLong: "Positioning SAIZA within a fast-growing FMCG market.",
-    },
-    experience: {
-      title: "Expanding the market and improving customer experience",
-      excerptShort: "Investing in after-sales service and omnichannel shopping.",
-      excerptLong: "Investing in after-sales service and omnichannel shopping experience for consumers.",
-    },
-    ecommerce: {
-      title: "Leading the cleaning industry through e-commerce",
-      excerptShort: "E-commerce is the lever helping SAIZA expand market share.",
-      excerptLong: "E-commerce is the lever helping SAIZA expand market share nationwide.",
     },
   },
 };

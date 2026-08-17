@@ -20,7 +20,7 @@ export function TrustStrip() {
         {t.home.trust.map((item) => (
           <div
             key={item}
-            className="flex items-start gap-3.5 rounded-2xl p-4.5 transition-all duration-300 hover:-translate-y-[3px] hover:bg-wash"
+            className="flex items-start gap-3.5 rounded-[22px] p-4.5 transition-all duration-400 ease-soft hover:-translate-y-[3px] hover:bg-wash"
           >
             <span className="flex h-8.5 w-8.5 flex-shrink-0 items-center justify-center rounded-full bg-wash text-accent-2">
               <CheckIcon />

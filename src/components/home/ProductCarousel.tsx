@@ -46,7 +46,7 @@ export function ProductCarousel() {
               <article
                 key={`${product.id}-${i}`}
                 aria-hidden={i >= products.length}
-                className="relative z-[1] flex w-80 flex-shrink-0 flex-col overflow-hidden rounded-card border border-line bg-card transition-all duration-400 hover:z-[5] hover:-translate-y-4 hover:scale-[1.06] hover:shadow-[0_32px_54px_rgba(18,41,42,0.24)]"
+                className="relative z-[1] flex w-80 flex-shrink-0 flex-col overflow-hidden rounded-card border border-line bg-card shadow-[0_10px_26px_rgba(22,33,62,0.07)] transition-all duration-400 ease-soft hover:z-[5] hover:-translate-y-4 hover:scale-[1.06] hover:shadow-[0_32px_54px_rgba(18,41,42,0.24)]"
               >
                 <div className="flex aspect-square items-center justify-center bg-wash p-7.5">
                   <Image

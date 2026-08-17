@@ -22,6 +22,7 @@ export const vi: Dictionary = {
     about: "Về SAIZA",
     partners: "Đối tác & Đại lý",
     news: "Tin tức",
+    careers: "Tuyển dụng",
     contact: "Liên hệ",
     cta: "Nhận tư vấn",
   },
@@ -172,6 +173,13 @@ export const vi: Dictionary = {
     eyebrow: "Tin tức",
     title: "Tin tức & hoạt động",
   },
+  careersPage: {
+    eyebrow: "Tuyển dụng",
+    title: "Cơ hội nghề nghiệp tại SAIZA",
+    subtitle: "Cùng SAIZA xây dựng thương hiệu tẩy rửa gia dụng dẫn đầu thị trường.",
+    noResults: "Hiện chưa có vị trí tuyển dụng nào. Vui lòng quay lại sau.",
+    applyCta: "Ứng tuyển ngay",
+  },
   contactPage: {
     eyebrow: "Liên hệ",
     title: "Liên hệ chúng tôi",
@@ -195,6 +203,9 @@ export const vi: Dictionary = {
   },
   footer: {
     tagline: "Đổi mới sáng tạo – Tiện lợi trong tầm tay!",
+    ctaTitle: "Sẵn sàng hợp tác cùng SAIZA?",
+    ctaSubtitle: "Để lại thông tin, đội ngũ SAIZA liên hệ tư vấn trong 24 giờ làm việc.",
+    ctaButton: "Liên hệ ngay",
     aboutHeading: "Giới thiệu",
     productsHeading: "Sản phẩm",
     contactHeading: "Thông tin liên hệ",
@@ -244,30 +255,6 @@ export const vi: Dictionary = {
       name: "Xịt vệ sinh tủ lạnh SU",
       descShort: "Làm sạch dịu nhẹ và khử mùi, giữ không gian trữ thực phẩm luôn thơm mát.",
       descLong: "Làm sạch an toàn cho khoang chứa thực phẩm, khử mùi và giữ tủ thơm mát lâu dài.",
-    },
-  },
-  news: {
-    strategy: {
-      title: "Chiến lược phát triển của SAIZA cho khách hàng",
-      excerptShort: "Nâng cao chất lượng dịch vụ và mở rộng hệ thống phân phối trong bối cảnh cạnh tranh.",
-      excerptLong:
-        "Trong bối cảnh thị trường cạnh tranh khốc liệt, SAIZA không ngừng nâng cao chất lượng dịch vụ và mở rộng hệ thống phân phối.",
-    },
-    positioning: {
-      title: "Khẳng định vị thế tiên phong trong ngành tẩy rửa",
-      excerptShort: "Định vị thương hiệu SAIZA giữa thị trường hàng tiêu dùng nhanh đang tăng trưởng.",
-      excerptLong:
-        "Định vị thương hiệu SAIZA giữa thị trường hàng tiêu dùng nhanh đang tăng trưởng nhanh.",
-    },
-    experience: {
-      title: "Mở rộng thị trường và nâng cao trải nghiệm khách hàng",
-      excerptShort: "Đầu tư vào dịch vụ hậu mãi và trải nghiệm mua sắm đa kênh.",
-      excerptLong: "Đầu tư vào dịch vụ hậu mãi và trải nghiệm mua sắm đa kênh cho người tiêu dùng.",
-    },
-    ecommerce: {
-      title: "Dẫn đầu ngành tẩy rửa nhờ thương mại điện tử",
-      excerptShort: "Nền tảng thương mại điện tử là đòn bẩy giúp SAIZA mở rộng thị phần.",
-      excerptLong: "Nền tảng thương mại điện tử là đòn bẩy giúp SAIZA mở rộng thị phần trên toàn quốc.",
     },
   },
 };

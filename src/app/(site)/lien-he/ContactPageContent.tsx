@@ -1,15 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useActionState } from "react";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { Container } from "@/components/ui/Container";
 import { ActionButton } from "@/components/ui/Button";
 import { FormField } from "@/components/ui/FormField";
 import { OfficeLocations } from "@/components/shared/OfficeLocations";
+import { submitContactForm, type ContactFormState } from "./actions";
+
+const initialState: ContactFormState = { error: null, sent: false };
 
 export function ContactPageContent() {
   const { t } = useLanguage();
-  const [sent, setSent] = useState(false);
+  const [state, formAction, pending] = useActionState(submitContactForm, initialState);
 
   return (
     <>
@@ -44,13 +47,7 @@ export function ContactPageContent() {
           </div>
         </div>
 
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            setSent(true);
-          }}
-          className="flex h-fit flex-col gap-4 rounded-card border border-line bg-card p-8"
-        >
+        <form action={formAction} className="flex h-fit flex-col gap-4 rounded-card border border-line bg-card p-8">
           <h2 className="text-[22px] font-semibold">{t.contactPage.formTitle}</h2>
           <p className="text-[14.5px] leading-[1.65] text-ink-2">{t.contactPage.formSubtitle}</p>
           <FormField id="contact-name" label={t.contactPage.placeholders.name} required />
@@ -58,10 +55,11 @@ export function ContactPageContent() {
           <FormField id="contact-email" label={t.contactPage.placeholders.email} type="email" />
           <FormField id="contact-region" label={t.contactPage.placeholders.region} />
           <FormField id="contact-message" label={t.contactPage.placeholders.message} multiline />
-          <ActionButton type="submit" variant="accent" className="text-center">
-            {t.contactPage.submit}
+          <ActionButton type="submit" variant="accent" className="text-center" disabled={pending}>
+            {pending ? "..." : t.contactPage.submit}
           </ActionButton>
-          {sent && <span className="text-center text-sm font-semibold text-accent-2">{t.contactPage.sent}</span>}
+          {state.error && <span className="text-center text-sm font-medium text-red-600">{state.error}</span>}
+          {state.sent && <span className="text-center text-sm font-semibold text-accent-2">{t.contactPage.sent}</span>}
         </form>
       </Container>
 

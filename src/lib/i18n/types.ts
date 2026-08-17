@@ -7,12 +7,6 @@ export type ProductCopy = {
   descLong: string;
 };
 
-export type NewsCopy = {
-  title: string;
-  excerptShort: string;
-  excerptLong: string;
-};
-
 export type Dictionary = {
   common: {
     pauseCarousel: string;
@@ -34,6 +28,7 @@ export type Dictionary = {
     about: string;
     partners: string;
     news: string;
+    careers: string;
     contact: string;
     cta: string;
   };
@@ -127,6 +122,13 @@ export type Dictionary = {
     eyebrow: string;
     title: string;
   };
+  careersPage: {
+    eyebrow: string;
+    title: string;
+    subtitle: string;
+    noResults: string;
+    applyCta: string;
+  };
   contactPage: {
     eyebrow: string;
     title: string;
@@ -149,6 +151,9 @@ export type Dictionary = {
   };
   footer: {
     tagline: string;
+    ctaTitle: string;
+    ctaSubtitle: string;
+    ctaButton: string;
     aboutHeading: string;
     productsHeading: string;
     contactHeading: string;
@@ -163,5 +168,4 @@ export type Dictionary = {
     "drum-cleaner" | "multi-cleaner" | "delicate-wash" | "kitchen-spray" | "bathroom-spray" | "fridge-spray",
     ProductCopy
   >;
-  news: Record<"strategy" | "positioning" | "experience" | "ecommerce", NewsCopy>;
 };

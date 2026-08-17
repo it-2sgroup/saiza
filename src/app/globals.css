@@ -1,16 +1,18 @@
 @import "tailwindcss";
 
 :root {
-  /* SAIZA brand palette, derived from the logo's navy gradient wordmark */
-  --color-ink: #16213e; /* Navy 900 */
+  /* SAIZA brand palette, sampled from the logo wordmark and campaign key art */
+  --color-ink: #16213e; /* Navy đậm — headings, dark surfaces */
   --color-ink-2: #4a5b78; /* muted slate-navy, body text */
   --color-paper: #f7f8fa;
-  --color-card: #ffffff;
-  --color-accent: #2a407a; /* Navy 700 — links, CTAs */
-  --color-accent-2: #4c6fae; /* Navy 500 — tags, stats, checkmarks */
-  --color-wash: #e8eef7; /* Navy 100 */
+  --color-card: #ffffff; /* Trắng ngà — page bg, cards */
+  --color-accent: #1d5fb8; /* Xanh biển SAIZA — links, CTAs (legible depth of the campaign blue) */
+  --color-accent-2: #0b84d8; /* Xanh biển SAIZA sáng — tags, stats, icons */
+  --color-wash: #dceefa; /* Xanh băng nhạt — soft section/card backgrounds */
+  --color-highlight: #f88aaf; /* Hồng san hô — sparing accent on decorative details only */
   --color-line: rgba(22, 33, 62, 0.12);
-  --radius-card: 18px;
+  --radius-card: 26px;
+  --ease-soft: cubic-bezier(0.22, 0.68, 0, 1);
 }
 
 @theme inline {
@@ -21,8 +23,10 @@
   --color-accent: var(--color-accent);
   --color-accent-2: var(--color-accent-2);
   --color-wash: var(--color-wash);
+  --color-highlight: var(--color-highlight);
   --color-line: var(--color-line);
   --radius-card: var(--radius-card);
+  --ease-soft: var(--ease-soft);
   --font-sans: var(--font-inter);
   --animate-fade-up: fadeUp 0.6s ease both;
   --animate-reveal-up: revealUp 0.8s ease both;
