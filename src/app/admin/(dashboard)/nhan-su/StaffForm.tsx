@@ -1,14 +1,22 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { inviteStaffAccount, type StaffFormState } from "./actions";
+import { Combobox } from "../Combobox";
 
 const initialState: StaffFormState = { error: null, success: false };
 const fieldClasses =
   "rounded-[14px] border border-line bg-paper px-4 py-3 text-[15px] text-ink outline-none transition-all duration-300 ease-soft focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/30";
 
+const ROLE_OPTIONS = [
+  { value: "admin", label: "Quản trị" },
+  { value: "editor", label: "Biên tập viên" },
+  { value: "contributor", label: "Cộng tác viên" },
+];
+
 export function StaffForm() {
   const [state, formAction, pending] = useActionState(inviteStaffAccount, initialState);
+  const [role, setRole] = useState("contributor");
 
   return (
     <form action={formAction} className="flex flex-col gap-3.5">
@@ -28,11 +36,13 @@ export function StaffForm() {
         <label htmlFor="role" className="text-xs tracking-[0.1em] text-ink-2 uppercase">
           Vai trò
         </label>
-        <select id="role" name="role" defaultValue="contributor" className={fieldClasses}>
-          <option value="admin">Quản trị</option>
-          <option value="editor">Biên tập viên</option>
-          <option value="contributor">Cộng tác viên</option>
-        </select>
+        <Combobox
+          name="role"
+          value={role}
+          options={ROLE_OPTIONS}
+          onChange={setRole}
+          buttonClassName={`${fieldClasses} flex w-full items-center justify-between gap-2 text-left`}
+        />
       </div>
       <p className="text-sm text-ink-2">
         Nhân viên sẽ nhận email chứa đường dẫn để tự đặt mật khẩu và bắt đầu sử dụng khu quản trị.

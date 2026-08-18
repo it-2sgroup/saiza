@@ -148,6 +148,16 @@ export function DashboardCharts({ news, jobs, contacts, staff }: DashboardCharts
             { name: "Đã đóng", value: jobs.closed, color: COLORS.closed },
           ]}
         />
+        {staff && (
+          <DonutCard
+            title="Nhân sự theo vai trò"
+            data={[
+              { name: "Quản trị", value: staff.admin, color: COLORS.admin },
+              { name: "Biên tập viên", value: staff.editor, color: COLORS.editor },
+              { name: "Cộng tác viên", value: staff.contributor, color: COLORS.contributor },
+            ]}
+          />
+        )}
         {contacts && (
           <>
             <DonutCard
@@ -160,16 +170,6 @@ export function DashboardCharts({ news, jobs, contacts, staff }: DashboardCharts
             />
             <TrendCard trend={contacts.trend} />
           </>
-        )}
-        {staff && (
-          <DonutCard
-            title="Nhân sự theo vai trò"
-            data={[
-              { name: "Quản trị", value: staff.admin, color: COLORS.admin },
-              { name: "Biên tập viên", value: staff.editor, color: COLORS.editor },
-              { name: "Cộng tác viên", value: staff.contributor, color: COLORS.contributor },
-            ]}
-          />
         )}
       </div>
     </div>

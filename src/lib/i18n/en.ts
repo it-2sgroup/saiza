@@ -4,6 +4,8 @@ export const en: Dictionary = {
   common: {
     pauseCarousel: "Pause carousel",
     playCarousel: "Resume carousel",
+    prevSlide: "Previous person",
+    nextSlide: "Next person",
     backToTop: "Back to top",
   },
   meta: {

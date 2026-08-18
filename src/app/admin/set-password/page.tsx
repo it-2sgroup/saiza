@@ -1,49 +1,35 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useActionState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { validatePassword } from "@/lib/admin/password";
+import { setPassword, type SetPasswordState } from "./actions";
+
+const initialState: SetPasswordState = { error: null, success: false };
 
 export default function SetPasswordPage() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
-  const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+  const [sessionError, setSessionError] = useState<string | null>(null);
+  const [password, setPasswordValue] = useState("");
+  const [state, formAction, pending] = useActionState(setPassword, initialState);
 
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getSession().then(({ data }) => {
       setReady(!!data.session);
-      if (!data.session) setError("Đường dẫn không hợp lệ hoặc đã hết hạn. Hãy xin quản trị viên gửi lời mời lại.");
+      if (!data.session) {
+        setSessionError("Đường dẫn không hợp lệ hoặc đã hết hạn. Hãy xin quản trị viên gửi lời mời lại.");
+      }
     });
   }, []);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (password.length < 8) {
-      setError("Mật khẩu cần ít nhất 8 ký tự.");
-      return;
-    }
-    if (password !== confirm) {
-      setError("Hai mật khẩu không khớp.");
-      return;
-    }
+  useEffect(() => {
+    if (state.success) router.replace("/admin");
+  }, [state.success, router]);
 
-    setSubmitting(true);
-    setError(null);
-    const supabase = createClient();
-    const { error: updateError } = await supabase.auth.updateUser({ password });
-    setSubmitting(false);
-
-    if (updateError) {
-      setError("Không đặt được mật khẩu: " + updateError.message);
-      return;
-    }
-
-    router.replace("/admin");
-  }
+  const liveCheck = password ? validatePassword(password) : null;
 
   return (
     <div className="flex min-h-screen items-center justify-center px-6">
@@ -54,21 +40,24 @@ export default function SetPasswordPage() {
         </div>
 
         {ready ? (
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <form action={formAction} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <label htmlFor="password" className="text-xs tracking-[0.1em] text-ink-2 uppercase">
                 Mật khẩu mới
               </label>
               <input
                 id="password"
+                name="password"
                 type="password"
                 required
-                minLength={8}
+                minLength={10}
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => setPasswordValue(e.target.value)}
                 autoComplete="new-password"
                 className="rounded-[14px] border border-line bg-paper px-4 py-3 text-[15px] outline-none transition-all duration-300 ease-soft focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/30"
               />
+              <p className="text-xs text-ink-2">Ít nhất 10 ký tự, có chữ hoa, chữ thường và số.</p>
+              {liveCheck && !liveCheck.valid && <p className="text-xs font-medium text-red-600">{liveCheck.error}</p>}
             </div>
             <div className="flex flex-col gap-1.5">
               <label htmlFor="confirm" className="text-xs tracking-[0.1em] text-ink-2 uppercase">
@@ -76,26 +65,25 @@ export default function SetPasswordPage() {
               </label>
               <input
                 id="confirm"
+                name="confirm"
                 type="password"
                 required
-                minLength={8}
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
+                minLength={10}
                 autoComplete="new-password"
                 className="rounded-[14px] border border-line bg-paper px-4 py-3 text-[15px] outline-none transition-all duration-300 ease-soft focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/30"
               />
             </div>
-            {error && <p className="text-sm font-medium text-red-600">{error}</p>}
+            {state.error && <p className="text-sm font-medium text-red-600">{state.error}</p>}
             <button
               type="submit"
-              disabled={submitting}
+              disabled={pending}
               className="mt-1 cursor-pointer rounded-full bg-accent px-5 py-3 text-sm font-semibold text-white transition-colors duration-300 ease-soft hover:bg-ink disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {submitting ? "Đang lưu..." : "Lưu mật khẩu"}
+              {pending ? "Đang lưu..." : "Lưu mật khẩu"}
             </button>
           </form>
         ) : (
-          <p className="text-sm text-ink-2">{error ?? "Đang xác thực đường dẫn..."}</p>
+          <p className="text-sm text-ink-2">{sessionError ?? "Đang xác thực đường dẫn..."}</p>
         )}
       </div>
     </div>

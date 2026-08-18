@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getCurrentProfile } from "@/lib/supabase/profile";
 import { canManageStaff } from "@/lib/admin/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { recordAuditLog } from "@/lib/admin/audit";
 import type { StaffRole } from "@/lib/supabase/profile";
 
 export type StaffFormState = { error: string | null; success: boolean };
@@ -48,6 +49,14 @@ export async function inviteStaffAccount(_prev: StaffFormState, formData: FormDa
     };
   }
 
+  await recordAuditLog({
+    actorId: profile.id,
+    action: "staff_invited",
+    targetTable: "profiles",
+    targetId: invited.user.id,
+    metadata: { email, role },
+  });
+
   revalidatePath("/admin/nhan-su");
   return { error: null, success: true };
 }
@@ -62,5 +71,52 @@ export async function updateStaffRole(id: string, formData: FormData) {
   const admin = createAdminClient();
   await admin.from("profiles").update({ role }).eq("id", id);
 
+  await recordAuditLog({
+    actorId: profile.id,
+    action: "staff_role_changed",
+    targetTable: "profiles",
+    targetId: id,
+    metadata: { newRole: role },
+  });
+
   revalidatePath("/admin/nhan-su");
+}
+
+export type DeleteStaffState = { error: string | null };
+
+export async function deleteStaffAccount(
+  id: string,
+  _prev: DeleteStaffState,
+  _formData: FormData,
+): Promise<DeleteStaffState> {
+  const profile = await getCurrentProfile();
+  if (!profile || !canManageStaff(profile.role)) return { error: "Bạn không có quyền thực hiện." };
+  if (id === profile.id) {
+    return { error: "Dùng trang Hồ sơ cá nhân để xoá tài khoản của chính bạn." };
+  }
+
+  const admin = createAdminClient();
+
+  const { data: target } = await admin.from("profiles").select("role, full_name").eq("id", id).single();
+
+  if (target?.role === "admin") {
+    const { count } = await admin.from("profiles").select("id", { count: "exact", head: true }).eq("role", "admin");
+    if ((count ?? 0) <= 1) {
+      return { error: "Không thể xoá quản trị viên duy nhất còn lại." };
+    }
+  }
+
+  await recordAuditLog({
+    actorId: profile.id,
+    action: "staff_deleted",
+    targetTable: "profiles",
+    targetId: id,
+    metadata: { fullName: target?.full_name, role: target?.role },
+  });
+
+  const { error } = await admin.auth.admin.deleteUser(id);
+  if (error) return { error: `Không xoá được: ${error.message}` };
+
+  revalidatePath("/admin/nhan-su");
+  return { error: null };
 }

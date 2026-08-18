@@ -4,6 +4,8 @@ export const vi: Dictionary = {
   common: {
     pauseCarousel: "Tạm dừng cuộn",
     playCarousel: "Tiếp tục cuộn",
+    prevSlide: "Xem người trước",
+    nextSlide: "Xem người tiếp theo",
     backToTop: "Về đầu trang",
   },
   meta: {

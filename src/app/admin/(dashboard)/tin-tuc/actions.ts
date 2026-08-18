@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/supabase/profile";
 import { canPublish, canDelete } from "@/lib/admin/permissions";
 import { uniqueSlug } from "@/lib/admin/slug";
+import { recordAuditLog } from "@/lib/admin/audit";
 
 export type NewsFormState = { error: string | null };
 
@@ -85,6 +86,8 @@ export async function deleteNewsPost(id: string) {
 
   const supabase = await createClient();
   await supabase.from("news_posts").delete().eq("id", id);
+
+  await recordAuditLog({ actorId: profile.id, action: "news_post_deleted", targetTable: "news_posts", targetId: id });
 
   revalidatePath("/admin/tin-tuc");
   revalidatePath("/tin-tuc");

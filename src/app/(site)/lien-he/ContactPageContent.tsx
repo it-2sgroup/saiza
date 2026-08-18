@@ -47,9 +47,20 @@ export function ContactPageContent() {
           </div>
         </div>
 
-        <form action={formAction} className="flex h-fit flex-col gap-4 rounded-card border border-line bg-card p-8">
+        <form action={formAction} className="relative flex h-fit flex-col gap-4 rounded-card border border-line bg-card p-8">
           <h2 className="text-[22px] font-semibold">{t.contactPage.formTitle}</h2>
           <p className="text-[14.5px] leading-[1.65] text-ink-2">{t.contactPage.formSubtitle}</p>
+          {/* Honeypot — invisible to real visitors, left unlabeled so screen
+              readers skip it; bots that auto-fill every field tend to fill
+              this in too, which silently marks the submission as spam. */}
+          <input
+            type="text"
+            name="company_website"
+            tabIndex={-1}
+            autoComplete="off"
+            aria-hidden="true"
+            className="pointer-events-none absolute -left-[9999px] h-0 w-0 opacity-0"
+          />
           <FormField id="contact-name" label={t.contactPage.placeholders.name} required />
           <FormField id="contact-phone" label={t.contactPage.placeholders.phone} type="tel" />
           <FormField id="contact-email" label={t.contactPage.placeholders.email} type="email" />
