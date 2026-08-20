@@ -5,6 +5,7 @@ import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { Container } from "@/components/ui/Container";
 import { SaizaLogo } from "@/components/ui/SaizaLogo";
 import { LinkButton } from "@/components/ui/Button";
+import { phoneToTelHref } from "@/lib/phone";
 
 const PRODUCT_LINKS = [
   { key: "drum-cleaner", label: { vi: "Bột vệ sinh lồng giặt", en: "Drum cleaner" } },
@@ -15,11 +16,24 @@ const PRODUCT_LINKS = [
   { key: "delicate-wash", label: { vi: "Nước giặt đồ lót", en: "Delicate wash" } },
 ] as const;
 
-const SOCIAL_LINKS = [
+const SOCIAL_ICONS = [
   {
     title: "Facebook",
-    href: "#",
+    variant: "stroke" as const,
+    viewBox: "0 0 24 24",
     path: "M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z",
+  },
+  {
+    title: "Zalo",
+    variant: "fill" as const,
+    viewBox: "27.4 27 64 64",
+    path: "M48,41.7v5h16.2l-16,19.8c-0.5,0.7-0.9,1.4-0.9,3v1.3h22.1c1.1,0,2-0.9,2-2v-2.7h-17l15.9-20c0.9-1.3,1-2.4,1-3.7l0-0.7H48z",
+  },
+  {
+    title: "TikTok",
+    variant: "fill" as const,
+    viewBox: "0 0 448 512",
+    path: "M448,209.91a210.06,210.06,0,0,1-122.77-39.25V349.38A162.55,162.55,0,1,1,185,188.31V278.2a74.62,74.62,0,1,0,52.23,71.18V0l88,0a121.18,121.18,0,0,0,1.86,22.17h0A122.18,122.18,0,0,0,381,102.39a121.43,121.43,0,0,0,67,20.14Z",
   },
 ];
 
@@ -37,8 +51,29 @@ function ContactIcon({ path }: { path: string }) {
   );
 }
 
-export function Footer() {
+type FooterProps = {
+  logoSrc?: string;
+  phone: string;
+  email: string;
+  office1Address: string;
+  office2Address: string;
+  facebookUrl: string;
+  zaloUrl: string;
+  tiktokUrl: string;
+};
+
+export function Footer({
+  logoSrc,
+  phone,
+  email,
+  office1Address,
+  office2Address,
+  facebookUrl,
+  zaloUrl,
+  tiktokUrl,
+}: FooterProps) {
   const { t, locale } = useLanguage();
+  const socialHrefs: Record<string, string> = { Facebook: facebookUrl, Zalo: zaloUrl, TikTok: tiktokUrl };
 
   return (
     <footer className="relative overflow-hidden bg-ink text-white/68">
@@ -65,37 +100,44 @@ export function Footer() {
       <Container className="relative grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-10 pt-14 pb-8">
         <div className="flex flex-col gap-4.5">
           <div className="flex items-center gap-3">
-            <SaizaLogo tone="light" className="h-13" />
+            <SaizaLogo tone="light" src={logoSrc} className="h-13" />
           </div>
           <p className="max-w-[26ch] text-[15.5px] leading-[1.6] text-white/55 italic">{t.footer.tagline}</p>
           <div className="mt-1 flex gap-2.5">
-            {SOCIAL_LINKS.map((social) => (
-              <a
-                key={social.title}
-                href={social.href}
-                title={social.title}
-                aria-label={social.title}
-                className="flex h-9.5 w-9.5 items-center justify-center rounded-full border border-white/20 bg-white/5 transition-all duration-300 hover:-translate-y-[2px] hover:border-accent-2 hover:bg-accent-2"
-              >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d={social.path} />
-                </svg>
-              </a>
-            ))}
-            <a
-              href="https://www.tiktok.com/@2sgroup"
-              target="_blank"
-              rel="noopener"
-              title="TikTok"
-              aria-label="TikTok"
-              className="flex h-9.5 w-9.5 items-center justify-center rounded-full border border-white/20 bg-white/5 transition-all duration-300 hover:-translate-y-[2px] hover:border-accent-2 hover:bg-accent-2"
-            >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 18V5l12-2v13" />
-                <circle cx="6" cy="18" r="3" />
-                <circle cx="18" cy="16" r="3" />
-              </svg>
-            </a>
+            {SOCIAL_ICONS.map((social) => {
+              const href = socialHrefs[social.title];
+              const external = href.startsWith("http");
+              return (
+                <a
+                  key={social.title}
+                  href={href}
+                  target={external ? "_blank" : undefined}
+                  rel={external ? "noopener" : undefined}
+                  title={social.title}
+                  aria-label={social.title}
+                  className="flex h-9.5 w-9.5 items-center justify-center rounded-full border border-white/20 bg-white/5 transition-all duration-300 hover:-translate-y-[2px] hover:border-accent-2 hover:bg-accent-2"
+                >
+                  {social.variant === "fill" ? (
+                    <svg width="15" height="15" viewBox={social.viewBox} fill="#fff">
+                      <path d={social.path} />
+                    </svg>
+                  ) : (
+                    <svg
+                      width="15"
+                      height="15"
+                      viewBox={social.viewBox}
+                      fill="none"
+                      stroke="#fff"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d={social.path} />
+                    </svg>
+                  )}
+                </a>
+              );
+            })}
           </div>
         </div>
 
@@ -136,32 +178,32 @@ export function Footer() {
           <h3 className="mb-0.5 border-b border-white/14 pb-2.5 text-[12.5px] tracking-[0.14em] text-white uppercase">
             {t.footer.contactHeading}
           </h3>
-          <a href="tel:0946010818" className="flex items-center gap-3 text-sm font-semibold text-white transition-colors hover:text-accent-2">
+          <a
+            href={phoneToTelHref(phone)}
+            className="flex items-center gap-3 text-sm font-semibold text-white transition-colors hover:text-accent-2"
+          >
             <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-white/10 text-accent-2">
               <ContactIcon path={CONTACT_ICONS.phone} />
             </span>
-            0946 010 818
+            {phone}
           </a>
-          <a
-            href="mailto:2sgrouprecruitment@gmail.com"
-            className="flex items-center gap-3 text-sm transition-colors hover:text-accent-2"
-          >
+          <a href={`mailto:${email}`} className="flex items-center gap-3 text-sm transition-colors hover:text-accent-2">
             <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-white/10 text-accent-2">
               <ContactIcon path={CONTACT_ICONS.mail} />
             </span>
-            2sgrouprecruitment@gmail.com
+            {email}
           </a>
           <div className="flex items-start gap-3 text-[13.5px] leading-[1.6]">
             <span className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-white/10 text-accent-2">
               <ContactIcon path={CONTACT_ICONS.pin} />
             </span>
-            <span>VP1: 131 Đường số 1A, KDC Nam Hùng Vương, P. An Lạc, Q. Bình Tân</span>
+            <span>{office1Address}</span>
           </div>
           <div className="flex items-start gap-3 text-[13.5px] leading-[1.6]">
             <span className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-white/10 text-accent-2">
               <ContactIcon path={CONTACT_ICONS.pin} />
             </span>
-            <span>VP2: Số 4, Đường Mỹ Đa Tây 9, P. Ngũ Hành Sơn, Đà Nẵng</span>
+            <span>{office2Address}</span>
           </div>
         </div>
       </Container>

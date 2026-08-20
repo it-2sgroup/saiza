@@ -7,10 +7,19 @@ import { ActionButton } from "@/components/ui/Button";
 import { FormField } from "@/components/ui/FormField";
 import { OfficeLocations } from "@/components/shared/OfficeLocations";
 import { submitContactForm, type ContactFormState } from "./actions";
+import type { OfficeConfig } from "@/lib/content/site-config";
 
 const initialState: ContactFormState = { error: null, sent: false };
 
-export function ContactPageContent() {
+type ContactPageContentProps = {
+  phone: string;
+  email: string;
+  office1Address: string;
+  office2Address: string;
+  offices: OfficeConfig[];
+};
+
+export function ContactPageContent({ phone, email, office1Address, office2Address, offices }: ContactPageContentProps) {
   const { t } = useLanguage();
   const [state, formAction, pending] = useActionState(submitContactForm, initialState);
 
@@ -28,21 +37,19 @@ export function ContactPageContent() {
           <div className="mt-3 flex flex-col gap-5 border-t border-line pt-6">
             <div className="flex flex-col gap-1">
               <span className="text-xs tracking-[0.12em] text-ink-2 uppercase">{t.contactPage.hotlineLabel}</span>
-              <span className="text-[19px] font-semibold">0946 010 818</span>
+              <span className="text-[19px] font-semibold">{phone}</span>
             </div>
             <div className="flex flex-col gap-1">
               <span className="text-xs tracking-[0.12em] text-ink-2 uppercase">{t.contactPage.emailLabel}</span>
-              <span className="text-base font-medium">2sgrouprecruitment@gmail.com</span>
+              <span className="text-base font-medium">{email}</span>
             </div>
             <div className="flex flex-col gap-1">
               <span className="text-xs tracking-[0.12em] text-ink-2 uppercase">{t.contactPage.office1Label}</span>
-              <span className="text-[15px] leading-[1.6]">
-                131 Đường số 1A, KDC Nam Hùng Vương, P. An Lạc, Q. Bình Tân, TP.HCM
-              </span>
+              <span className="text-[15px] leading-[1.6]">{office1Address}</span>
             </div>
             <div className="flex flex-col gap-1">
               <span className="text-xs tracking-[0.12em] text-ink-2 uppercase">{t.contactPage.office2Label}</span>
-              <span className="text-[15px] leading-[1.6]">Số 4, Đường Mỹ Đa Tây 9, P. Ngũ Hành Sơn, TP. Đà Nẵng</span>
+              <span className="text-[15px] leading-[1.6]">{office2Address}</span>
             </div>
           </div>
         </div>
@@ -83,7 +90,7 @@ export function ContactPageContent() {
             {t.home.offices.title}
           </h2>
         </div>
-        <OfficeLocations />
+        <OfficeLocations offices={offices} />
       </Container>
     </>
   );

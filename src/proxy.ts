@@ -36,7 +36,7 @@ function buildCsp(nonce: string) {
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' https: data: blob:",
     "font-src 'self' data:",
-    "frame-src https://www.google.com https://www.youtube-nocookie.com",
+    "frame-src https://www.google.com https://www.youtube-nocookie.com https://*.larksuite.com",
     "connect-src 'self' https://*.supabase.co",
     "frame-ancestors 'none'",
     "base-uri 'self'",

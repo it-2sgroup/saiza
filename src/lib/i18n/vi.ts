@@ -7,6 +7,8 @@ export const vi: Dictionary = {
     prevSlide: "Xem người trước",
     nextSlide: "Xem người tiếp theo",
     backToTop: "Về đầu trang",
+    scrollToBottom: "Xuống cuối trang",
+    since: "Since 2023",
   },
   meta: {
     title: "SAIZA — Sáng tạo khác biệt, dẫn đầu thị trường",
@@ -40,6 +42,7 @@ export const vi: Dictionary = {
       ctaSecondary: "Trở thành đại lý",
       marketplaceNote: "Có mặt trên Shopee · TikTok Shop · Lazada",
       antibacterialBadge: "Hiệu quả kháng khuẩn",
+      scrollHint: "Cuộn xuống",
     },
     stats: {
       eyebrow: "Số liệu thật",
@@ -174,6 +177,8 @@ export const vi: Dictionary = {
   newsPage: {
     eyebrow: "Tin tức",
     title: "Tin tức & hoạt động",
+    empty: "Chưa có bài viết nào.",
+    postFallbackTitle: "Tin tức | SAIZA",
   },
   careersPage: {
     eyebrow: "Tuyển dụng",
@@ -181,6 +186,16 @@ export const vi: Dictionary = {
     subtitle: "Cùng SAIZA xây dựng thương hiệu tẩy rửa gia dụng dẫn đầu thị trường.",
     noResults: "Hiện chưa có vị trí tuyển dụng nào. Vui lòng quay lại sau.",
     applyCta: "Ứng tuyển ngay",
+    requirementsLabel: "Yêu cầu",
+    benefitsLabel: "Quyền lợi",
+    viewDetails: "Xem chi tiết",
+    applyFormFallback: "Không hiển thị được form? Mở trong tab mới",
+    positionLabel: "Vị trí",
+    departmentLabel: "Phòng ban",
+    locationLabel: "Địa điểm",
+    employmentTypeLabel: "Loại hình",
+    salaryLabel: "Mức lương",
+    descriptionLabel: "Mô tả công việc",
   },
   contactPage: {
     eyebrow: "Liên hệ",
@@ -218,45 +233,21 @@ export const vi: Dictionary = {
     hcm: "Văn phòng TP.HCM",
     danang: "Văn phòng Đà Nẵng",
   },
-  products: {
-    "drum-cleaner": {
-      tag: "Máy giặt",
-      name: "Bột vệ sinh lồng máy giặt SAIZA",
-      descShort: "Loại bỏ cặn bẩn và mùi hôi trong lồng giặt, giúp máy bền hơn và tiết kiệm điện.",
-      descLong:
-        "Loại bỏ cặn bẩn, mùi hôi và vi khuẩn tích tụ trong lồng giặt. Dùng định kỳ mỗi tháng để máy bền và tiết kiệm điện.",
-    },
-    "multi-cleaner": {
-      tag: "Đa năng",
-      name: "Dung dịch tẩy đa năng SAIZA",
-      descShort: "Kháng khuẩn 99,99%, xử lý vết ố, rỉ sét và khử mùi hiệu quả trên nhiều bề mặt.",
-      descLong: "Kháng khuẩn 99,99%, làm sạch vết ố, rỉ sét và khử mùi. Phù hợp cho sàn, tường, thiết bị vệ sinh.",
-    },
-    "delicate-wash": {
-      tag: "Chuyên dụng",
-      name: "Nước giặt đồ lót SAIZA Silky Clean",
-      descShort: "Làm sạch sâu, giữ sợi vải mềm mại, dịu nhẹ với da và thân thiện với môi trường.",
-      descLong:
-        "Công thức dịu nhẹ dành riêng cho đồ lót: sạch sâu, giữ form vải, an toàn cho da nhạy cảm.",
-    },
-    "kitchen-spray": {
-      tag: "Nhà bếp",
-      name: "Xịt vệ sinh nhà bếp đa năng SAIZA",
-      descShort: "Đánh tan dầu mỡ và bám bẩn cứng đầu, giữ khu vực nấu nướng sáng bóng.",
-      descLong: "Xử lý dầu mỡ trên bếp, máy hút mùi, tường kính và bồn rửa chỉ với vài lần xịt.",
-    },
-    "bathroom-spray": {
-      tag: "Nhà tắm",
-      name: "Xịt vệ sinh nhà tắm SAIZA",
-      descShort: "Làm sạch mảng bám, cặn xà phòng và khử mùi, an toàn cho men gạch, thiết bị sứ.",
-      descLong:
-        "Tan mảng bám, cặn xà phòng và vết nước cứng; khử mùi, an toàn cho men gạch và thiết bị sứ.",
-    },
-    "fridge-spray": {
-      tag: "Tủ lạnh",
-      name: "Xịt vệ sinh tủ lạnh SU",
-      descShort: "Làm sạch dịu nhẹ và khử mùi, giữ không gian trữ thực phẩm luôn thơm mát.",
-      descLong: "Làm sạch an toàn cho khoang chứa thực phẩm, khử mùi và giữ tủ thơm mát lâu dài.",
-    },
+  productDetail: {
+    specBrand: "Thương hiệu",
+    specType: "Đặc điểm sản phẩm",
+    specForm: "Hình thức sản phẩm",
+    specShelfLife: "Hạn sử dụng",
+    specScent: "Mùi hương",
+    specIngredients: "Thành phần",
+    tabInfo: "Thông tin chi tiết",
+    tabUsage: "Hướng dẫn sử dụng",
+    tabNotes: "Lưu ý",
+    featuresTitle: "Tính năng",
+    volumeLabel: "Dung tích",
+    priceLabel: "Giá",
+    priceContact: "Liên hệ",
+    ctaQuote: "Nhận báo giá",
+    ctaCall: "Gọi điện ngay",
   },
 };

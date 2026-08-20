@@ -17,7 +17,7 @@ export function NewsPageContent({ posts }: { posts: NewsPost[] }) {
         </h1>
       </div>
       {posts.length === 0 ? (
-        <p className="text-ink-2">Chưa có bài viết nào.</p>
+        <p className="text-ink-2">{t.newsPage.empty}</p>
       ) : (
         <div className="flex flex-col">
           {posts.map((post, i) => (

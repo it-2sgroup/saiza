@@ -7,6 +7,8 @@ export const en: Dictionary = {
     prevSlide: "Previous person",
     nextSlide: "Next person",
     backToTop: "Back to top",
+    scrollToBottom: "Scroll to bottom",
+    since: "Since 2023",
   },
   meta: {
     title: "SAIZA — Creative by difference, leading the market",
@@ -40,6 +42,7 @@ export const en: Dictionary = {
       ctaSecondary: "Become a distributor",
       marketplaceNote: "Available on Shopee · TikTok Shop · Lazada",
       antibacterialBadge: "Antibacterial efficacy",
+      scrollHint: "Scroll down",
     },
     stats: {
       eyebrow: "Real numbers",
@@ -173,6 +176,8 @@ export const en: Dictionary = {
   newsPage: {
     eyebrow: "News",
     title: "News & activities",
+    empty: "No articles yet.",
+    postFallbackTitle: "News | SAIZA",
   },
   careersPage: {
     eyebrow: "Careers",
@@ -180,6 +185,16 @@ export const en: Dictionary = {
     subtitle: "Join SAIZA in building a leading household cleaning brand.",
     noResults: "There are no open positions right now. Please check back later.",
     applyCta: "Apply now",
+    requirementsLabel: "Requirements",
+    benefitsLabel: "Benefits",
+    viewDetails: "View details",
+    applyFormFallback: "Form not showing? Open it in a new tab",
+    positionLabel: "Position",
+    departmentLabel: "Department",
+    locationLabel: "Location",
+    employmentTypeLabel: "Employment type",
+    salaryLabel: "Salary",
+    descriptionLabel: "Job description",
   },
   contactPage: {
     eyebrow: "Contact",
@@ -216,43 +231,21 @@ export const en: Dictionary = {
     hcm: "Ho Chi Minh City office",
     danang: "Da Nang office",
   },
-  products: {
-    "drum-cleaner": {
-      tag: "Laundry",
-      name: "SAIZA Washing Machine Drum Cleaner",
-      descShort: "Removes residue and odour inside the drum, extending machine life and saving energy.",
-      descLong:
-        "Removes residue, odour and built-up bacteria inside the drum. Use monthly to keep the machine running longer and save energy.",
-    },
-    "multi-cleaner": {
-      tag: "Multi-purpose",
-      name: "SAIZA Multi-purpose Cleaner",
-      descShort: "99.99% antibacterial; removes stains, rust and odour on many surfaces.",
-      descLong: "99.99% antibacterial, removes stains, rust and odour. Suited to floors, walls and bathroom fixtures.",
-    },
-    "delicate-wash": {
-      tag: "Specialist",
-      name: "SAIZA Silky Clean Delicate Wash",
-      descShort: "Deep clean, keeps fabric soft, gentle on skin and eco-friendly.",
-      descLong: "A gentle formula made for delicates: deep clean, keeps fabric shape, safe for sensitive skin.",
-    },
-    "kitchen-spray": {
-      tag: "Kitchen",
-      name: "SAIZA Kitchen Degreaser Spray",
-      descShort: "Cuts through grease and stubborn grime, keeping the kitchen spotless.",
-      descLong: "Cuts through grease on stovetops, range hoods, glass and sinks in just a few sprays.",
-    },
-    "bathroom-spray": {
-      tag: "Bathroom",
-      name: "SAIZA Bathroom Cleaning Spray",
-      descShort: "Removes limescale and soap residue, deodorises, safe on tiles and ceramics.",
-      descLong: "Dissolves limescale, soap scum and hard-water marks; deodorises and is safe on tiles and ceramics.",
-    },
-    "fridge-spray": {
-      tag: "Refrigerator",
-      name: "SU Refrigerator Cleaning Spray",
-      descShort: "Gentle cleaning and deodorising, keeping food storage fresh.",
-      descLong: "Safely cleans food storage compartments, deodorises and keeps the fridge fresh for longer.",
-    },
+  productDetail: {
+    specBrand: "Brand",
+    specType: "Product type",
+    specForm: "Product form",
+    specShelfLife: "Shelf life",
+    specScent: "Scent",
+    specIngredients: "Ingredients",
+    tabInfo: "Product details",
+    tabUsage: "How to use",
+    tabNotes: "Notes",
+    featuresTitle: "Features",
+    volumeLabel: "Volume",
+    priceLabel: "Price",
+    priceContact: "Contact us",
+    ctaQuote: "Request a quote",
+    ctaCall: "Call now",
   },
 };

@@ -1,12 +1,5 @@
 export type Locale = "vi" | "en";
 
-export type ProductCopy = {
-  tag: string;
-  name: string;
-  descShort: string;
-  descLong: string;
-};
-
 export type Dictionary = {
   common: {
     pauseCarousel: string;
@@ -14,6 +7,8 @@ export type Dictionary = {
     prevSlide: string;
     nextSlide: string;
     backToTop: string;
+    scrollToBottom: string;
+    since: string;
   };
   meta: {
     title: string;
@@ -45,6 +40,7 @@ export type Dictionary = {
       ctaSecondary: string;
       marketplaceNote: string;
       antibacterialBadge: string;
+      scrollHint: string;
     };
     stats: {
       eyebrow: string;
@@ -123,6 +119,8 @@ export type Dictionary = {
   newsPage: {
     eyebrow: string;
     title: string;
+    empty: string;
+    postFallbackTitle: string;
   };
   careersPage: {
     eyebrow: string;
@@ -130,6 +128,16 @@ export type Dictionary = {
     subtitle: string;
     noResults: string;
     applyCta: string;
+    requirementsLabel: string;
+    benefitsLabel: string;
+    viewDetails: string;
+    applyFormFallback: string;
+    positionLabel: string;
+    departmentLabel: string;
+    locationLabel: string;
+    employmentTypeLabel: string;
+    salaryLabel: string;
+    descriptionLabel: string;
   };
   contactPage: {
     eyebrow: string;
@@ -166,8 +174,21 @@ export type Dictionary = {
     hcm: string;
     danang: string;
   };
-  products: Record<
-    "drum-cleaner" | "multi-cleaner" | "delicate-wash" | "kitchen-spray" | "bathroom-spray" | "fridge-spray",
-    ProductCopy
-  >;
+  productDetail: {
+    specBrand: string;
+    specType: string;
+    specForm: string;
+    specShelfLife: string;
+    specScent: string;
+    specIngredients: string;
+    tabInfo: string;
+    tabUsage: string;
+    tabNotes: string;
+    featuresTitle: string;
+    volumeLabel: string;
+    priceLabel: string;
+    priceContact: string;
+    ctaQuote: string;
+    ctaCall: string;
+  };
 };

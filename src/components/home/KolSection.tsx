@@ -6,7 +6,7 @@ import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { Container } from "@/components/ui/Container";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { MarqueeToggle } from "@/components/ui/MarqueeToggle";
-import { kolList } from "@/lib/data/kol";
+import { kolList as DEFAULT_KOL_LIST, type Kol } from "@/lib/data/kol";
 
 const MS_PER_STEP = 3200;
 const CARD_SPACING_PX = 210;
@@ -44,7 +44,7 @@ function ArrowButton({ direction, onClick, label }: { direction: "prev" | "next"
   );
 }
 
-export function KolSection() {
+export function KolSection({ kolList = DEFAULT_KOL_LIST }: { kolList?: Kol[] }) {
   const { t } = useLanguage();
   const [paused, setPaused] = useState(false);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);

@@ -6,7 +6,10 @@ import { Container } from "@/components/ui/Container";
 import { LinkButton } from "@/components/ui/Button";
 import { WaveDivider } from "@/components/ui/WaveDivider";
 
-export function PartnersPageContent() {
+const DEFAULT_CTA_IMAGE =
+  "https://2sgroup.vn/wp-content/uploads/2025/04/11f57cbc-5a38-44e2-9040-47f02ba311b9-20240705-ADP-Bosch-17-1024x576.webp";
+
+export function PartnersPageContent({ ctaImage = DEFAULT_CTA_IMAGE }: { ctaImage?: string }) {
   const { t } = useLanguage();
 
   return (
@@ -45,7 +48,7 @@ export function PartnersPageContent() {
           </div>
           <div className="aspect-[16/10] overflow-hidden rounded-card">
             <Image
-              src="https://2sgroup.vn/wp-content/uploads/2025/04/11f57cbc-5a38-44e2-9040-47f02ba311b9-20240705-ADP-Bosch-17-1024x576.webp"
+              src={ctaImage}
               alt=""
               width={640}
               height={400}

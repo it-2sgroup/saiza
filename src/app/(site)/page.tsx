@@ -10,29 +10,40 @@ import { OfficeLocationsSection } from "@/components/home/OfficeLocationsSection
 import { WaveDivider } from "@/components/ui/WaveDivider";
 import { createClient } from "@/lib/supabase/server";
 import type { NewsPost } from "@/lib/admin/types";
+import { getHeroSlides, getWhyUsImage, getKolList } from "@/lib/content/site-images";
+import { getPublicProducts } from "@/lib/content/products";
+import { getOfficesConfig, getSiteConfig } from "@/lib/content/site-config";
 
 export default async function HomePage() {
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("news_posts")
-    .select("*")
-    .eq("status", "published")
-    .order("published_at", { ascending: false })
-    .limit(4);
+  const [{ data }, heroSlides, whyUsImage, kolList, products, offices, config] = await Promise.all([
+    supabase
+      .from("news_posts")
+      .select("*")
+      .eq("status", "published")
+      .order("published_at", { ascending: false })
+      .limit(4),
+    getHeroSlides(),
+    getWhyUsImage(),
+    getKolList(),
+    getPublicProducts(),
+    getOfficesConfig(),
+    getSiteConfig(),
+  ]);
 
   return (
     <>
-      <Hero />
+      <Hero slides={heroSlides} />
       <StatsBar />
       <WaveDivider topClassName="bg-ink" fill="var(--color-card)" />
       <TrustStrip />
-      <ProductVideos />
-      <ProductCarousel />
-      <WhyUs />
+      <ProductVideos videoIds={config.videoIds} />
+      <ProductCarousel products={products} />
+      <WhyUs imageUrl={whyUsImage} />
       <WaveDivider topClassName="bg-ink" fill="var(--color-paper)" />
-      <KolSection />
+      <KolSection kolList={kolList} />
       <NewsPreview posts={(data ?? []) as NewsPost[]} />
-      <OfficeLocationsSection />
+      <OfficeLocationsSection offices={offices} />
     </>
   );
 }

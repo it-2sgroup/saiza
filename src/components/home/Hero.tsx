@@ -4,20 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { LinkButton } from "@/components/ui/Button";
-
-const HERO_SLIDES = [
-  { src: "/images/banner-kitchen-bathroom.png", bright: false },
-  { src: "/images/banner-product-closeup.png", bright: false },
-  { src: "/images/banner-warehouse.png", bright: false },
-  // These two are much brighter campaign renders, so they get an extra
-  // uniform scrim below so the headline stays readable on top of them.
-  { src: "/images/banner-saiza-clean-promo.png", bright: true },
-  { src: "/images/banner-silky-clean-promo.png", bright: true },
-];
+import { HERO_SLIDES as DEFAULT_HERO_SLIDES, type HeroSlide } from "@/lib/data/hero";
 
 const ROTATE_INTERVAL_MS = 4800;
 
-export function Hero() {
+export function Hero({ slides = DEFAULT_HERO_SLIDES }: { slides?: HeroSlide[] }) {
   const { t, locale } = useLanguage();
   const [activeIdx, setActiveIdx] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -26,14 +17,14 @@ export function Hero() {
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (prefersReducedMotion) return;
     timerRef.current = setInterval(() => {
-      setActiveIdx((idx) => (idx + 1) % HERO_SLIDES.length);
+      setActiveIdx((idx) => (idx + 1) % slides.length);
     }, ROTATE_INTERVAL_MS);
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, []);
+  }, [slides.length]);
 
-  const isBrightSlide = HERO_SLIDES[activeIdx].bright;
+  const isBrightSlide = slides[activeIdx].bright;
 
   const beforeWords = t.home.hero.titleBefore.split(" ");
   const afterWords = t.home.hero.titleAfter.split(" ");
@@ -44,7 +35,7 @@ export function Hero() {
 
   return (
     <section className="relative flex h-screen min-h-[640px] items-center overflow-hidden bg-ink">
-      {HERO_SLIDES.map((slide, idx) => (
+      {slides.map((slide, idx) => (
         <Image
           key={slide.src}
           src={slide.src}
@@ -100,7 +91,7 @@ export function Hero() {
         </div>
 
         <div className="animate-soft-in flex gap-2.5 [animation-delay:1.45s]">
-          {HERO_SLIDES.map((_, idx) => (
+          {slides.map((_, idx) => (
             <button
               key={idx}
               type="button"
@@ -130,7 +121,7 @@ export function Hero() {
       </div>
 
       <div className="animate-soft-in absolute bottom-7 left-1/2 z-10 hidden -translate-x-1/2 flex-col items-center gap-2 text-white/60 [animation-delay:1.8s] md:flex">
-        <span className="text-[11px] tracking-[0.2em] uppercase">Cuộn xuống</span>
+        <span className="text-[11px] tracking-[0.2em] uppercase">{t.home.hero.scrollHint}</span>
         <svg
           width="16"
           height="16"

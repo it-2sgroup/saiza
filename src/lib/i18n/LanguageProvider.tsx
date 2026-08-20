@@ -2,10 +2,7 @@
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { Dictionary, Locale } from "./types";
-import { vi } from "./vi";
-import { en } from "./en";
 
-const dictionaries: Record<Locale, Dictionary> = { vi, en };
 const STORAGE_KEY = "saiza-locale";
 
 type LanguageContextValue = {
@@ -16,7 +13,13 @@ type LanguageContextValue = {
 
 const LanguageContext = createContext<LanguageContextValue | null>(null);
 
-export function LanguageProvider({ children }: { children: React.ReactNode }) {
+export function LanguageProvider({
+  children,
+  dictionaries,
+}: {
+  children: React.ReactNode;
+  dictionaries: Record<Locale, Dictionary>;
+}) {
   const [locale, setLocaleState] = useState<Locale>("vi");
 
   useEffect(() => {
@@ -34,7 +37,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo<LanguageContextValue>(
     () => ({ locale, setLocale, t: dictionaries[locale] }),
-    [locale],
+    [locale, dictionaries],
   );
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;

@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
-import { offices, type OfficeId } from "@/lib/data/offices";
+import type { OfficeConfig } from "@/lib/content/site-config";
 
-export function OfficeLocations() {
+export function OfficeLocations({ offices }: { offices: OfficeConfig[] }) {
   const { t } = useLanguage();
-  const [activeOffice, setActiveOffice] = useState<OfficeId>("hcm");
+  const [activeOffice, setActiveOffice] = useState<OfficeConfig["id"]>(offices[0]?.id ?? "hcm");
 
   return (
     <div>

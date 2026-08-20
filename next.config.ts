@@ -24,6 +24,11 @@ const nextConfig: NextConfig = {
         hostname: "2sgroup.vn",
         pathname: "/wp-content/uploads/**",
       },
+      {
+        protocol: "https",
+        hostname: "zkxlyuuicmynshkjdllj.supabase.co",
+        pathname: "/storage/v1/object/public/**",
+      },
     ],
   },
   async headers() {

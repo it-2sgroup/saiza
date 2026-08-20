@@ -4,7 +4,9 @@ import Image from "next/image";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { Container } from "@/components/ui/Container";
 
-export function WhyUs() {
+const DEFAULT_IMAGE = "/images/why-choose-lab.png";
+
+export function WhyUs({ imageUrl = DEFAULT_IMAGE }: { imageUrl?: string }) {
   const { t } = useLanguage();
 
   return (
@@ -12,7 +14,7 @@ export function WhyUs() {
       <Container className="grid grid-cols-[repeat(auto-fit,minmax(360px,1fr))] items-center gap-14 py-30">
         <div className="aspect-[5/4] overflow-hidden rounded-card">
           <Image
-            src="/images/why-choose-lab.png"
+            src={imageUrl}
             alt={t.home.whyUs.title}
             width={640}
             height={512}

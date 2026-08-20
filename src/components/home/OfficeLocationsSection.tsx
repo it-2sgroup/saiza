@@ -4,8 +4,9 @@ import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { Container } from "@/components/ui/Container";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { OfficeLocations } from "@/components/shared/OfficeLocations";
+import type { OfficeConfig } from "@/lib/content/site-config";
 
-export function OfficeLocationsSection() {
+export function OfficeLocationsSection({ offices }: { offices: OfficeConfig[] }) {
   const { t } = useLanguage();
 
   return (
@@ -16,7 +17,7 @@ export function OfficeLocationsSection() {
           title={t.home.offices.title}
           className="mb-8 max-w-[620px]"
         />
-        <OfficeLocations />
+        <OfficeLocations offices={offices} />
       </Container>
     </section>
   );

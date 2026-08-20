@@ -1,27 +1,32 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
-import type { Product } from "@/lib/data/products";
+import type { PublicProduct } from "@/lib/content/products";
 
-export function ProductGridCard({ product }: { product: Product }) {
-  const { t } = useLanguage();
-  const copy = t.products[product.id];
+export function ProductGridCard({ product }: { product: PublicProduct }) {
+  const { t, locale } = useLanguage();
 
   return (
     <article className="flex flex-col overflow-hidden rounded-card border border-line bg-card shadow-[0_10px_26px_rgba(22,33,62,0.06)] transition-all duration-400 ease-soft hover:-translate-y-1.5 hover:shadow-[0_20px_40px_rgba(22,33,62,0.14)]">
       <div className="flex aspect-[4/3] items-center justify-center bg-wash p-6.5">
         <Image
           src={product.image}
-          alt={copy.name}
+          alt={product.name[locale]}
           width={320}
           height={240}
           className="h-full w-full object-contain mix-blend-multiply"
         />
       </div>
       <div className="flex flex-1 flex-col gap-3 p-6">
-        <h3 className="text-lg leading-[1.35] font-semibold">{copy.name}</h3>
-        <p className="flex-1 text-[14.5px] leading-[1.7] text-ink-2">{copy.descLong}</p>
+        <Link href={`/san-pham/${product.slug}`} className="hover:text-accent">
+          <h3 className="text-lg leading-[1.35] font-semibold">{product.name[locale]}</h3>
+        </Link>
+        <p className="flex-1 text-[14.5px] leading-[1.7] text-ink-2">{product.descLong[locale]}</p>
+        <Link href={`/san-pham/${product.slug}`} className="text-sm font-semibold">
+          {t.home.catalog.viewDetails}
+        </Link>
         <div className="mt-1.5 flex flex-wrap gap-2.5">
           <button
             type="button"

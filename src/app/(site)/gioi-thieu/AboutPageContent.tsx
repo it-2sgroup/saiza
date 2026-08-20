@@ -3,9 +3,17 @@
 import Image from "next/image";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { Container } from "@/components/ui/Container";
-import { galleryImages } from "@/lib/data/gallery";
+import { galleryImages as DEFAULT_GALLERY_IMAGES } from "@/lib/data/gallery";
 
-export function AboutPageContent() {
+const DEFAULT_HERO_IMAGE = "https://2sgroup.vn/wp-content/uploads/2025/04/102581-1024x682.jpg";
+
+export function AboutPageContent({
+  heroImage = DEFAULT_HERO_IMAGE,
+  galleryImages = DEFAULT_GALLERY_IMAGES,
+}: {
+  heroImage?: string;
+  galleryImages?: string[];
+}) {
   const { t } = useLanguage();
   const facts = [t.aboutPage.vision, t.aboutPage.mission, t.aboutPage.values, t.aboutPage.capabilities];
 
@@ -27,7 +35,7 @@ export function AboutPageContent() {
         </div>
         <div className="aspect-[4/3] overflow-hidden rounded-card bg-wash">
           <Image
-            src="https://2sgroup.vn/wp-content/uploads/2025/04/102581-1024x682.jpg"
+            src={heroImage}
             alt="SAIZA"
             width={640}
             height={480}

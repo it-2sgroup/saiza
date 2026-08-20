@@ -1,10 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { Container } from "@/components/ui/Container";
 import type { JobPost } from "@/lib/admin/types";
-
-const RECRUITMENT_EMAIL = "2sgrouprecruitment@gmail.com";
 
 export function CareersPageContent({ jobs }: { jobs: JobPost[] }) {
   const { t } = useLanguage();
@@ -24,40 +23,30 @@ export function CareersPageContent({ jobs }: { jobs: JobPost[] }) {
       {jobs.length === 0 ? (
         <p className="text-ink-2">{t.careersPage.noResults}</p>
       ) : (
-        <div className="flex flex-col gap-5">
-          {jobs.map((job) => (
-            <div key={job.id} className="flex flex-col gap-4 rounded-card border border-line bg-card p-7">
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <h2 className="text-xl font-semibold">{job.title}</h2>
-                  <p className="text-sm text-ink-2">
-                    {[job.department, job.location, job.employment_type, job.salary_note]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </p>
-                </div>
-                <a
-                  href={`mailto:${RECRUITMENT_EMAIL}?subject=${encodeURIComponent(`Ứng tuyển: ${job.title}`)}`}
-                  className="flex-shrink-0 rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-300 ease-soft hover:bg-ink"
-                >
-                  {t.careersPage.applyCta}
-                </a>
-              </div>
-              <p className="text-[15px] leading-[1.75] whitespace-pre-line text-ink-2">{job.description}</p>
-              {job.requirements && (
-                <div className="flex flex-col gap-1.5">
-                  <h3 className="text-sm font-semibold">Yêu cầu</h3>
-                  <p className="text-[15px] leading-[1.75] whitespace-pre-line text-ink-2">{job.requirements}</p>
-                </div>
-              )}
-              {job.benefits && (
-                <div className="flex flex-col gap-1.5">
-                  <h3 className="text-sm font-semibold">Quyền lợi</h3>
-                  <p className="text-[15px] leading-[1.75] whitespace-pre-line text-ink-2">{job.benefits}</p>
-                </div>
-              )}
-            </div>
-          ))}
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {jobs.map((job) => {
+            const tags = [job.department, job.location, job.employment_type].filter(Boolean) as string[];
+            return (
+              <Link
+                key={job.id}
+                href={`/tuyen-dung/${job.slug}`}
+                className="flex flex-col gap-3.5 rounded-card border border-line bg-card p-6 transition-all duration-300 ease-soft hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(22,33,62,0.1)]"
+              >
+                <h2 className="text-lg leading-[1.35] font-semibold">{job.title}</h2>
+                {tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {tags.map((tag) => (
+                      <span key={tag} className="rounded-full bg-wash px-3 py-1 text-xs font-medium text-ink-2">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {job.salary_note && <p className="text-sm text-ink-2">{job.salary_note}</p>}
+                <span className="mt-1 text-sm font-semibold text-accent">{t.careersPage.viewDetails} →</span>
+              </Link>
+            );
+          })}
         </div>
       )}
     </Container>

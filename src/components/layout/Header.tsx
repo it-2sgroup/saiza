@@ -8,8 +8,9 @@ import { NAV_ITEMS } from "@/lib/nav";
 import { Container } from "@/components/ui/Container";
 import { LinkButton } from "@/components/ui/Button";
 import { SaizaLogo } from "@/components/ui/SaizaLogo";
+import { phoneToTelHref } from "@/lib/phone";
 
-export function Header() {
+export function Header({ logoSrc, phone }: { logoSrc?: string; phone: string }) {
   const { t, locale, setLocale } = useLanguage();
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
@@ -31,9 +32,9 @@ export function Header() {
           }`}
         >
           <Link href="/" className="flex flex-shrink-0 items-center gap-2">
-            <SaizaLogo className="h-6.5" />
+            <SaizaLogo className="h-6.5" src={logoSrc} />
             <span className="mt-0.5 hidden self-start text-[10px] tracking-[0.16em] text-ink-2 uppercase sm:block">
-              Since 2023
+              {t.common.since}
             </span>
           </Link>
 
@@ -99,7 +100,7 @@ export function Header() {
                 {t.nav.cta}
               </LinkButton>
             </div>
-            <a href="tel:0946010818" className="px-4 pt-3 text-sm font-semibold text-ink-2">
+            <a href={phoneToTelHref(phone)} className="px-4 pt-3 text-sm font-semibold text-ink-2">
               {t.topbar.hotline}
             </a>
           </div>

@@ -3,9 +3,9 @@
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { ProductGridCard } from "@/components/products/ProductGridCard";
-import { products } from "@/lib/data/products";
+import type { PublicProduct } from "@/lib/content/products";
 
-export function ProductsPageContent() {
+export function ProductsPageContent({ products }: { products: PublicProduct[] }) {
   const { t } = useLanguage();
 
   return (

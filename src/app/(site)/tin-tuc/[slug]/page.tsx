@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Container } from "@/components/ui/Container";
 import type { NewsPost } from "@/lib/admin/types";
+import { getDictionary } from "@/lib/content/site-text";
 
 async function getPost(slug: string) {
   const supabase = await createClient();
@@ -17,8 +18,8 @@ async function getPost(slug: string) {
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
-  const post = await getPost(slug);
-  return { title: post ? `${post.title} | SAIZA` : "Tin tức | SAIZA" };
+  const [post, dict] = await Promise.all([getPost(slug), getDictionary("vi")]);
+  return { title: post ? `${post.title} | SAIZA` : dict.newsPage.postFallbackTitle };
 }
 
 export default async function NewsDetailPage({ params }: { params: Promise<{ slug: string }> }) {

@@ -3,37 +3,46 @@
 import { useEffect, useState } from "react";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
-const SHOW_AFTER_PX = 480;
+const TOP_THRESHOLD_PX = 80;
 
 export function BackToTop() {
   const { t } = useLanguage();
-  const [visible, setVisible] = useState(false);
+  const [atTop, setAtTop] = useState(true);
 
   useEffect(() => {
-    const onScroll = () => setVisible(window.scrollY > SHOW_AFTER_PX);
+    const onScroll = () => setAtTop(window.scrollY <= TOP_THRESHOLD_PX);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const scrollToTop = () => {
+  const handleClick = () => {
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    window.scrollTo({ top: 0, behavior: prefersReducedMotion ? "auto" : "smooth" });
+    const behavior = prefersReducedMotion ? "auto" : "smooth";
+    window.scrollTo({ top: atTop ? document.documentElement.scrollHeight : 0, behavior });
   };
+
+  const label = atTop ? t.common.scrollToBottom : t.common.backToTop;
 
   return (
     <button
       type="button"
-      onClick={scrollToTop}
-      aria-label={t.common.backToTop}
-      title={t.common.backToTop}
-      tabIndex={visible ? 0 : -1}
-      className={`fixed right-5.5 bottom-72 z-[60] flex h-13 w-13 items-center justify-center rounded-full bg-ink text-white shadow-[0_10px_26px_rgba(22,33,62,0.28)] transition-all duration-300 hover:scale-108 hover:bg-accent ${
-        visible ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-3 opacity-0"
-      }`}
+      onClick={handleClick}
+      aria-label={label}
+      title={label}
+      className="fixed right-5.5 bottom-72 z-[60] flex h-13 w-13 items-center justify-center rounded-full bg-ink text-white shadow-[0_10px_26px_rgba(22,33,62,0.28)] transition-all duration-300 hover:scale-108 hover:bg-accent"
     >
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 19V5M5 12l7-7 7 7" />
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        {atTop ? <path d="M12 5v14M5 12l7 7 7-7" /> : <path d="M12 19V5M5 12l7-7 7 7" />}
       </svg>
     </button>
   );
