@@ -17,10 +17,21 @@ export function SetPasswordForm() {
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getSession().then(({ data }) => {
-      setReady(!!data.session);
-      if (!data.session) {
+    const hashParams = new URLSearchParams(window.location.hash.slice(1));
+    const accessToken = hashParams.get("access_token");
+    const refreshToken = hashParams.get("refresh_token");
+
+    const resolveSession = accessToken && refreshToken
+      ? supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
+      : supabase.auth.getSession();
+
+    resolveSession.then(({ data }) => {
+      const session = "session" in data ? data.session : null;
+      setReady(!!session);
+      if (!session) {
         setSessionError("Đường dẫn không hợp lệ hoặc đã hết hạn. Hãy xin quản trị viên gửi lời mời lại.");
+      } else {
+        window.history.replaceState(null, "", window.location.pathname);
       }
     });
   }, []);
