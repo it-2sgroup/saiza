@@ -2,6 +2,8 @@ import { getCurrentProfile } from "@/lib/supabase/profile";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { departmentLabel } from "@/lib/admin/departments";
 import { LarkDocForm } from "./LarkDocForm";
+import { ShareExistingDoc } from "./ShareExistingDoc";
+import type { StaffOption } from "./StaffSharePicker";
 
 type AuditRow = {
   actor_id: string | null;
@@ -17,18 +19,23 @@ export default async function AdminLarkPage() {
   }
 
   const admin = createAdminClient();
-  const { data: logRows } = await admin
-    .from("audit_log")
-    .select("actor_id, target_id, metadata, created_at")
-    .eq("action", "lark_doc_created")
-    .order("created_at", { ascending: false })
-    .limit(50);
+  const [{ data: logRows }, { data: profilesData }, { data: usersData }] = await Promise.all([
+    admin
+      .from("audit_log")
+      .select("actor_id, target_id, metadata, created_at")
+      .eq("action", "lark_doc_created")
+      .order("created_at", { ascending: false })
+      .limit(50),
+    admin.from("profiles").select("id, full_name"),
+    admin.auth.admin.listUsers(),
+  ]);
 
   const rows = (logRows ?? []) as AuditRow[];
-  const actorIds = [...new Set(rows.map((r) => r.actor_id).filter((id): id is string => !!id))];
-  const { data: profilesData } =
-    actorIds.length > 0 ? await admin.from("profiles").select("id, full_name").in("id", actorIds) : { data: [] };
   const nameById = new Map((profilesData ?? []).map((p) => [p.id, p.full_name as string]));
+  const emailById = new Map(usersData?.users.map((u) => [u.id, u.email]) ?? []);
+  const staff: StaffOption[] = (profilesData ?? [])
+    .map((p) => ({ id: p.id as string, full_name: p.full_name as string, email: emailById.get(p.id) ?? "" }))
+    .filter((s): s is StaffOption => !!s.email);
 
   return (
     <div className="flex flex-col gap-8">
@@ -43,7 +50,7 @@ export default async function AdminLarkPage() {
         </p>
       </div>
 
-      <LarkDocForm defaultDepartment={profile.department} />
+      <LarkDocForm defaultDepartment={profile.department} staff={staff} />
 
       <div className="flex flex-col gap-3">
         <h2 className="text-lg font-semibold">Đã tạo gần đây</h2>
@@ -54,25 +61,28 @@ export default async function AdminLarkPage() {
             {rows.map((row) => (
               <div
                 key={row.target_id}
-                className="flex items-center justify-between gap-4 rounded-card border border-line bg-card p-4"
+                className="flex flex-col gap-3 rounded-card border border-line bg-card p-4"
               >
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[15px] font-medium">{row.metadata?.title ?? "(không có tiêu đề)"}</span>
-                  <span className="text-xs text-ink-2">
-                    {(row.actor_id && nameById.get(row.actor_id)) ?? "—"} ·{" "}
-                    {new Date(row.created_at).toLocaleString("vi-VN")}
-                  </span>
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[15px] font-medium">{row.metadata?.title ?? "(không có tiêu đề)"}</span>
+                    <span className="text-xs text-ink-2">
+                      {(row.actor_id && nameById.get(row.actor_id)) ?? "—"} ·{" "}
+                      {new Date(row.created_at).toLocaleString("vi-VN")}
+                    </span>
+                  </div>
+                  {row.metadata?.url && (
+                    <a
+                      href={row.metadata.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-sm font-medium text-accent underline whitespace-nowrap"
+                    >
+                      Mở
+                    </a>
+                  )}
                 </div>
-                {row.metadata?.url && (
-                  <a
-                    href={row.metadata.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-sm font-medium text-accent underline whitespace-nowrap"
-                  >
-                    Mở
-                  </a>
-                )}
+                {row.target_id && <ShareExistingDoc documentId={row.target_id} staff={staff} />}
               </div>
             ))}
           </div>

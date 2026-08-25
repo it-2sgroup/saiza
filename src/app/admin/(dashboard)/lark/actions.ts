@@ -5,10 +5,16 @@ import { getCurrentProfile } from "@/lib/supabase/profile";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { recordAuditLog } from "@/lib/admin/audit";
 import { createLarkDoc, shareLarkDocByEmail } from "@/lib/lark/client";
+import { parseShareRows, applyShareRows, type ShareResult } from "@/lib/lark/shareRows";
 import { DEPARTMENT_CODES, ORG_CODES } from "@/lib/admin/departments";
 import { buildFileName, MAX_FILENAME_LENGTH } from "@/lib/admin/fileNaming";
 
-export type LarkDocFormState = { error: string | null; url?: string; title?: string };
+export type LarkDocFormState = {
+  error: string | null;
+  url?: string;
+  title?: string;
+  shareResults?: ShareResult[];
+};
 
 export async function createLarkDocument(_prev: LarkDocFormState, formData: FormData): Promise<LarkDocFormState> {
   const profile = await getCurrentProfile();
@@ -57,14 +63,44 @@ export async function createLarkDocument(_prev: LarkDocFormState, formData: Form
     }
   }
 
+  const shareRows = parseShareRows(String(formData.get("shares") ?? "[]")).filter((r) => r.email !== email);
+  const shareResults = await applyShareRows(documentId, shareRows);
+
   await recordAuditLog({
     actorId: profile.id,
     action: "lark_doc_created",
     targetTable: "lark_docs",
     targetId: documentId,
-    metadata: { title, url, shared },
+    metadata: { title, url, shared, shares: shareResults },
   });
 
   revalidatePath("/admin/lark");
-  return { error: null, url, title };
+  return { error: null, url, title, shareResults };
+}
+
+export type ShareExistingState = { error: string | null; shareResults?: ShareResult[] };
+
+export async function shareExistingDocument(
+  documentId: string,
+  _prev: ShareExistingState,
+  formData: FormData,
+): Promise<ShareExistingState> {
+  const profile = await getCurrentProfile();
+  if (!profile) return { error: "Bạn cần đăng nhập lại." };
+
+  const rows = parseShareRows(String(formData.get("shares") ?? "[]"));
+  if (rows.length === 0) return { error: "Chọn ít nhất một người để chia sẻ." };
+
+  const shareResults = await applyShareRows(documentId, rows);
+
+  await recordAuditLog({
+    actorId: profile.id,
+    action: "lark_doc_shared",
+    targetTable: "lark_docs",
+    targetId: documentId,
+    metadata: { shares: shareResults },
+  });
+
+  revalidatePath("/admin/lark");
+  return { error: null, shareResults };
 }

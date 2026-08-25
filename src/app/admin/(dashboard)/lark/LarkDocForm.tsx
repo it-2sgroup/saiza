@@ -3,6 +3,7 @@
 import { useActionState, useMemo, useRef, useState } from "react";
 import { createLarkDocument, type LarkDocFormState } from "./actions";
 import { Combobox } from "../Combobox";
+import { StaffSharePicker, type StaffOption, type ShareRow } from "./StaffSharePicker";
 import { DEPARTMENTS, ORG_CODES } from "@/lib/admin/departments";
 import { DOC_TYPES, VERSION_OPTIONS } from "@/lib/admin/docTypes";
 import { buildFileName, todayYYYYMMDD, dateInputToYYYYMMDD, MAX_FILENAME_LENGTH } from "@/lib/admin/fileNaming";
@@ -16,10 +17,17 @@ const DEPARTMENT_OPTIONS = DEPARTMENTS.map((d) => ({ value: d.code, label: `${d.
 const DOC_TYPE_OPTIONS = [...DOC_TYPES.map((d) => ({ value: d.code, label: `${d.label} (${d.code})` })), { value: "Khác", label: "Khác…" }];
 const VERSION_SELECT_OPTIONS = VERSION_OPTIONS.map((v) => ({ value: v, label: v }));
 
-export function LarkDocForm({ defaultDepartment }: { defaultDepartment: string | null }) {
+export function LarkDocForm({
+  defaultDepartment,
+  staff,
+}: {
+  defaultDepartment: string | null;
+  staff: StaffOption[];
+}) {
   const [state, formAction, pending] = useActionState(createLarkDocument, initialState);
   const formRef = useRef<HTMLFormElement>(null);
 
+  const [shares, setShares] = useState<ShareRow[]>([]);
   const [org, setOrg] = useState("");
   const [department, setDepartment] = useState(defaultDepartment ?? "");
   const [docType, setDocType] = useState(DOC_TYPES[0].code);
@@ -178,6 +186,12 @@ export function LarkDocForm({ defaultDepartment }: { defaultDepartment: string |
           )}
         </div>
 
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs tracking-[0.1em] text-ink-2 uppercase">Chia sẻ thêm với (không bắt buộc)</label>
+          <p className="text-xs text-ink-2">Bạn (người tạo) luôn tự động có toàn quyền. Thêm đồng nghiệp cần truy cập ở đây.</p>
+          <StaffSharePicker staff={staff} hiddenFieldName="shares" value={shares} onChange={setShares} />
+        </div>
+
         {state.error && <p className="text-sm font-medium text-red-600">{state.error}</p>}
         <button
           type="submit"
@@ -194,6 +208,15 @@ export function LarkDocForm({ defaultDepartment }: { defaultDepartment: string |
           <a href={state.url} target="_blank" rel="noreferrer" className="text-sm text-accent underline break-all">
             {state.url}
           </a>
+          {state.shareResults && state.shareResults.length > 0 && (
+            <div className="mt-1 flex flex-col gap-1 border-t border-line pt-3">
+              {state.shareResults.map((r) => (
+                <span key={r.email} className="text-xs text-ink-2">
+                  {r.ok ? "✓" : "✗"} {r.email} {r.ok ? "" : "— chia sẻ thất bại, có thể chưa có tài khoản Lark"}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
