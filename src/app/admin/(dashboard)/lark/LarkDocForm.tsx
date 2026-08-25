@@ -45,7 +45,7 @@ export function LarkDocForm() {
 
       {state.url && (
         <div className="flex flex-col gap-1.5 rounded-card border border-line bg-card p-5">
-          <span className="text-sm font-semibold">Đã tạo "{state.title}"</span>
+          <span className="text-sm font-semibold">Đã tạo &quot;{state.title}&quot;</span>
           <a href={state.url} target="_blank" rel="noreferrer" className="text-sm text-accent underline break-all">
             {state.url}
           </a>

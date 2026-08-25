@@ -93,7 +93,7 @@ export function KolSection({ kolList = DEFAULT_KOL_LIST }: { kolList?: Kol[] }) 
     nudge(delta);
   };
 
-  const activeIndex = Math.round(((phaseRef.current % length) + length) % length) % length;
+  const activeIndex = Math.round(((phase % length) + length) % length) % length;
 
   return (
     <Container className="py-30">
