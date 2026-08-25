@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import { Combobox } from "../Combobox";
 
 export type StaffOption = { id: string; full_name: string; email: string };
@@ -16,7 +17,9 @@ const fieldClasses =
 
 // Reusable "share with colleagues" row list: emits its current value via a
 // hidden JSON input under `hiddenFieldName` so a plain <form action> Server
-// Action can read it, without needing per-row dynamic field names.
+// Action can read it, without needing per-row dynamic field names. Email is
+// free text (any Lark account works, not just staff with a website login) —
+// `staff` only feeds the autocomplete suggestions, it isn't the allowed set.
 export function StaffSharePicker({
   staff,
   hiddenFieldName,
@@ -28,30 +31,34 @@ export function StaffSharePicker({
   value: ShareRow[];
   onChange: (rows: ShareRow[]) => void;
 }) {
-  const staffOptions = staff.map((s) => ({ value: s.email, label: `${s.full_name} (${s.email})` }));
+  const datalistId = useId();
 
   const updateRow = (index: number, patch: Partial<ShareRow>) => {
     onChange(value.map((row, i) => (i === index ? { ...row, ...patch } : row)));
   };
   const removeRow = (index: number) => onChange(value.filter((_, i) => i !== index));
-  const addRow = () => {
-    const next = staffOptions.find((o) => !value.some((r) => r.email === o.value));
-    onChange([...value, { email: next?.value ?? "", perm: "view" }]);
-  };
+  const addRow = () => onChange([...value, { email: "", perm: "view" }]);
 
   return (
     <div className="flex flex-col gap-2.5">
       <input type="hidden" name={hiddenFieldName} value={JSON.stringify(value)} />
+      <datalist id={datalistId}>
+        {staff.map((s) => (
+          <option key={s.id} value={s.email}>
+            {s.full_name}
+          </option>
+        ))}
+      </datalist>
       {value.map((row, i) => (
         <div key={i} className="flex items-center gap-2.5">
-          <div className="flex-1">
-            <Combobox
-              value={row.email}
-              options={staffOptions}
-              onChange={(email) => updateRow(i, { email })}
-              buttonClassName={`${fieldClasses} flex w-full items-center justify-between gap-2 text-left`}
-            />
-          </div>
+          <input
+            type="email"
+            list={datalistId}
+            value={row.email}
+            onChange={(e) => updateRow(i, { email: e.target.value })}
+            placeholder="email@2sgroup.vn"
+            className={`${fieldClasses} flex-1`}
+          />
           <div className="w-36 flex-shrink-0">
             <Combobox
               value={row.perm}
@@ -75,8 +82,7 @@ export function StaffSharePicker({
       <button
         type="button"
         onClick={addRow}
-        disabled={staffOptions.length === 0 || value.length >= staffOptions.length}
-        className="w-fit cursor-pointer text-sm font-semibold text-accent hover:text-ink disabled:cursor-not-allowed disabled:opacity-50"
+        className="w-fit cursor-pointer text-sm font-semibold text-accent hover:text-ink"
       >
         + Thêm người
       </button>
