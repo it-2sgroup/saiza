@@ -192,7 +192,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <LogoutButton />
         </div>
       </aside>
-      <main className="flex-1 overflow-y-auto p-8">{children}</main>
+      <main className="flex-1 overflow-y-auto p-8">
+        <div className="mx-auto w-full max-w-[1040px]">{children}</div>
+      </main>
     </div>
   );
 }
