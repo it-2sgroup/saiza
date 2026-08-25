@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getCurrentProfile } from "@/lib/supabase/profile";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { departmentLabel } from "@/lib/admin/departments";
@@ -24,8 +25,9 @@ export default async function AdminLarkPage() {
       .from("audit_log")
       .select("actor_id, target_id, metadata, created_at")
       .eq("action", "lark_doc_created")
+      .eq("actor_id", profile.id)
       .order("created_at", { ascending: false })
-      .limit(50),
+      .limit(10),
     admin.from("profiles").select("id, full_name"),
     admin.auth.admin.listUsers(),
   ]);
@@ -39,21 +41,40 @@ export default async function AdminLarkPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-medium">Tạo file Lark</h1>
-        <p className="text-ink-2">
-          Bạn đang tạo file với tên: <strong>{profile.full_name}</strong>
-          {" — phòng ban: "}
-          <strong>{departmentLabel(profile.department) ?? "chưa gán"}</strong>. Tên file được ghép tự động theo quy
-          tắc đặt tên file & thư mục của công ty (PERMATE v1.0), tài liệu sẽ tự động được chia sẻ cho email công ty
-          của bạn nếu email đó là tài khoản Lark hợp lệ.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-2">
+          <h1 className="text-2xl font-medium">Tạo file Lark</h1>
+          <p className="text-ink-2">
+            Bạn đang tạo file với tên: <strong>{profile.full_name}</strong>
+            {" — phòng ban: "}
+            <strong>{departmentLabel(profile.department) ?? "chưa gán"}</strong>. Tên file được ghép tự động theo quy
+            tắc đặt tên file & thư mục của công ty (PERMATE v1.0), tài liệu sẽ tự động được chia sẻ cho email công ty
+            của bạn nếu email đó là tài khoản Lark hợp lệ.
+          </p>
+        </div>
+        <Link
+          href="/admin/lark/lich-su"
+          title="Lịch sử tạo file của tôi"
+          aria-label="Lịch sử tạo file của tôi"
+          className="flex h-11 w-11 flex-shrink-0 cursor-pointer items-center justify-center rounded-full border border-line bg-card text-ink-2 transition-colors duration-300 ease-soft hover:border-ink hover:text-ink"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <path d="M14 2v6h6" />
+            <path d="M9 13h6M9 17h6" />
+          </svg>
+        </Link>
       </div>
 
       <LarkDocForm defaultDepartment={profile.department} staff={staff} />
 
       <div className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold">Đã tạo gần đây</h2>
+        <div className="flex items-center justify-between gap-4">
+          <h2 className="text-lg font-semibold">File của bạn — gần đây</h2>
+          <Link href="/admin/lark/lich-su" className="text-sm font-medium text-accent hover:text-ink">
+            Xem toàn bộ lịch sử →
+          </Link>
+        </div>
         {rows.length === 0 ? (
           <p className="text-sm text-ink-2">Chưa có tài liệu nào được tạo.</p>
         ) : (
