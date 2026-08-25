@@ -40,7 +40,7 @@ export default async function AdminLarkPage() {
     .filter((s): s is StaffOption => !!s.email);
 
   return (
-    <div className="mx-auto flex max-w-[760px] flex-col gap-7">
+    <div className="flex w-full flex-col gap-7">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <Avatar fullName={profile.full_name} avatarUrl={profile.avatar_url} size={9} />
