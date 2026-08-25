@@ -10,9 +10,10 @@ import { buildFileName, todayYYYYMMDD, dateInputToYYYYMMDD, MAX_FILENAME_LENGTH 
 
 const initialState: LarkDocFormState = { error: null };
 const fieldClasses =
-  "rounded-[14px] border border-line bg-paper px-4 py-3 text-[15px] text-ink outline-none transition-all duration-300 ease-soft focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/30";
+  "rounded-xl border border-line bg-paper px-3.5 py-2.5 text-[14.5px] text-ink outline-none transition-all duration-300 ease-soft focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/30";
+const labelClasses = "text-[11px] font-medium tracking-[0.06em] text-ink-2 uppercase";
 
-const ORG_OPTIONS = [{ value: "", label: "Không — dùng chung toàn hệ thống" }, ...ORG_CODES.map((o) => ({ value: o, label: o }))];
+const ORG_OPTIONS = [{ value: "", label: "Không riêng" }, ...ORG_CODES.map((o) => ({ value: o, label: o }))];
 const DEPARTMENT_OPTIONS = DEPARTMENTS.map((d) => ({ value: d.code, label: `${d.code} — ${d.label}` }));
 const DOC_TYPE_OPTIONS = [...DOC_TYPES.map((d) => ({ value: d.code, label: `${d.label} (${d.code})` })), { value: "Khác", label: "Khác…" }];
 const VERSION_SELECT_OPTIONS = VERSION_OPTIONS.map((v) => ({ value: v, label: v }));
@@ -27,6 +28,7 @@ export function LarkDocForm({
   const [state, formAction, pending] = useActionState(createLarkDocument, initialState);
   const formRef = useRef<HTMLFormElement>(null);
 
+  const [shareOpen, setShareOpen] = useState(false);
   const [shares, setShares] = useState<ShareRow[]>([]);
   const [org, setOrg] = useState("");
   const [department, setDepartment] = useState(defaultDepartment ?? "");
@@ -39,6 +41,7 @@ export function LarkDocForm({
   });
   const [version, setVersion] = useState<string>(VERSION_OPTIONS[0]);
   const [wip, setWip] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const effectiveDocType = docType === "Khác" ? docTypeOther.trim() : docType;
 
@@ -58,17 +61,15 @@ export function LarkDocForm({
   const previewTooLong = preview !== null && preview.length > MAX_FILENAME_LENGTH;
 
   return (
-    <div className="flex max-w-[640px] flex-col gap-4">
+    <div className="flex flex-col gap-3">
       <form
         ref={formRef}
-        action={(formData) => {
-          formAction(formData);
-        }}
-        className="flex flex-col gap-4"
+        action={(formData) => formAction(formData)}
+        className="flex flex-col gap-4 rounded-card border border-line bg-card p-5"
       >
-        <div className="grid grid-cols-2 gap-3.5">
+        <div className="grid grid-cols-3 gap-3">
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs tracking-[0.1em] text-ink-2 uppercase">Mã tổ chức (nếu riêng)</label>
+            <label className={labelClasses}>Mã tổ chức</label>
             <Combobox
               name="org"
               value={org}
@@ -78,7 +79,7 @@ export function LarkDocForm({
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs tracking-[0.1em] text-ink-2 uppercase">Phòng ban</label>
+            <label className={labelClasses}>Phòng ban</label>
             <Combobox
               name="department"
               value={department}
@@ -86,17 +87,9 @@ export function LarkDocForm({
               onChange={setDepartment}
               buttonClassName={`${fieldClasses} flex w-full items-center justify-between gap-2 text-left`}
             />
-            {!defaultDepartment && (
-              <p className="text-xs text-amber-700">
-                Hồ sơ của bạn chưa được gán phòng ban cố định — chọn tạm ở đây, hoặc báo Quản trị vào Nhân sự để gán.
-              </p>
-            )}
           </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3.5">
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs tracking-[0.1em] text-ink-2 uppercase">Loại tài liệu</label>
+            <label className={labelClasses}>Loại tài liệu</label>
             <Combobox
               name="docType"
               value={docType}
@@ -105,21 +98,16 @@ export function LarkDocForm({
               buttonClassName={`${fieldClasses} flex w-full items-center justify-between gap-2 text-left`}
             />
           </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs tracking-[0.1em] text-ink-2 uppercase">Version</label>
-            <Combobox
-              name="version"
-              value={version}
-              options={VERSION_SELECT_OPTIONS}
-              onChange={setVersion}
-              buttonClassName={`${fieldClasses} flex w-full items-center justify-between gap-2 text-left`}
-            />
-          </div>
         </div>
+        {!defaultDepartment && (
+          <p className="-mt-1.5 text-xs text-amber-700">
+            Hồ sơ của bạn chưa gán phòng ban cố định — chọn tạm ở đây, hoặc báo Quản trị vào Nhân sự để gán.
+          </p>
+        )}
 
         {docType === "Khác" && (
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="docTypeOther" className="text-xs tracking-[0.1em] text-ink-2 uppercase">
+            <label htmlFor="docTypeOther" className={labelClasses}>
               Loại tài liệu (tự nhập)
             </label>
             <input
@@ -134,7 +122,7 @@ export function LarkDocForm({
         )}
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="content" className="text-xs tracking-[0.1em] text-ink-2 uppercase">
+          <label htmlFor="content" className={labelClasses}>
             Nội dung / dự án
           </label>
           <input
@@ -146,12 +134,21 @@ export function LarkDocForm({
             placeholder="Ví dụ: Chiến dịch Q3"
             className={fieldClasses}
           />
-          <p className="text-xs text-ink-2">Mô tả ngắn gọn — khoảng trắng sẽ tự chuyển thành PascalCase khi ghép tên.</p>
         </div>
 
-        <div className="grid grid-cols-2 gap-3.5">
+        <div className="grid grid-cols-3 items-end gap-3">
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="date" className="text-xs tracking-[0.1em] text-ink-2 uppercase">
+            <label className={labelClasses}>Version</label>
+            <Combobox
+              name="version"
+              value={version}
+              options={VERSION_SELECT_OPTIONS}
+              onChange={setVersion}
+              buttonClassName={`${fieldClasses} flex w-full items-center justify-between gap-2 text-left`}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="date" className={labelClasses}>
               Ngày
             </label>
             <input
@@ -162,7 +159,7 @@ export function LarkDocForm({
               className={fieldClasses}
             />
           </div>
-          <label className="flex items-center gap-2.5 self-end pb-3">
+          <label className="flex items-center gap-2 pb-2.5">
             <input
               type="checkbox"
               name="wip"
@@ -170,40 +167,77 @@ export function LarkDocForm({
               onChange={(e) => setWip(e.target.checked)}
               className="h-4 w-4 accent-accent"
             />
-            <span className="text-sm text-ink-2">Đang soạn (thêm tiền tố WIP_)</span>
+            <span className="text-[13px] text-ink-2">WIP (đang soạn)</span>
           </label>
         </div>
 
         <input type="hidden" name="date" value={dateInputToYYYYMMDD(dateInput)} />
 
-        <div className="flex flex-col gap-1.5 rounded-[14px] border border-line bg-wash px-4 py-3.5">
-          <span className="text-xs tracking-[0.1em] text-ink-2 uppercase">Tên file sẽ tạo</span>
-          <span className="font-mono text-[15px] break-all text-ink">{preview ?? "— điền đủ các mục ở trên —"}</span>
-          {previewTooLong && (
-            <span className="text-xs font-medium text-red-600">
-              Tên dài {preview?.length} ký tự, vượt giới hạn khuyến nghị {MAX_FILENAME_LENGTH}. Rút ngắn phần nội dung.
-            </span>
+        <div className="flex items-center gap-2 rounded-xl border border-line bg-wash px-3.5 py-2.5">
+          <span className="min-w-0 flex-1 truncate font-mono text-[13.5px] text-ink">
+            {preview ?? "— điền đủ các mục ở trên —"}
+          </span>
+          {preview && (
+            <button
+              type="button"
+              onClick={() => {
+                navigator.clipboard.writeText(preview);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 1500);
+              }}
+              className="flex-shrink-0 cursor-pointer text-xs font-semibold text-accent hover:text-ink"
+            >
+              {copied ? "Đã chép" : "Chép"}
+            </button>
           )}
         </div>
+        {previewTooLong && (
+          <p className="-mt-2 text-xs font-medium text-red-600">
+            Tên dài {preview?.length} ký tự, vượt giới hạn {MAX_FILENAME_LENGTH}. Rút ngắn phần nội dung.
+          </p>
+        )}
 
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs tracking-[0.1em] text-ink-2 uppercase">Chia sẻ thêm với (không bắt buộc)</label>
-          <p className="text-xs text-ink-2">Bạn (người tạo) luôn tự động có toàn quyền. Thêm đồng nghiệp cần truy cập ở đây.</p>
-          <StaffSharePicker staff={staff} hiddenFieldName="shares" value={shares} onChange={setShares} />
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={() => setShareOpen((o) => !o)}
+            className="flex w-fit cursor-pointer items-center gap-1.5 text-sm font-medium text-ink-2 hover:text-ink"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className={`transition-transform duration-300 ease-soft ${shareOpen ? "rotate-90" : ""}`}
+            >
+              <path d="m9 6 6 6-6 6" />
+            </svg>
+            Chia sẻ thêm với {shares.length > 0 && `(${shares.length})`}
+          </button>
+          {shareOpen && (
+            <div className="rounded-xl border border-line bg-paper p-3">
+              <p className="mb-2.5 text-xs text-ink-2">Bạn (người tạo) luôn tự động có toàn quyền.</p>
+              <StaffSharePicker staff={staff} hiddenFieldName="shares" value={shares} onChange={setShares} />
+            </div>
+          )}
         </div>
 
         {state.error && <p className="text-sm font-medium text-red-600">{state.error}</p>}
         <button
           type="submit"
           disabled={pending || !preview}
-          className="w-fit cursor-pointer rounded-full bg-accent px-6 py-3 text-sm font-semibold text-white transition-colors duration-300 ease-soft hover:bg-ink disabled:cursor-not-allowed disabled:opacity-60"
+          className="w-fit cursor-pointer rounded-full bg-accent px-6 py-2.5 text-sm font-semibold text-white transition-colors duration-300 ease-soft hover:bg-ink disabled:cursor-not-allowed disabled:opacity-60"
         >
           {pending ? "Đang tạo..." : "Tạo tài liệu Lark"}
         </button>
       </form>
 
       {state.url && (
-        <div className="flex flex-col gap-1.5 rounded-card border border-line bg-card p-5">
+        <div className="flex flex-col gap-1.5 rounded-card border border-line bg-card p-4">
           <span className="text-sm font-semibold">Đã tạo &quot;{state.title}&quot;</span>
           <a href={state.url} target="_blank" rel="noreferrer" className="text-sm text-accent underline break-all">
             {state.url}

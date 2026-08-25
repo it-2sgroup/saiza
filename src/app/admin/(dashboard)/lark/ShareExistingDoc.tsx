@@ -16,12 +16,12 @@ export function ShareExistingDoc({ documentId, staff }: { documentId: string; st
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="w-fit cursor-pointer text-sm font-medium text-accent hover:text-ink"
+        className="w-fit cursor-pointer text-xs font-medium text-accent hover:text-ink"
       >
-        {open ? "Đóng" : "Chia sẻ thêm"}
+        {open ? "Đóng" : "Chia sẻ thêm →"}
       </button>
       {open && (
-        <form action={formAction} className="flex flex-col gap-2.5 rounded-2xl border border-line bg-paper p-3.5">
+        <form action={formAction} className="flex flex-col gap-2.5 rounded-xl border border-line bg-paper p-3">
           <StaffSharePicker staff={staff} hiddenFieldName="shares" value={shares} onChange={setShares} />
           {state.error && <p className="text-xs font-medium text-red-600">{state.error}</p>}
           {state.shareResults && (

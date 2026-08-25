@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getCurrentProfile } from "@/lib/supabase/profile";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { departmentLabel } from "@/lib/admin/departments";
+import { Avatar } from "../Avatar";
 import { LarkDocForm } from "./LarkDocForm";
 import { ShareExistingDoc } from "./ShareExistingDoc";
 import type { StaffOption } from "./StaffSharePicker";
@@ -33,32 +34,30 @@ export default async function AdminLarkPage() {
   ]);
 
   const rows = (logRows ?? []) as AuditRow[];
-  const nameById = new Map((profilesData ?? []).map((p) => [p.id, p.full_name as string]));
   const emailById = new Map(usersData?.users.map((u) => [u.id, u.email]) ?? []);
   const staff: StaffOption[] = (profilesData ?? [])
     .map((p) => ({ id: p.id as string, full_name: p.full_name as string, email: emailById.get(p.id) ?? "" }))
     .filter((s): s is StaffOption => !!s.email);
 
   return (
-    <div className="flex flex-col gap-8">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-2xl font-medium">Tạo file Lark</h1>
-          <p className="text-ink-2">
-            Bạn đang tạo file với tên: <strong>{profile.full_name}</strong>
-            {" — phòng ban: "}
-            <strong>{departmentLabel(profile.department) ?? "chưa gán"}</strong>. Tên file được ghép tự động theo quy
-            tắc đặt tên file & thư mục của công ty (PERMATE v1.0), tài liệu sẽ tự động được chia sẻ cho email công ty
-            của bạn nếu email đó là tài khoản Lark hợp lệ.
-          </p>
+    <div className="mx-auto flex max-w-[760px] flex-col gap-7">
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <Avatar fullName={profile.full_name} avatarUrl={profile.avatar_url} size={9} />
+          <div className="flex flex-col gap-0.5">
+            <h1 className="text-xl font-medium">Tạo file Lark</h1>
+            <span className="text-xs text-ink-2">
+              {profile.full_name} · {departmentLabel(profile.department) ?? "chưa gán phòng ban"}
+            </span>
+          </div>
         </div>
         <Link
           href="/admin/lark/lich-su"
           title="Lịch sử tạo file của tôi"
           aria-label="Lịch sử tạo file của tôi"
-          className="flex h-11 w-11 flex-shrink-0 cursor-pointer items-center justify-center rounded-full border border-line bg-card text-ink-2 transition-colors duration-300 ease-soft hover:border-ink hover:text-ink"
+          className="flex h-10 w-10 flex-shrink-0 cursor-pointer items-center justify-center rounded-full border border-line bg-card text-ink-2 transition-colors duration-300 ease-soft hover:border-ink hover:text-ink"
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
             <path d="M14 2v6h6" />
             <path d="M9 13h6M9 17h6" />
@@ -68,38 +67,34 @@ export default async function AdminLarkPage() {
 
       <LarkDocForm defaultDepartment={profile.department} staff={staff} />
 
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-2.5">
         <div className="flex items-center justify-between gap-4">
-          <h2 className="text-lg font-semibold">File của bạn — gần đây</h2>
+          <h2 className="text-sm font-semibold text-ink-2 uppercase tracking-[0.06em]">File của bạn — gần đây</h2>
           <Link href="/admin/lark/lich-su" className="text-sm font-medium text-accent hover:text-ink">
-            Xem toàn bộ lịch sử →
+            Xem tất cả →
           </Link>
         </div>
         {rows.length === 0 ? (
           <p className="text-sm text-ink-2">Chưa có tài liệu nào được tạo.</p>
         ) : (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col divide-y divide-line rounded-card border border-line bg-card">
             {rows.map((row) => (
-              <div
-                key={row.target_id}
-                className="flex flex-col gap-3 rounded-card border border-line bg-card p-4"
-              >
+              <div key={row.target_id} className="flex flex-col gap-2 px-4 py-3">
                 <div className="flex items-center justify-between gap-4">
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-[15px] font-medium">{row.metadata?.title ?? "(không có tiêu đề)"}</span>
-                    <span className="text-xs text-ink-2">
-                      {(row.actor_id && nameById.get(row.actor_id)) ?? "—"} ·{" "}
-                      {new Date(row.created_at).toLocaleString("vi-VN")}
+                  <div className="flex min-w-0 flex-col gap-0.5">
+                    <span className="truncate text-[14.5px] font-medium">
+                      {row.metadata?.title ?? "(không có tiêu đề)"}
                     </span>
+                    <span className="text-xs text-ink-2">{new Date(row.created_at).toLocaleString("vi-VN")}</span>
                   </div>
                   {row.metadata?.url && (
                     <a
                       href={row.metadata.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-sm font-medium text-accent underline whitespace-nowrap"
+                      className="flex-shrink-0 text-sm font-medium text-accent hover:text-ink"
                     >
-                      Mở
+                      Mở →
                     </a>
                   )}
                 </div>

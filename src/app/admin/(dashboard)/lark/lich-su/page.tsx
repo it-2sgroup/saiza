@@ -48,26 +48,26 @@ export default async function LarkHistoryPage({
     .filter((s): s is StaffOption => !!s.email);
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-2">
+    <div className="mx-auto flex max-w-[760px] flex-col gap-6">
+      <div className="flex flex-col gap-1.5">
         <Link href="/admin/lark" className="w-fit text-sm font-medium text-accent hover:text-ink">
           ← Quay lại Tạo file Lark
         </Link>
-        <h1 className="text-2xl font-medium">Lịch sử tạo file của bạn</h1>
-        <p className="text-ink-2">
-          Toàn bộ file bạn đã tạo qua Lark ({total} file) — chỉ hiển thị file của chính bạn.
-        </p>
+        <h1 className="text-xl font-medium">Lịch sử tạo file của bạn</h1>
+        <p className="text-sm text-ink-2">{total} file — chỉ hiển thị file của chính bạn.</p>
       </div>
 
       {rows.length === 0 ? (
         <p className="text-sm text-ink-2">Bạn chưa tạo file nào.</p>
       ) : (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col divide-y divide-line rounded-card border border-line bg-card">
           {rows.map((row) => (
-            <div key={row.target_id} className="flex flex-col gap-3 rounded-card border border-line bg-card p-4">
+            <div key={row.target_id} className="flex flex-col gap-2 px-4 py-3">
               <div className="flex items-center justify-between gap-4">
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[15px] font-medium">{row.metadata?.title ?? "(không có tiêu đề)"}</span>
+                <div className="flex min-w-0 flex-col gap-0.5">
+                  <span className="truncate text-[14.5px] font-medium">
+                    {row.metadata?.title ?? "(không có tiêu đề)"}
+                  </span>
                   <span className="text-xs text-ink-2">{new Date(row.created_at).toLocaleString("vi-VN")}</span>
                 </div>
                 {row.metadata?.url && (
@@ -75,9 +75,9 @@ export default async function LarkHistoryPage({
                     href={row.metadata.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-sm font-medium text-accent underline whitespace-nowrap"
+                    className="flex-shrink-0 text-sm font-medium text-accent hover:text-ink"
                   >
-                    Mở
+                    Mở →
                   </a>
                 )}
               </div>
