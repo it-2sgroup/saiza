@@ -1,5 +1,6 @@
 import { getCurrentProfile } from "@/lib/supabase/profile";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { departmentLabel } from "@/lib/admin/departments";
 import { LarkDocForm } from "./LarkDocForm";
 
 type AuditRow = {
@@ -34,12 +35,15 @@ export default async function AdminLarkPage() {
       <div className="flex flex-col gap-2">
         <h1 className="text-2xl font-medium">Tạo file Lark</h1>
         <p className="text-ink-2">
-          Tạo tài liệu Lark Docs mới. Tài liệu sẽ tự động được chia sẻ cho email công ty của bạn nếu email đó là tài
-          khoản Lark hợp lệ.
+          Bạn đang tạo file với tên: <strong>{profile.full_name}</strong>
+          {" — phòng ban: "}
+          <strong>{departmentLabel(profile.department) ?? "chưa gán"}</strong>. Tên file được ghép tự động theo quy
+          tắc đặt tên file & thư mục của công ty (PERMATE v1.0), tài liệu sẽ tự động được chia sẻ cho email công ty
+          của bạn nếu email đó là tài khoản Lark hợp lệ.
         </p>
       </div>
 
-      <LarkDocForm />
+      <LarkDocForm defaultDepartment={profile.department} />
 
       <div className="flex flex-col gap-3">
         <h2 className="text-lg font-semibold">Đã tạo gần đây</h2>

@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { inviteStaffAccount, type StaffFormState } from "./actions";
 import { Combobox } from "../Combobox";
+import { DEPARTMENTS } from "@/lib/admin/departments";
 
 const initialState: StaffFormState = { error: null, success: false };
 const fieldClasses =
@@ -14,9 +15,15 @@ const ROLE_OPTIONS = [
   { value: "contributor", label: "Cộng tác viên" },
 ];
 
+const DEPARTMENT_OPTIONS = [
+  { value: "", label: "Chưa gán — sẽ chọn khi tạo file" },
+  ...DEPARTMENTS.map((d) => ({ value: d.code, label: `${d.code} — ${d.label}` })),
+];
+
 export function StaffForm() {
   const [state, formAction, pending] = useActionState(inviteStaffAccount, initialState);
   const [role, setRole] = useState("contributor");
+  const [department, setDepartment] = useState("");
 
   return (
     <form action={formAction} className="flex flex-col gap-3.5">
@@ -43,6 +50,19 @@ export function StaffForm() {
           onChange={setRole}
           buttonClassName={`${fieldClasses} flex w-full items-center justify-between gap-2 text-left`}
         />
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="department" className="text-xs tracking-[0.1em] text-ink-2 uppercase">
+          Phòng ban
+        </label>
+        <Combobox
+          name="department"
+          value={department}
+          options={DEPARTMENT_OPTIONS}
+          onChange={setDepartment}
+          buttonClassName={`${fieldClasses} flex w-full items-center justify-between gap-2 text-left`}
+        />
+        <p className="text-xs text-ink-2">Dùng để tự điền mã phòng ban khi nhân viên tạo file Lark.</p>
       </div>
       <p className="text-sm text-ink-2">
         Nhân viên sẽ nhận email chứa đường dẫn để tự đặt mật khẩu và bắt đầu sử dụng khu quản trị.

@@ -5,6 +5,7 @@ import { getCurrentProfile } from "@/lib/supabase/profile";
 import { canManageStaff } from "@/lib/admin/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { recordAuditLog } from "@/lib/admin/audit";
+import { DEPARTMENT_CODES } from "@/lib/admin/departments";
 import type { StaffRole } from "@/lib/supabase/profile";
 
 export type StaffFormState = { error: string | null; success: boolean };
@@ -18,12 +19,16 @@ export async function inviteStaffAccount(_prev: StaffFormState, formData: FormDa
   const fullName = String(formData.get("full_name") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim();
   const role = String(formData.get("role") ?? "contributor") as StaffRole;
+  const department = String(formData.get("department") ?? "").trim();
 
   if (!fullName || !email) {
     return { error: "Nhập đầy đủ họ tên và email.", success: false };
   }
   if (!VALID_ROLES.includes(role)) {
     return { error: "Vai trò không hợp lệ.", success: false };
+  }
+  if (department && !DEPARTMENT_CODES.includes(department)) {
+    return { error: "Mã phòng ban không hợp lệ.", success: false };
   }
 
   const admin = createAdminClient();
@@ -40,7 +45,7 @@ export async function inviteStaffAccount(_prev: StaffFormState, formData: FormDa
 
   const { error: profileError } = await admin
     .from("profiles")
-    .insert({ id: invited.user.id, full_name: fullName, role });
+    .insert({ id: invited.user.id, full_name: fullName, role, department: department || null });
 
   if (profileError) {
     return {
@@ -77,6 +82,30 @@ export async function updateStaffRole(id: string, formData: FormData) {
     targetTable: "profiles",
     targetId: id,
     metadata: { newRole: role },
+  });
+
+  revalidatePath("/admin/nhan-su");
+}
+
+export async function updateStaffDepartment(id: string, formData: FormData) {
+  const profile = await getCurrentProfile();
+  if (!profile || !canManageStaff(profile.role)) return;
+
+  const department = String(formData.get("department") ?? "").trim();
+  if (department && !DEPARTMENT_CODES.includes(department)) return;
+
+  const admin = createAdminClient();
+  await admin
+    .from("profiles")
+    .update({ department: department || null })
+    .eq("id", id);
+
+  await recordAuditLog({
+    actorId: profile.id,
+    action: "staff_department_changed",
+    targetTable: "profiles",
+    targetId: id,
+    metadata: { newDepartment: department || null },
   });
 
   revalidatePath("/admin/nhan-su");

@@ -3,11 +3,20 @@ import { canManageStaff, ROLE_LABELS } from "@/lib/admin/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { StaffForm } from "./StaffForm";
 import { RoleSelect } from "./RoleSelect";
+import { DepartmentSelect } from "./DepartmentSelect";
 import { DeleteStaffButton } from "./DeleteStaffButton";
 import { Avatar } from "../Avatar";
+import { departmentLabel } from "@/lib/admin/departments";
 import type { StaffRole } from "@/lib/supabase/profile";
 
-type StaffRow = { id: string; full_name: string; role: StaffRole; avatar_url: string | null; created_at: string };
+type StaffRow = {
+  id: string;
+  full_name: string;
+  role: StaffRole;
+  department: string | null;
+  avatar_url: string | null;
+  created_at: string;
+};
 
 export default async function AdminStaffPage() {
   const profile = await getCurrentProfile();
@@ -19,7 +28,7 @@ export default async function AdminStaffPage() {
   const [{ data: profilesData }, { data: usersData }] = await Promise.all([
     admin
       .from("profiles")
-      .select("id, full_name, role, avatar_url, created_at")
+      .select("id, full_name, role, department, avatar_url, created_at")
       .order("created_at", { ascending: false }),
     admin.auth.admin.listUsers(),
   ]);
@@ -48,9 +57,12 @@ export default async function AdminStaffPage() {
               </div>
             </div>
             {person.id === profile.id ? (
-              <span className="text-sm text-ink-2">{ROLE_LABELS[person.role]} (bạn)</span>
+              <span className="text-sm text-ink-2">
+                {ROLE_LABELS[person.role]} · {departmentLabel(person.department) ?? "Chưa gán phòng ban"} (bạn)
+              </span>
             ) : (
               <div className="flex items-center gap-2.5">
+                <DepartmentSelect id={person.id} department={person.department} />
                 <RoleSelect id={person.id} role={person.role} />
                 <DeleteStaffButton id={person.id} />
               </div>
