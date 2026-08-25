@@ -68,6 +68,14 @@ const ICONS = {
       <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
     </>
   ),
+  lark: (
+    <>
+      <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+      <path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2Z" />
+      <path d="M12 11v6" />
+      <path d="M9 14h6" />
+    </>
+  ),
 } as const;
 
 function NavIcon({ name }: { name: keyof typeof ICONS }) {
@@ -94,6 +102,7 @@ const NAV_ITEMS = [
   { href: "/admin/tin-tuc", label: "Tin tức", icon: "news" as const },
   { href: "/admin/tuyen-dung", label: "Tuyển dụng", icon: "jobs" as const },
   { href: "/admin/san-pham", label: "Sản phẩm", icon: "products" as const },
+  { href: "/admin/lark", label: "Tạo file Lark", icon: "lark" as const },
 ];
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
