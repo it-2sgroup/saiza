@@ -6,6 +6,7 @@ import { LARK_FILE_TYPE_LABELS, type LarkFileType } from "@/lib/lark/fileTypes";
 import type { FolderOption } from "@/lib/lark/folders";
 import type { StaffOption } from "./StaffSharePicker";
 import { LarkDocForm } from "./LarkDocForm";
+import type { LarkPrefs } from "@/lib/lark/prefs";
 
 type TypeCard = {
   type: LarkFileType;
@@ -66,10 +67,12 @@ export function CreateFileModal({
   defaultDepartment,
   staff,
   foldersByOrg,
+  prefs,
 }: {
   defaultDepartment: string | null;
   staff: StaffOption[];
   foldersByOrg: Record<string, FolderOption[]>;
+  prefs: LarkPrefs;
 }) {
   const [open, setOpen] = useState(false);
   const [fileType, setFileType] = useState<LarkFileType | null>(null);
@@ -151,6 +154,7 @@ export function CreateFileModal({
                 defaultDepartment={defaultDepartment}
                 staff={staff}
                 foldersByOrg={foldersByOrg}
+                prefs={prefs}
               />
             )}
           </div>

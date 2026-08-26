@@ -15,6 +15,7 @@ import {
 } from "@/lib/admin/fileNaming";
 import { LARK_FILE_TYPE_LABELS, type LarkFileType } from "@/lib/lark/fileTypes";
 import type { FolderOption } from "@/lib/lark/folders";
+import { DEFAULT_LARK_PREFS, type LarkPrefs } from "@/lib/lark/prefs";
 
 const initialState: LarkDocFormState = { error: null };
 const fieldClasses =
@@ -32,12 +33,14 @@ export function LarkDocForm({
   defaultDepartment,
   staff,
   foldersByOrg,
+  prefs,
 }: {
   fileType: LarkFileType;
   onBack: () => void;
   defaultDepartment: string | null;
   staff: StaffOption[];
   foldersByOrg: Record<string, FolderOption[]>;
+  prefs: LarkPrefs;
 }) {
   const [state, formAction, pending] = useActionState(createLarkDocument, initialState);
   const formRef = useRef<HTMLFormElement>(null);
@@ -45,7 +48,7 @@ export function LarkDocForm({
   const [shareOpen, setShareOpen] = useState(false);
   const [shares, setShares] = useState<ShareRow[]>([]);
   const [targetFolder, setTargetFolder] = useState("");
-  const [org, setOrg] = useState("");
+  const [org, setOrg] = useState(prefs.defaultOrg ?? "");
 
   const rootLabel = org ? `— Thư mục gốc (${org}) —` : "— Thư mục gốc (dùng chung) —";
   const FOLDER_OPTIONS = [
@@ -60,14 +63,14 @@ export function LarkDocForm({
     const d = todayYYYYMMDD();
     return `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`;
   });
-  const [version, setVersion] = useState<string>(VERSION_OPTIONS[0]);
+  const [version, setVersion] = useState<string>(prefs.defaultVersion ?? VERSION_OPTIONS[0]);
   const [wip, setWip] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const [includeDept, setIncludeDept] = useState(true);
-  const [includeDocType, setIncludeDocType] = useState(true);
-  const [includeDate, setIncludeDate] = useState(true);
-  const [includeVersion, setIncludeVersion] = useState(true);
+  const [includeDept, setIncludeDept] = useState(prefs.includeDept ?? DEFAULT_LARK_PREFS.includeDept);
+  const [includeDocType, setIncludeDocType] = useState(prefs.includeDocType ?? DEFAULT_LARK_PREFS.includeDocType);
+  const [includeDate, setIncludeDate] = useState(prefs.includeDate ?? DEFAULT_LARK_PREFS.includeDate);
+  const [includeVersion, setIncludeVersion] = useState(prefs.includeVersion ?? DEFAULT_LARK_PREFS.includeVersion);
 
   const isFolder = fileType === "folder";
   const effectiveDocType = docType === "Khác" ? docTypeOther.trim() : docType;

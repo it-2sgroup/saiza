@@ -1,10 +1,12 @@
-import Link from "next/link";
 import { getCurrentProfile } from "@/lib/supabase/profile";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { departmentLabel } from "@/lib/admin/departments";
 import { canManageStaff } from "@/lib/admin/permissions";
 import { Avatar } from "../Avatar";
 import { CreateFileModal } from "./CreateFileModal";
+import { LarkSettingsModal } from "./LarkSettingsModal";
+import { HistoryModal, type HistoryRow } from "./HistoryModal";
+import { OverviewModal, type OverviewRow } from "./OverviewModal";
 import { ShareExistingDoc } from "./ShareExistingDoc";
 import { DeleteLarkFileButton } from "./DeleteLarkFileButton";
 import type { StaffOption } from "./StaffSharePicker";
@@ -25,36 +27,79 @@ export default async function AdminLarkPage() {
     return <p className="text-ink-2">Bạn không có quyền truy cập trang này.</p>;
   }
 
+  const isAdmin = canManageStaff(profile.role);
   const admin = createAdminClient();
   const orgKeys = ["", ...listConfiguredOrgs()];
-  const [{ data: logRows }, { data: deletedRows }, { data: profilesData }, { data: usersData }, folderTrees] =
-    await Promise.all([
-      admin
-        .from("audit_log")
-        .select("actor_id, target_id, metadata, created_at")
-        .eq("action", "lark_doc_created")
-        .eq("actor_id", profile.id)
-        .order("created_at", { ascending: false })
-        .limit(10),
-      admin.from("audit_log").select("target_id").eq("action", "lark_doc_deleted"),
-      admin.from("profiles").select("id, full_name"),
-      admin.auth.admin.listUsers(),
-      Promise.all(
-        orgKeys.map(async (org) => {
-          const root = resolveRootFolderToken(org || null);
-          return [org, root ? await listLarkFolderTree(root) : []] as [string, FolderOption[]];
-        }),
-      ),
-    ]);
+  const [
+    { data: ownRows },
+    { data: allCreatedRows },
+    { data: deletedRows },
+    { data: profilesData },
+    { data: usersData },
+    folderTrees,
+  ] = await Promise.all([
+    admin
+      .from("audit_log")
+      .select("actor_id, target_id, metadata, created_at")
+      .eq("action", "lark_doc_created")
+      .eq("actor_id", profile.id)
+      .order("created_at", { ascending: false }),
+    isAdmin
+      ? admin
+          .from("audit_log")
+          .select("actor_id, target_id, metadata, created_at")
+          .eq("action", "lark_doc_created")
+          .order("created_at", { ascending: false })
+      : Promise.resolve({ data: [] }),
+    admin.from("audit_log").select("target_id").eq("action", "lark_doc_deleted"),
+    admin.from("profiles").select("id, full_name, department"),
+    admin.auth.admin.listUsers(),
+    Promise.all(
+      orgKeys.map(async (org) => {
+        const root = resolveRootFolderToken(org || null);
+        return [org, root ? await listLarkFolderTree(root) : []] as [string, FolderOption[]];
+      }),
+    ),
+  ]);
 
   const foldersByOrg: Record<string, FolderOption[]> = Object.fromEntries(folderTrees);
-
   const deletedIds = new Set((deletedRows ?? []).map((r) => r.target_id));
-  const rows = ((logRows ?? []) as AuditRow[]).filter((r) => !deletedIds.has(r.target_id));
   const emailById = new Map(usersData?.users.map((u) => [u.id, u.email]) ?? []);
+  const profileById = new Map(
+    (profilesData ?? []).map((p) => [p.id as string, { fullName: p.full_name as string, department: p.department as string | null }]),
+  );
   const staff: StaffOption[] = (profilesData ?? [])
     .map((p) => ({ id: p.id as string, full_name: p.full_name as string, email: emailById.get(p.id) ?? "" }))
     .filter((s): s is StaffOption => !!s.email);
+
+  const ownAll = ((ownRows ?? []) as AuditRow[]).filter((r) => !deletedIds.has(r.target_id));
+  const recentRows = ownAll.slice(0, 10);
+  const historyRows: HistoryRow[] = ownAll
+    .filter((r) => r.target_id)
+    .map((r) => ({
+      targetId: r.target_id as string,
+      title: r.metadata?.title ?? "(không có tiêu đề)",
+      url: r.metadata?.url ?? null,
+      fileType: r.metadata?.fileType ?? "docx",
+      createdAt: r.created_at,
+    }));
+
+  const overviewRows: OverviewRow[] = isAdmin
+    ? ((allCreatedRows ?? []) as AuditRow[])
+        .filter((r) => r.target_id && !deletedIds.has(r.target_id))
+        .map((r) => {
+          const creator = r.actor_id ? profileById.get(r.actor_id) : undefined;
+          return {
+            targetId: r.target_id as string,
+            title: r.metadata?.title ?? "(không có tiêu đề)",
+            url: r.metadata?.url ?? null,
+            fileType: r.metadata?.fileType ?? "docx",
+            createdAt: r.created_at,
+            creatorName: creator?.fullName ?? "—",
+            creatorDepartment: creator?.department ?? null,
+          };
+        })
+    : [];
 
   return (
     <div className="flex w-full flex-col gap-7">
@@ -69,50 +114,26 @@ export default async function AdminLarkPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {canManageStaff(profile.role) && (
-            <Link
-              href="/admin/lark/quan-tri"
-              title="Tổng quan toàn công ty"
-              aria-label="Tổng quan toàn công ty"
-              className="flex h-10 w-10 flex-shrink-0 cursor-pointer items-center justify-center rounded-full border border-line bg-card text-ink-2 transition-colors duration-300 ease-soft hover:border-ink hover:text-ink"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="3" width="7" height="7" rx="1.5" />
-                <rect x="14" y="3" width="7" height="7" rx="1.5" />
-                <rect x="14" y="14" width="7" height="7" rx="1.5" />
-                <rect x="3" y="14" width="7" height="7" rx="1.5" />
-              </svg>
-            </Link>
-          )}
-          <Link
-            href="/admin/lark/lich-su"
-            title="Lịch sử tạo file của tôi"
-            aria-label="Lịch sử tạo file của tôi"
-            className="flex h-10 w-10 flex-shrink-0 cursor-pointer items-center justify-center rounded-full border border-line bg-card text-ink-2 transition-colors duration-300 ease-soft hover:border-ink hover:text-ink"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <path d="M14 2v6h6" />
-              <path d="M9 13h6M9 17h6" />
-            </svg>
-          </Link>
+          <LarkSettingsModal prefs={profile.lark_prefs} />
+          {isAdmin && <OverviewModal rows={overviewRows} />}
+          <HistoryModal rows={historyRows} staff={staff} />
         </div>
       </div>
 
-      <CreateFileModal defaultDepartment={profile.department} staff={staff} foldersByOrg={foldersByOrg} />
+      <CreateFileModal
+        defaultDepartment={profile.department}
+        staff={staff}
+        foldersByOrg={foldersByOrg}
+        prefs={profile.lark_prefs}
+      />
 
       <div className="flex flex-col gap-2.5">
-        <div className="flex items-center justify-between gap-4">
-          <h2 className="text-sm font-semibold text-ink-2 uppercase tracking-[0.06em]">File của bạn — gần đây</h2>
-          <Link href="/admin/lark/lich-su" className="text-sm font-medium text-accent hover:text-ink">
-            Xem tất cả →
-          </Link>
-        </div>
-        {rows.length === 0 ? (
+        <h2 className="text-sm font-semibold text-ink-2 uppercase tracking-[0.06em]">File của bạn — gần đây</h2>
+        {recentRows.length === 0 ? (
           <p className="text-sm text-ink-2">Chưa có tài liệu nào được tạo.</p>
         ) : (
           <div className="flex flex-col divide-y divide-line rounded-card border border-line bg-card">
-            {rows.map((row) => (
+            {recentRows.map((row) => (
               <div key={row.target_id} className="flex flex-col gap-2 px-4 py-3">
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex min-w-0 flex-col gap-0.5">

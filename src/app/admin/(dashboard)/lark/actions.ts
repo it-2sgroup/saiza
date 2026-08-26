@@ -10,6 +10,8 @@ import { resolveRootFolderToken } from "@/lib/lark/orgFolders";
 import { DEPARTMENT_CODES, ORG_CODES } from "@/lib/admin/departments";
 import { buildFileName, buildFolderName, MAX_FILENAME_LENGTH } from "@/lib/admin/fileNaming";
 import { canDelete } from "@/lib/admin/permissions";
+import { VERSION_OPTIONS } from "@/lib/admin/docTypes";
+import type { LarkPrefs } from "@/lib/lark/prefs";
 
 const VALID_FILE_TYPES: LarkFileType[] = ["docx", "sheet", "bitable", "folder"];
 
@@ -143,6 +145,36 @@ export async function shareExistingDocument(
   return { error: null, shareResults };
 }
 
+export type LarkPrefsState = { error: string | null; success?: boolean };
+
+export async function updateLarkPrefs(_prev: LarkPrefsState, formData: FormData): Promise<LarkPrefsState> {
+  const profile = await getCurrentProfile();
+  if (!profile) return { error: "Bạn cần đăng nhập lại." };
+
+  const org = String(formData.get("defaultOrg") ?? "").trim();
+  const version = String(formData.get("defaultVersion") ?? "").trim();
+  if (org && !(ORG_CODES as readonly string[]).includes(org)) return { error: "Mã tổ chức không hợp lệ." };
+  if (version && !(VERSION_OPTIONS as readonly string[]).includes(version)) return { error: "Version không hợp lệ." };
+
+  const prefs: LarkPrefs = {
+    includeDept: formData.get("includeDept") === "on",
+    includeDocType: formData.get("includeDocType") === "on",
+    includeDate: formData.get("includeDate") === "on",
+    includeVersion: formData.get("includeVersion") === "on",
+    ...(org ? { defaultOrg: org } : {}),
+    ...(version ? { defaultVersion: version } : {}),
+  };
+
+  // Service-role client, but hard-coded to only ever touch `lark_prefs` —
+  // same reasoning as updateFullName in ho-so/actions.ts.
+  const admin = createAdminClient();
+  const { error } = await admin.from("profiles").update({ lark_prefs: prefs }).eq("id", profile.id);
+  if (error) return { error: `Không lưu được: ${error.message}` };
+
+  revalidatePath("/admin/lark");
+  return { error: null, success: true };
+}
+
 export type DeleteLarkDocState = { error: string | null; done?: boolean };
 
 export async function deleteLarkDocument(
@@ -181,6 +213,5 @@ export async function deleteLarkDocument(
   });
 
   revalidatePath("/admin/lark");
-  revalidatePath("/admin/lark/lich-su");
   return { error: null, done: true };
 }
