@@ -5,6 +5,7 @@ import { departmentLabel } from "@/lib/admin/departments";
 import { Avatar } from "../Avatar";
 import { LarkDocForm } from "./LarkDocForm";
 import { ShareExistingDoc } from "./ShareExistingDoc";
+import { DeleteLarkFileButton } from "./DeleteLarkFileButton";
 import type { StaffOption } from "./StaffSharePicker";
 import { LARK_FILE_TYPE_LABELS, type LarkFileType } from "@/lib/lark/client";
 
@@ -22,7 +23,7 @@ export default async function AdminLarkPage() {
   }
 
   const admin = createAdminClient();
-  const [{ data: logRows }, { data: profilesData }, { data: usersData }] = await Promise.all([
+  const [{ data: logRows }, { data: deletedRows }, { data: profilesData }, { data: usersData }] = await Promise.all([
     admin
       .from("audit_log")
       .select("actor_id, target_id, metadata, created_at")
@@ -30,11 +31,13 @@ export default async function AdminLarkPage() {
       .eq("actor_id", profile.id)
       .order("created_at", { ascending: false })
       .limit(10),
+    admin.from("audit_log").select("target_id").eq("action", "lark_doc_deleted"),
     admin.from("profiles").select("id, full_name"),
     admin.auth.admin.listUsers(),
   ]);
 
-  const rows = (logRows ?? []) as AuditRow[];
+  const deletedIds = new Set((deletedRows ?? []).map((r) => r.target_id));
+  const rows = ((logRows ?? []) as AuditRow[]).filter((r) => !deletedIds.has(r.target_id));
   const emailById = new Map(usersData?.users.map((u) => [u.id, u.email]) ?? []);
   const staff: StaffOption[] = (profilesData ?? [])
     .map((p) => ({ id: p.id as string, full_name: p.full_name as string, email: emailById.get(p.id) ?? "" }))
@@ -103,7 +106,10 @@ export default async function AdminLarkPage() {
                   )}
                 </div>
                 {row.target_id && (
-                  <ShareExistingDoc documentId={row.target_id} fileType={row.metadata?.fileType} staff={staff} />
+                  <div className="flex items-center justify-between gap-4">
+                    <ShareExistingDoc documentId={row.target_id} fileType={row.metadata?.fileType} staff={staff} />
+                    <DeleteLarkFileButton documentId={row.target_id} fileType={row.metadata?.fileType} />
+                  </div>
                 )}
               </div>
             ))}

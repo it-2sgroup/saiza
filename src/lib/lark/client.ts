@@ -78,6 +78,19 @@ export async function createLarkFile(type: LarkFileType, title: string): Promise
   }
 }
 
+export async function deleteLarkFile(documentId: string, type: LarkFileType): Promise<void> {
+  const token = await getTenantAccessToken();
+  const res = await fetch(`${LARK_API_BASE}/drive/v1/files/${documentId}?type=${type}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const data = await res.json();
+  if (!res.ok || data.code !== 0) {
+    throw new Error(`Không xoá được file: ${data.msg ?? res.statusText}`);
+  }
+}
+
 // Best-effort: sharing can fail if the email isn't a real member of the Lark
 // tenant. Callers must not fail file creation when this throws.
 export async function shareLarkDocByEmail(

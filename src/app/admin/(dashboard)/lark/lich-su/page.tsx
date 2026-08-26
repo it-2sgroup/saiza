@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getCurrentProfile } from "@/lib/supabase/profile";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ShareExistingDoc } from "../ShareExistingDoc";
+import { DeleteLarkFileButton } from "../DeleteLarkFileButton";
 import type { StaffOption } from "../StaffSharePicker";
 import { LARK_FILE_TYPE_LABELS, type LarkFileType } from "@/lib/lark/client";
 
@@ -30,11 +31,15 @@ export default async function LarkHistoryPage({
   const to = from + PAGE_SIZE - 1;
 
   const admin = createAdminClient();
+  const { data: deletedRows } = await admin.from("audit_log").select("target_id").eq("action", "lark_doc_deleted");
+  const deletedIds = (deletedRows ?? []).map((r) => r.target_id).filter((id): id is string => !!id);
+
   let query = admin
     .from("audit_log")
     .select("target_id, metadata, created_at", { count: "exact" })
     .eq("action", "lark_doc_created")
     .eq("actor_id", profile.id);
+  if (deletedIds.length > 0) query = query.not("target_id", "in", `(${deletedIds.join(",")})`);
   if (q) query = query.ilike("metadata->>title", `%${q}%`);
 
   const [{ data: logRows, count }, { data: profilesData }, { data: usersData }] = await Promise.all([
@@ -138,7 +143,10 @@ export default async function LarkHistoryPage({
                     </a>
                   )}
                   {row.target_id && (
-                    <ShareExistingDoc documentId={row.target_id} fileType={row.metadata?.fileType} staff={staff} />
+                    <div className="flex items-center justify-between gap-2">
+                      <ShareExistingDoc documentId={row.target_id} fileType={row.metadata?.fileType} staff={staff} />
+                      <DeleteLarkFileButton documentId={row.target_id} fileType={row.metadata?.fileType} />
+                    </div>
                   )}
                 </div>
               </div>

@@ -4,10 +4,11 @@ import { revalidatePath } from "next/cache";
 import { getCurrentProfile } from "@/lib/supabase/profile";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { recordAuditLog } from "@/lib/admin/audit";
-import { createLarkFile, shareLarkDocByEmail, type LarkFileType } from "@/lib/lark/client";
+import { createLarkFile, deleteLarkFile, shareLarkDocByEmail, type LarkFileType } from "@/lib/lark/client";
 import { parseShareRows, applyShareRows, type ShareResult } from "@/lib/lark/shareRows";
 import { DEPARTMENT_CODES, ORG_CODES } from "@/lib/admin/departments";
 import { buildFileName, MAX_FILENAME_LENGTH } from "@/lib/admin/fileNaming";
+import { canDelete } from "@/lib/admin/permissions";
 
 const VALID_FILE_TYPES: LarkFileType[] = ["docx", "sheet", "bitable", "folder"];
 
@@ -109,4 +110,46 @@ export async function shareExistingDocument(
 
   revalidatePath("/admin/lark");
   return { error: null, shareResults };
+}
+
+export type DeleteLarkDocState = { error: string | null; done?: boolean };
+
+export async function deleteLarkDocument(
+  documentId: string,
+  fileType: LarkFileType,
+  _prev: DeleteLarkDocState,
+): Promise<DeleteLarkDocState> {
+  const profile = await getCurrentProfile();
+  if (!profile) return { error: "Bạn cần đăng nhập lại." };
+
+  const admin = createAdminClient();
+  const { data: creationRow } = await admin
+    .from("audit_log")
+    .select("actor_id")
+    .eq("action", "lark_doc_created")
+    .eq("target_id", documentId)
+    .maybeSingle();
+
+  const isOwner = creationRow?.actor_id === profile.id;
+  if (!isOwner && !canDelete(profile.role)) {
+    return { error: "Bạn không có quyền xoá file này." };
+  }
+
+  try {
+    await deleteLarkFile(documentId, fileType);
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Không xoá được file." };
+  }
+
+  await recordAuditLog({
+    actorId: profile.id,
+    action: "lark_doc_deleted",
+    targetTable: "lark_docs",
+    targetId: documentId,
+    metadata: { fileType },
+  });
+
+  revalidatePath("/admin/lark");
+  revalidatePath("/admin/lark/lich-su");
+  return { error: null, done: true };
 }
