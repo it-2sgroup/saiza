@@ -6,7 +6,13 @@ import { Combobox } from "../Combobox";
 import { StaffSharePicker, type StaffOption, type ShareRow } from "./StaffSharePicker";
 import { DEPARTMENTS, ORG_CODES } from "@/lib/admin/departments";
 import { DOC_TYPES, VERSION_OPTIONS } from "@/lib/admin/docTypes";
-import { buildFileName, todayYYYYMMDD, dateInputToYYYYMMDD, MAX_FILENAME_LENGTH } from "@/lib/admin/fileNaming";
+import {
+  buildFileName,
+  buildFolderName,
+  todayYYYYMMDD,
+  dateInputToYYYYMMDD,
+  MAX_FILENAME_LENGTH,
+} from "@/lib/admin/fileNaming";
 import { LARK_FILE_TYPE_LABELS, type LarkFileType } from "@/lib/lark/fileTypes";
 import type { FolderOption } from "@/lib/lark/folders";
 
@@ -58,10 +64,13 @@ export function LarkDocForm({
   const [wip, setWip] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  const isFolder = fileType === "folder";
   const effectiveDocType = docType === "Khác" ? docTypeOther.trim() : docType;
 
   const preview = useMemo(() => {
-    if (!department || !effectiveDocType || !content.trim()) return null;
+    if (!department || !content.trim()) return null;
+    if (isFolder) return buildFolderName({ org: org || null, department, name: content });
+    if (!effectiveDocType) return null;
     return buildFileName({
       org: org || null,
       department,
@@ -71,7 +80,7 @@ export function LarkDocForm({
       version,
       wip,
     });
-  }, [org, department, effectiveDocType, content, dateInput, version, wip]);
+  }, [isFolder, org, department, effectiveDocType, content, dateInput, version, wip]);
 
   const previewTooLong = preview !== null && preview.length > MAX_FILENAME_LENGTH;
 
@@ -105,7 +114,7 @@ export function LarkDocForm({
           />
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className={`grid gap-3 ${isFolder ? "grid-cols-2" : "grid-cols-3"}`}>
           <div className="flex flex-col gap-1.5">
             <label className={labelClasses}>Mã tổ chức</label>
             <Combobox
@@ -129,16 +138,18 @@ export function LarkDocForm({
               buttonClassName={`${fieldClasses} flex w-full items-center justify-between gap-2 text-left`}
             />
           </div>
-          <div className="flex flex-col gap-1.5">
-            <label className={labelClasses}>Loại tài liệu</label>
-            <Combobox
-              name="docType"
-              value={docType}
-              options={DOC_TYPE_OPTIONS}
-              onChange={setDocType}
-              buttonClassName={`${fieldClasses} flex w-full items-center justify-between gap-2 text-left`}
-            />
-          </div>
+          {!isFolder && (
+            <div className="flex flex-col gap-1.5">
+              <label className={labelClasses}>Loại tài liệu</label>
+              <Combobox
+                name="docType"
+                value={docType}
+                options={DOC_TYPE_OPTIONS}
+                onChange={setDocType}
+                buttonClassName={`${fieldClasses} flex w-full items-center justify-between gap-2 text-left`}
+              />
+            </div>
+          )}
         </div>
         {!defaultDepartment && (
           <p className="-mt-1.5 text-xs text-amber-700">
@@ -146,7 +157,7 @@ export function LarkDocForm({
           </p>
         )}
 
-        {docType === "Khác" && (
+        {!isFolder && docType === "Khác" && (
           <div className="flex flex-col gap-1.5">
             <label htmlFor="docTypeOther" className={labelClasses}>
               Loại tài liệu (tự nhập)
@@ -164,7 +175,7 @@ export function LarkDocForm({
 
         <div className="flex flex-col gap-1.5">
           <label htmlFor="content" className={labelClasses}>
-            Nội dung / dự án
+            {isFolder ? "Tên thư mục" : "Nội dung / dự án"}
           </label>
           <input
             id="content"
@@ -172,47 +183,49 @@ export function LarkDocForm({
             required
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="Ví dụ: Chiến dịch Q3"
+            placeholder={isFolder ? "Ví dụ: Hợp đồng khách hàng" : "Ví dụ: Chiến dịch Q3"}
             className={fieldClasses}
           />
         </div>
 
-        <div className="grid grid-cols-3 items-end gap-3">
-          <div className="flex flex-col gap-1.5">
-            <label className={labelClasses}>Version</label>
-            <Combobox
-              name="version"
-              value={version}
-              options={VERSION_SELECT_OPTIONS}
-              onChange={setVersion}
-              buttonClassName={`${fieldClasses} flex w-full items-center justify-between gap-2 text-left`}
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="date" className={labelClasses}>
-              Ngày
+        {!isFolder && (
+          <div className="grid grid-cols-3 items-end gap-3">
+            <div className="flex flex-col gap-1.5">
+              <label className={labelClasses}>Version</label>
+              <Combobox
+                name="version"
+                value={version}
+                options={VERSION_SELECT_OPTIONS}
+                onChange={setVersion}
+                buttonClassName={`${fieldClasses} flex w-full items-center justify-between gap-2 text-left`}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="date" className={labelClasses}>
+                Ngày
+              </label>
+              <input
+                id="date"
+                type="date"
+                value={dateInput}
+                onChange={(e) => setDateInput(e.target.value)}
+                className={fieldClasses}
+              />
+            </div>
+            <label className="flex items-center gap-2 pb-2.5">
+              <input
+                type="checkbox"
+                name="wip"
+                checked={wip}
+                onChange={(e) => setWip(e.target.checked)}
+                className="h-4 w-4 accent-accent"
+              />
+              <span className="text-[13px] text-ink-2">WIP (đang soạn)</span>
             </label>
-            <input
-              id="date"
-              type="date"
-              value={dateInput}
-              onChange={(e) => setDateInput(e.target.value)}
-              className={fieldClasses}
-            />
           </div>
-          <label className="flex items-center gap-2 pb-2.5">
-            <input
-              type="checkbox"
-              name="wip"
-              checked={wip}
-              onChange={(e) => setWip(e.target.checked)}
-              className="h-4 w-4 accent-accent"
-            />
-            <span className="text-[13px] text-ink-2">WIP (đang soạn)</span>
-          </label>
-        </div>
+        )}
 
-        <input type="hidden" name="date" value={dateInputToYYYYMMDD(dateInput)} />
+        {!isFolder && <input type="hidden" name="date" value={dateInputToYYYYMMDD(dateInput)} />}
 
         <div className="flex items-center gap-2 rounded-xl border border-line bg-wash px-3.5 py-2.5">
           <span className="min-w-0 flex-1 truncate font-mono text-[13.5px] text-ink">

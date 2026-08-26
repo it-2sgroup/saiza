@@ -44,3 +44,16 @@ export function buildFileName(parts: FileNameParts): string {
 }
 
 export const MAX_FILENAME_LENGTH = 80;
+
+// Thư mục không phải tài liệu có phiên bản — chỉ cần định danh theo tổ chức/phòng
+// ban + tên, không có LoạiTàiLiệu/Ngày/Version như file.
+export type FolderNameParts = {
+  org?: string | null;
+  department: string;
+  name: string;
+};
+
+export function buildFolderName(parts: FolderNameParts): string {
+  const deptSegment = parts.org ? `${parts.org}-${parts.department}` : parts.department;
+  return [deptSegment, toPascalCaseVN(parts.name)].join("_");
+}
