@@ -26,25 +26,26 @@ const FILE_TYPE_OPTIONS = (Object.entries(LARK_FILE_TYPE_LABELS) as [LarkFileTyp
 export function LarkDocForm({
   defaultDepartment,
   staff,
-  folders,
+  foldersByOrg,
 }: {
   defaultDepartment: string | null;
   staff: StaffOption[];
-  folders: FolderOption[];
+  foldersByOrg: Record<string, FolderOption[]>;
 }) {
   const [state, formAction, pending] = useActionState(createLarkDocument, initialState);
   const formRef = useRef<HTMLFormElement>(null);
-
-  const FOLDER_OPTIONS = [
-    { value: "", label: "— Thư mục gốc —" },
-    ...folders.map((f) => ({ value: f.token, label: `${"　".repeat(f.depth - 1)}└ ${f.name}` })),
-  ];
 
   const [shareOpen, setShareOpen] = useState(false);
   const [shares, setShares] = useState<ShareRow[]>([]);
   const [fileType, setFileType] = useState<LarkFileType>("docx");
   const [targetFolder, setTargetFolder] = useState("");
   const [org, setOrg] = useState("");
+
+  const rootLabel = org ? `— Thư mục gốc (${org}) —` : "— Thư mục gốc (dùng chung) —";
+  const FOLDER_OPTIONS = [
+    { value: "", label: rootLabel },
+    ...(foldersByOrg[org] ?? []).map((f) => ({ value: f.token, label: `${"　".repeat(f.depth - 1)}└ ${f.name}` })),
+  ];
   const [department, setDepartment] = useState(defaultDepartment ?? "");
   const [docType, setDocType] = useState(DOC_TYPES[0].code);
   const [docTypeOther, setDocTypeOther] = useState("");
@@ -111,7 +112,10 @@ export function LarkDocForm({
               name="org"
               value={org}
               options={ORG_OPTIONS}
-              onChange={setOrg}
+              onChange={(v) => {
+                setOrg(v);
+                setTargetFolder("");
+              }}
               buttonClassName={`${fieldClasses} flex w-full items-center justify-between gap-2 text-left`}
             />
           </div>

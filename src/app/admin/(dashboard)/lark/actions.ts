@@ -6,6 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { recordAuditLog } from "@/lib/admin/audit";
 import { createLarkFile, deleteLarkFile, shareLarkDocByEmail, type LarkFileType } from "@/lib/lark/client";
 import { parseShareRows, applyShareRows, type ShareResult } from "@/lib/lark/shareRows";
+import { resolveRootFolderToken } from "@/lib/lark/orgFolders";
 import { DEPARTMENT_CODES, ORG_CODES } from "@/lib/admin/departments";
 import { buildFileName, MAX_FILENAME_LENGTH } from "@/lib/admin/fileNaming";
 import { canDelete } from "@/lib/admin/permissions";
@@ -49,10 +50,12 @@ export async function createLarkDocument(_prev: LarkDocFormState, formData: Form
     return { error: `Tên file dài ${title.length} ký tự, vượt giới hạn ${MAX_FILENAME_LENGTH}. Rút ngắn nội dung.` };
   }
 
+  const effectiveFolder = targetFolder || resolveRootFolderToken(org || null);
+
   let documentId: string;
   let url: string;
   try {
-    ({ documentId, url } = await createLarkFile(fileType, title, targetFolder));
+    ({ documentId, url } = await createLarkFile(fileType, title, effectiveFolder));
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Không tạo được file Lark." };
   }
