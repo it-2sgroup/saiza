@@ -8,6 +8,7 @@ import { DEPARTMENTS, ORG_CODES } from "@/lib/admin/departments";
 import { DOC_TYPES, VERSION_OPTIONS } from "@/lib/admin/docTypes";
 import { buildFileName, todayYYYYMMDD, dateInputToYYYYMMDD, MAX_FILENAME_LENGTH } from "@/lib/admin/fileNaming";
 import { LARK_FILE_TYPE_LABELS, type LarkFileType } from "@/lib/lark/fileTypes";
+import type { FolderOption } from "@/lib/lark/folders";
 
 const initialState: LarkDocFormState = { error: null };
 const fieldClasses =
@@ -25,16 +26,24 @@ const FILE_TYPE_OPTIONS = (Object.entries(LARK_FILE_TYPE_LABELS) as [LarkFileTyp
 export function LarkDocForm({
   defaultDepartment,
   staff,
+  folders,
 }: {
   defaultDepartment: string | null;
   staff: StaffOption[];
+  folders: FolderOption[];
 }) {
   const [state, formAction, pending] = useActionState(createLarkDocument, initialState);
   const formRef = useRef<HTMLFormElement>(null);
 
+  const FOLDER_OPTIONS = [
+    { value: "", label: "— Thư mục gốc —" },
+    ...folders.map((f) => ({ value: f.token, label: `${"　".repeat(f.depth - 1)}└ ${f.name}` })),
+  ];
+
   const [shareOpen, setShareOpen] = useState(false);
   const [shares, setShares] = useState<ShareRow[]>([]);
   const [fileType, setFileType] = useState<LarkFileType>("docx");
+  const [targetFolder, setTargetFolder] = useState("");
   const [org, setOrg] = useState("");
   const [department, setDepartment] = useState(defaultDepartment ?? "");
   const [docType, setDocType] = useState(DOC_TYPES[0].code);
@@ -72,15 +81,27 @@ export function LarkDocForm({
         action={(formData) => formAction(formData)}
         className="flex flex-col gap-4 rounded-card border border-line bg-card p-5"
       >
-        <div className="flex flex-col gap-1.5">
-          <label className={labelClasses}>Loại file</label>
-          <Combobox
-            name="fileType"
-            value={fileType}
-            options={FILE_TYPE_OPTIONS}
-            onChange={(v) => setFileType(v as LarkFileType)}
-            buttonClassName={`${fieldClasses} flex w-full items-center justify-between gap-2 text-left`}
-          />
+        <div className="grid grid-cols-2 gap-3">
+          <div className="flex flex-col gap-1.5">
+            <label className={labelClasses}>Loại file</label>
+            <Combobox
+              name="fileType"
+              value={fileType}
+              options={FILE_TYPE_OPTIONS}
+              onChange={(v) => setFileType(v as LarkFileType)}
+              buttonClassName={`${fieldClasses} flex w-full items-center justify-between gap-2 text-left`}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className={labelClasses}>Tạo trong thư mục</label>
+            <Combobox
+              name="targetFolder"
+              value={targetFolder}
+              options={FOLDER_OPTIONS}
+              onChange={setTargetFolder}
+              buttonClassName={`${fieldClasses} flex w-full items-center justify-between gap-2 text-left`}
+            />
+          </div>
         </div>
 
         <div className="grid grid-cols-3 gap-3">

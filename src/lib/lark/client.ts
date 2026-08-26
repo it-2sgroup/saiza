@@ -48,8 +48,8 @@ async function larkFetch(path: string, body: Record<string, unknown>) {
 
 export type LarkFile = { documentId: string; url: string; type: LarkFileType };
 
-export async function createLarkFile(type: LarkFileType, title: string): Promise<LarkFile> {
-  const folderToken = process.env.LARK_DOC_FOLDER_TOKEN?.trim();
+export async function createLarkFile(type: LarkFileType, title: string, targetFolderToken?: string): Promise<LarkFile> {
+  const folderToken = targetFolderToken?.trim() || process.env.LARK_DOC_FOLDER_TOKEN?.trim();
   const folderField = folderToken ? { folder_token: folderToken } : {};
 
   try {
@@ -76,6 +76,23 @@ export async function createLarkFile(type: LarkFileType, title: string): Promise
     const label = LARK_FILE_TYPE_LABELS[type];
     throw new Error(`Không tạo được ${label}: ${err instanceof Error ? err.message : "lỗi không rõ"}`);
   }
+}
+
+export type LarkFolderEntry = { token: string; name: string };
+
+export async function listFolderChildren(folderToken: string): Promise<LarkFolderEntry[]> {
+  const token = await getTenantAccessToken();
+  const res = await fetch(`${LARK_API_BASE}/drive/v1/files?folder_token=${folderToken}&page_size=200`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const data = await res.json();
+  if (!res.ok || data.code !== 0) {
+    throw new Error(`Không đọc được thư mục: ${data.msg ?? res.statusText}`);
+  }
+  return (data.data.files as { token: string; name: string; type: string }[])
+    .filter((f) => f.type === "folder")
+    .map((f) => ({ token: f.token, name: f.name }));
 }
 
 export async function deleteLarkFile(documentId: string, type: LarkFileType): Promise<void> {

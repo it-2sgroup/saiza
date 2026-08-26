@@ -9,6 +9,7 @@ import { ShareExistingDoc } from "./ShareExistingDoc";
 import { DeleteLarkFileButton } from "./DeleteLarkFileButton";
 import type { StaffOption } from "./StaffSharePicker";
 import { LARK_FILE_TYPE_LABELS, type LarkFileType } from "@/lib/lark/client";
+import { listLarkFolderTree } from "@/lib/lark/folders";
 
 type AuditRow = {
   actor_id: string | null;
@@ -24,18 +25,21 @@ export default async function AdminLarkPage() {
   }
 
   const admin = createAdminClient();
-  const [{ data: logRows }, { data: deletedRows }, { data: profilesData }, { data: usersData }] = await Promise.all([
-    admin
-      .from("audit_log")
-      .select("actor_id, target_id, metadata, created_at")
-      .eq("action", "lark_doc_created")
-      .eq("actor_id", profile.id)
-      .order("created_at", { ascending: false })
-      .limit(10),
-    admin.from("audit_log").select("target_id").eq("action", "lark_doc_deleted"),
-    admin.from("profiles").select("id, full_name"),
-    admin.auth.admin.listUsers(),
-  ]);
+  const rootFolderToken = process.env.LARK_DOC_FOLDER_TOKEN?.trim();
+  const [{ data: logRows }, { data: deletedRows }, { data: profilesData }, { data: usersData }, folders] =
+    await Promise.all([
+      admin
+        .from("audit_log")
+        .select("actor_id, target_id, metadata, created_at")
+        .eq("action", "lark_doc_created")
+        .eq("actor_id", profile.id)
+        .order("created_at", { ascending: false })
+        .limit(10),
+      admin.from("audit_log").select("target_id").eq("action", "lark_doc_deleted"),
+      admin.from("profiles").select("id, full_name"),
+      admin.auth.admin.listUsers(),
+      rootFolderToken ? listLarkFolderTree(rootFolderToken) : Promise.resolve([]),
+    ]);
 
   const deletedIds = new Set((deletedRows ?? []).map((r) => r.target_id));
   const rows = ((logRows ?? []) as AuditRow[]).filter((r) => !deletedIds.has(r.target_id));
@@ -87,7 +91,7 @@ export default async function AdminLarkPage() {
         </div>
       </div>
 
-      <LarkDocForm defaultDepartment={profile.department} staff={staff} />
+      <LarkDocForm defaultDepartment={profile.department} staff={staff} folders={folders} />
 
       <div className="flex flex-col gap-2.5">
         <div className="flex items-center justify-between gap-4">

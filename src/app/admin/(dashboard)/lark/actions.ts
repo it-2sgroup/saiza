@@ -25,6 +25,7 @@ export async function createLarkDocument(_prev: LarkDocFormState, formData: Form
 
   const fileType = String(formData.get("fileType") ?? "docx").trim() as LarkFileType;
   if (!VALID_FILE_TYPES.includes(fileType)) return { error: "Loại file không hợp lệ." };
+  const targetFolder = String(formData.get("targetFolder") ?? "").trim() || undefined;
 
   const org = String(formData.get("org") ?? "").trim();
   const department = String(formData.get("department") ?? "").trim();
@@ -51,7 +52,7 @@ export async function createLarkDocument(_prev: LarkDocFormState, formData: Form
   let documentId: string;
   let url: string;
   try {
-    ({ documentId, url } = await createLarkFile(fileType, title));
+    ({ documentId, url } = await createLarkFile(fileType, title, targetFolder));
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Không tạo được file Lark." };
   }
