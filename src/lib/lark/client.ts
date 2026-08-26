@@ -1,4 +1,8 @@
 import "server-only";
+import { LARK_FILE_TYPE_LABELS, type LarkFileType } from "./fileTypes";
+
+export type { LarkFileType } from "./fileTypes";
+export { LARK_FILE_TYPE_LABELS } from "./fileTypes";
 
 const LARK_API_BASE = "https://open.larksuite.com/open-apis";
 
@@ -27,35 +31,64 @@ async function getTenantAccessToken(): Promise<string> {
   return tokenCache.token;
 }
 
-export async function createLarkDoc(title: string): Promise<{ documentId: string; url: string }> {
+async function larkFetch(path: string, body: Record<string, unknown>) {
   const token = await getTenantAccessToken();
-  const folderToken = process.env.LARK_DOC_FOLDER_TOKEN?.trim();
-
-  const res = await fetch(`${LARK_API_BASE}/docx/v1/documents`, {
+  const res = await fetch(`${LARK_API_BASE}${path}`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ title, ...(folderToken ? { folder_token: folderToken } : {}) }),
+    body: JSON.stringify(body),
     cache: "no-store",
   });
   const data = await res.json();
   if (!res.ok || data.code !== 0) {
-    throw new Error(`Không tạo được tài liệu Lark: ${data.msg ?? res.statusText}`);
+    throw new Error(data.msg ?? res.statusText);
   }
+  return data.data;
+}
 
-  const documentId = data.data.document.document_id as string;
-  return { documentId, url: `https://${process.env.LARK_WORKSPACE_DOMAIN}/docx/${documentId}` };
+export type LarkFile = { documentId: string; url: string; type: LarkFileType };
+
+export async function createLarkFile(type: LarkFileType, title: string): Promise<LarkFile> {
+  const folderToken = process.env.LARK_DOC_FOLDER_TOKEN?.trim();
+  const folderField = folderToken ? { folder_token: folderToken } : {};
+
+  try {
+    switch (type) {
+      case "docx": {
+        const data = await larkFetch("/docx/v1/documents", { title, ...folderField });
+        const documentId = data.document.document_id as string;
+        return { documentId, url: `https://${process.env.LARK_WORKSPACE_DOMAIN}/docx/${documentId}`, type };
+      }
+      case "sheet": {
+        const data = await larkFetch("/sheets/v3/spreadsheets", { title, ...folderField });
+        return { documentId: data.spreadsheet.spreadsheet_token, url: data.spreadsheet.url, type };
+      }
+      case "bitable": {
+        const data = await larkFetch("/bitable/v1/apps", { name: title, ...folderField });
+        return { documentId: data.app.app_token, url: data.app.url, type };
+      }
+      case "folder": {
+        const data = await larkFetch("/drive/v1/files/create_folder", { name: title, ...folderField });
+        return { documentId: data.token, url: data.url, type };
+      }
+    }
+  } catch (err) {
+    const label = LARK_FILE_TYPE_LABELS[type];
+    throw new Error(`Không tạo được ${label}: ${err instanceof Error ? err.message : "lỗi không rõ"}`);
+  }
 }
 
 // Best-effort: sharing can fail if the email isn't a real member of the Lark
-// tenant. Callers must not fail doc creation when this throws.
+// tenant. Callers must not fail file creation when this throws.
 export async function shareLarkDocByEmail(
   documentId: string,
   email: string,
   perm: "view" | "edit" | "full_access",
+  type: LarkFileType = "docx",
 ): Promise<void> {
   const token = await getTenantAccessToken();
 
-  const res = await fetch(`${LARK_API_BASE}/drive/v1/permissions/${documentId}/members?type=docx`, {
+  const res = await fetch(`${LARK_API_BASE}/drive/v1/permissions/${documentId}/members?type=${type}`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     body: JSON.stringify({ member_type: "email", member_id: email, perm }),

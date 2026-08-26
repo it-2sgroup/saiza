@@ -3,13 +3,25 @@
 import { useActionState, useState } from "react";
 import { shareExistingDocument, type ShareExistingState } from "./actions";
 import { StaffSharePicker, type StaffOption, type ShareRow } from "./StaffSharePicker";
+import type { LarkFileType } from "@/lib/lark/client";
 
 const initialState: ShareExistingState = { error: null };
 
-export function ShareExistingDoc({ documentId, staff }: { documentId: string; staff: StaffOption[] }) {
+export function ShareExistingDoc({
+  documentId,
+  fileType = "docx",
+  staff,
+}: {
+  documentId: string;
+  fileType?: LarkFileType;
+  staff: StaffOption[];
+}) {
   const [open, setOpen] = useState(false);
   const [shares, setShares] = useState<ShareRow[]>([]);
-  const [state, formAction, pending] = useActionState(shareExistingDocument.bind(null, documentId), initialState);
+  const [state, formAction, pending] = useActionState(
+    shareExistingDocument.bind(null, documentId, fileType),
+    initialState,
+  );
 
   return (
     <div className="flex flex-col gap-2.5">

@@ -1,5 +1,5 @@
 import "server-only";
-import { shareLarkDocByEmail } from "./client";
+import { shareLarkDocByEmail, type LarkFileType } from "./client";
 
 export type SharePerm = "view" | "edit" | "full_access";
 export type ShareRow = { email: string; perm: SharePerm };
@@ -29,11 +29,15 @@ export function parseShareRows(raw: string): ShareRow[] {
   return rows;
 }
 
-export async function applyShareRows(documentId: string, rows: ShareRow[]): Promise<ShareResult[]> {
+export async function applyShareRows(
+  documentId: string,
+  rows: ShareRow[],
+  fileType: LarkFileType = "docx",
+): Promise<ShareResult[]> {
   const results: ShareResult[] = [];
   for (const row of rows) {
     try {
-      await shareLarkDocByEmail(documentId, row.email, row.perm);
+      await shareLarkDocByEmail(documentId, row.email, row.perm, fileType);
       results.push({ email: row.email, ok: true });
     } catch {
       results.push({ email: row.email, ok: false });

@@ -6,11 +6,12 @@ import { Avatar } from "../Avatar";
 import { LarkDocForm } from "./LarkDocForm";
 import { ShareExistingDoc } from "./ShareExistingDoc";
 import type { StaffOption } from "./StaffSharePicker";
+import { LARK_FILE_TYPE_LABELS, type LarkFileType } from "@/lib/lark/client";
 
 type AuditRow = {
   actor_id: string | null;
   target_id: string | null;
-  metadata: { title?: string; url?: string; shared?: boolean } | null;
+  metadata: { title?: string; url?: string; shared?: boolean; fileType?: LarkFileType } | null;
   created_at: string;
 };
 
@@ -85,7 +86,10 @@ export default async function AdminLarkPage() {
                     <span className="truncate text-[14.5px] font-medium">
                       {row.metadata?.title ?? "(không có tiêu đề)"}
                     </span>
-                    <span className="text-xs text-ink-2">{new Date(row.created_at).toLocaleString("vi-VN")}</span>
+                    <span className="text-xs text-ink-2">
+                      {LARK_FILE_TYPE_LABELS[row.metadata?.fileType ?? "docx"]} ·{" "}
+                      {new Date(row.created_at).toLocaleString("vi-VN")}
+                    </span>
                   </div>
                   {row.metadata?.url && (
                     <a
@@ -98,7 +102,9 @@ export default async function AdminLarkPage() {
                     </a>
                   )}
                 </div>
-                {row.target_id && <ShareExistingDoc documentId={row.target_id} staff={staff} />}
+                {row.target_id && (
+                  <ShareExistingDoc documentId={row.target_id} fileType={row.metadata?.fileType} staff={staff} />
+                )}
               </div>
             ))}
           </div>

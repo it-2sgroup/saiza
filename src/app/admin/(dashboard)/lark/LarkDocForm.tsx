@@ -7,6 +7,7 @@ import { StaffSharePicker, type StaffOption, type ShareRow } from "./StaffShareP
 import { DEPARTMENTS, ORG_CODES } from "@/lib/admin/departments";
 import { DOC_TYPES, VERSION_OPTIONS } from "@/lib/admin/docTypes";
 import { buildFileName, todayYYYYMMDD, dateInputToYYYYMMDD, MAX_FILENAME_LENGTH } from "@/lib/admin/fileNaming";
+import { LARK_FILE_TYPE_LABELS, type LarkFileType } from "@/lib/lark/fileTypes";
 
 const initialState: LarkDocFormState = { error: null };
 const fieldClasses =
@@ -17,6 +18,9 @@ const ORG_OPTIONS = [{ value: "", label: "Không riêng" }, ...ORG_CODES.map((o)
 const DEPARTMENT_OPTIONS = DEPARTMENTS.map((d) => ({ value: d.code, label: `${d.code} — ${d.label}` }));
 const DOC_TYPE_OPTIONS = [...DOC_TYPES.map((d) => ({ value: d.code, label: `${d.label} (${d.code})` })), { value: "Khác", label: "Khác…" }];
 const VERSION_SELECT_OPTIONS = VERSION_OPTIONS.map((v) => ({ value: v, label: v }));
+const FILE_TYPE_OPTIONS = (Object.entries(LARK_FILE_TYPE_LABELS) as [LarkFileType, string][]).map(
+  ([value, label]) => ({ value, label }),
+);
 
 export function LarkDocForm({
   defaultDepartment,
@@ -30,6 +34,7 @@ export function LarkDocForm({
 
   const [shareOpen, setShareOpen] = useState(false);
   const [shares, setShares] = useState<ShareRow[]>([]);
+  const [fileType, setFileType] = useState<LarkFileType>("docx");
   const [org, setOrg] = useState("");
   const [department, setDepartment] = useState(defaultDepartment ?? "");
   const [docType, setDocType] = useState(DOC_TYPES[0].code);
@@ -67,6 +72,17 @@ export function LarkDocForm({
         action={(formData) => formAction(formData)}
         className="flex flex-col gap-4 rounded-card border border-line bg-card p-5"
       >
+        <div className="flex flex-col gap-1.5">
+          <label className={labelClasses}>Loại file</label>
+          <Combobox
+            name="fileType"
+            value={fileType}
+            options={FILE_TYPE_OPTIONS}
+            onChange={(v) => setFileType(v as LarkFileType)}
+            buttonClassName={`${fieldClasses} flex w-full items-center justify-between gap-2 text-left`}
+          />
+        </div>
+
         <div className="grid grid-cols-3 gap-3">
           <div className="flex flex-col gap-1.5">
             <label className={labelClasses}>Mã tổ chức</label>
@@ -232,7 +248,7 @@ export function LarkDocForm({
           disabled={pending || !preview}
           className="w-fit cursor-pointer rounded-full bg-accent px-6 py-2.5 text-sm font-semibold text-white transition-colors duration-300 ease-soft hover:bg-ink disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {pending ? "Đang tạo..." : "Tạo tài liệu Lark"}
+          {pending ? "Đang tạo..." : `Tạo ${LARK_FILE_TYPE_LABELS[fileType]}`}
         </button>
       </form>
 

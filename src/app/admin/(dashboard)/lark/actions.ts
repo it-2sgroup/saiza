@@ -4,10 +4,12 @@ import { revalidatePath } from "next/cache";
 import { getCurrentProfile } from "@/lib/supabase/profile";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { recordAuditLog } from "@/lib/admin/audit";
-import { createLarkDoc, shareLarkDocByEmail } from "@/lib/lark/client";
+import { createLarkFile, shareLarkDocByEmail, type LarkFileType } from "@/lib/lark/client";
 import { parseShareRows, applyShareRows, type ShareResult } from "@/lib/lark/shareRows";
 import { DEPARTMENT_CODES, ORG_CODES } from "@/lib/admin/departments";
 import { buildFileName, MAX_FILENAME_LENGTH } from "@/lib/admin/fileNaming";
+
+const VALID_FILE_TYPES: LarkFileType[] = ["docx", "sheet", "bitable", "folder"];
 
 export type LarkDocFormState = {
   error: string | null;
@@ -19,6 +21,9 @@ export type LarkDocFormState = {
 export async function createLarkDocument(_prev: LarkDocFormState, formData: FormData): Promise<LarkDocFormState> {
   const profile = await getCurrentProfile();
   if (!profile) return { error: "Bạn cần đăng nhập lại." };
+
+  const fileType = String(formData.get("fileType") ?? "docx").trim() as LarkFileType;
+  if (!VALID_FILE_TYPES.includes(fileType)) return { error: "Loại file không hợp lệ." };
 
   const org = String(formData.get("org") ?? "").trim();
   const department = String(formData.get("department") ?? "").trim();
@@ -45,9 +50,9 @@ export async function createLarkDocument(_prev: LarkDocFormState, formData: Form
   let documentId: string;
   let url: string;
   try {
-    ({ documentId, url } = await createLarkDoc(title));
+    ({ documentId, url } = await createLarkFile(fileType, title));
   } catch (err) {
-    return { error: err instanceof Error ? err.message : "Không tạo được tài liệu Lark." };
+    return { error: err instanceof Error ? err.message : "Không tạo được file Lark." };
   }
 
   let shared = false;
@@ -56,7 +61,7 @@ export async function createLarkDocument(_prev: LarkDocFormState, formData: Form
   const email = userData?.user?.email;
   if (email) {
     try {
-      await shareLarkDocByEmail(documentId, email, "full_access");
+      await shareLarkDocByEmail(documentId, email, "full_access", fileType);
       shared = true;
     } catch {
       // Best-effort — employee still gets the link, just may need manual access.
@@ -64,14 +69,14 @@ export async function createLarkDocument(_prev: LarkDocFormState, formData: Form
   }
 
   const shareRows = parseShareRows(String(formData.get("shares") ?? "[]")).filter((r) => r.email !== email);
-  const shareResults = await applyShareRows(documentId, shareRows);
+  const shareResults = await applyShareRows(documentId, shareRows, fileType);
 
   await recordAuditLog({
     actorId: profile.id,
     action: "lark_doc_created",
     targetTable: "lark_docs",
     targetId: documentId,
-    metadata: { title, url, shared, shares: shareResults },
+    metadata: { title, url, shared, shares: shareResults, fileType },
   });
 
   revalidatePath("/admin/lark");
@@ -82,6 +87,7 @@ export type ShareExistingState = { error: string | null; shareResults?: ShareRes
 
 export async function shareExistingDocument(
   documentId: string,
+  fileType: LarkFileType,
   _prev: ShareExistingState,
   formData: FormData,
 ): Promise<ShareExistingState> {
@@ -91,7 +97,7 @@ export async function shareExistingDocument(
   const rows = parseShareRows(String(formData.get("shares") ?? "[]"));
   if (rows.length === 0) return { error: "Chọn ít nhất một người để chia sẻ." };
 
-  const shareResults = await applyShareRows(documentId, rows);
+  const shareResults = await applyShareRows(documentId, rows, fileType);
 
   await recordAuditLog({
     actorId: profile.id,
