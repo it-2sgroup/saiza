@@ -6,13 +6,13 @@ export type DocTypeCode = {
 };
 
 export const DOC_TYPES: DocTypeCode[] = [
-  { code: "BáoCáo", label: "Báo cáo", usage: "Báo cáo định kỳ, báo cáo dự án" },
-  { code: "KếHoạch", label: "Kế hoạch", usage: "Kế hoạch, đề xuất" },
-  { code: "HợpĐồng", label: "Hợp đồng", usage: "Hợp đồng, phụ lục hợp đồng" },
-  { code: "BiênBản", label: "Biên bản", usage: "Biên bản họp / nghiệm thu" },
-  { code: "TàiLiệu", label: "Tài liệu", usage: "Tài liệu kỹ thuật, hướng dẫn" },
+  { code: "Báo Cáo", label: "Báo cáo", usage: "Báo cáo định kỳ, báo cáo dự án" },
+  { code: "Kế Hoạch", label: "Kế hoạch", usage: "Kế hoạch, đề xuất" },
+  { code: "Hợp Đồng", label: "Hợp đồng", usage: "Hợp đồng, phụ lục hợp đồng" },
+  { code: "Biên Bản", label: "Biên bản", usage: "Biên bản họp / nghiệm thu" },
+  { code: "Tài Liệu", label: "Tài liệu", usage: "Tài liệu kỹ thuật, hướng dẫn" },
   { code: "Template", label: "Template", usage: "Biểu mẫu, mẫu dùng lại" },
-  { code: "ChínhSách", label: "Chính sách", usage: "Chính sách nội bộ" },
+  { code: "Chính Sách", label: "Chính sách", usage: "Chính sách nội bộ" },
 ];
 
 export const VERSION_OPTIONS = ["v1", "v2", "v3", "draft", "final"] as const;

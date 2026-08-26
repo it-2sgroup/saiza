@@ -213,7 +213,7 @@ export function LarkDocForm({
               name="docTypeOther"
               value={docTypeOther}
               onChange={(e) => setDocTypeOther(e.target.value)}
-              placeholder="Ví dụ: ĐềXuất"
+              placeholder="Ví dụ: Đề Xuất"
               className={fieldClasses}
             />
           </div>

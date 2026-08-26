@@ -2,15 +2,15 @@
 // [MãTổChức-]MãPhòngBan_LoạiTàiLiệu_NộiDung_YYYYMMDD_Version, tối đa ~80 ký tự.
 const UNSAFE_CHARS = /[\\/:*?"<>|]/g;
 
-// "chiến dịch q3" -> "ChiếnDịchQ3" — PascalCase theo từng từ, giữ dấu tiếng Việt, bỏ khoảng trắng.
-export function toPascalCaseVN(input: string): string {
+// "chiến dịch q3" -> "Chiến Dịch Q3" — viết hoa đầu mỗi từ, giữ dấu tiếng Việt và khoảng trắng giữa các từ.
+export function toTitleCaseVN(input: string): string {
   return input
     .trim()
     .replace(UNSAFE_CHARS, "")
     .split(/\s+/)
     .filter(Boolean)
     .map((word) => word.charAt(0).toLocaleUpperCase("vi") + word.slice(1))
-    .join("");
+    .join(" ");
 }
 
 export function todayYYYYMMDD(): string {
@@ -44,7 +44,7 @@ export function buildFileName(parts: FileNameParts): string {
       ? `${parts.org}-${parts.department}`
       : parts.department
     : parts.org;
-  const segments = [deptSegment, parts.docType, toPascalCaseVN(parts.content), parts.date, parts.version].filter(
+  const segments = [deptSegment, parts.docType, toTitleCaseVN(parts.content), parts.date, parts.version].filter(
     (s): s is string => !!s,
   );
   const base = segments.join("_");
@@ -67,6 +67,6 @@ export function buildFolderName(parts: FolderNameParts): string {
       ? `${parts.org}-${parts.department}`
       : parts.department
     : parts.org;
-  const segments = [deptSegment, toPascalCaseVN(parts.name)].filter((s): s is string => !!s);
+  const segments = [deptSegment, toTitleCaseVN(parts.name)].filter((s): s is string => !!s);
   return segments.join("_");
 }
