@@ -66,7 +66,7 @@ export function Combobox({ value, options, onChange, name, buttonClassName, pane
           role="listbox"
           className={
             panelClassName ??
-            "absolute z-20 mt-1.5 w-full min-w-[160px] overflow-hidden rounded-2xl border border-line bg-card p-1.5 shadow-[0_16px_32px_rgba(22,33,62,0.18)]"
+            "absolute z-20 mt-1.5 max-h-72 w-full min-w-[160px] overflow-y-auto rounded-2xl border border-line bg-card p-1.5 shadow-[0_16px_32px_rgba(22,33,62,0.18)]"
           }
         >
           {options.map((o) => (
