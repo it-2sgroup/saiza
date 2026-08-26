@@ -29,31 +29,49 @@ export async function createLarkDocument(_prev: LarkDocFormState, formData: Form
   const targetFolder = String(formData.get("targetFolder") ?? "").trim() || undefined;
 
   const org = String(formData.get("org") ?? "").trim();
-  const department = String(formData.get("department") ?? "").trim();
   const content = String(formData.get("content") ?? "").trim();
-
+  if (!content) return { error: fileType === "folder" ? "Nhập tên thư mục." : "Nhập nội dung/dự án." };
   if (org && !(ORG_CODES as readonly string[]).includes(org)) return { error: "Mã tổ chức không hợp lệ." };
-  if (!department || !DEPARTMENT_CODES.includes(department)) return { error: "Chọn phòng ban." };
+
+  const includeDept = formData.get("includeDept") === "on";
+  let department: string | null = null;
+  if (includeDept) {
+    department = String(formData.get("department") ?? "").trim();
+    if (!department || !DEPARTMENT_CODES.includes(department)) return { error: "Chọn phòng ban." };
+  }
 
   let title: string;
   if (fileType === "folder") {
-    if (!content) return { error: "Nhập tên thư mục." };
     title = buildFolderName({ org: org || null, department, name: content });
   } else {
-    const docTypeRaw = String(formData.get("docType") ?? "").trim();
-    const docTypeOther = String(formData.get("docTypeOther") ?? "").trim();
-    const date = String(formData.get("date") ?? "").trim();
-    const version = String(formData.get("version") ?? "").trim();
+    const includeDocType = formData.get("includeDocType") === "on";
+    const includeDate = formData.get("includeDate") === "on";
+    const includeVersion = formData.get("includeVersion") === "on";
     const wip = formData.get("wip") === "on";
 
-    const docType = docTypeRaw === "Khác" ? docTypeOther : docTypeRaw;
-    if (!docType) return { error: "Chọn hoặc nhập loại tài liệu." };
-    if (!content) return { error: "Nhập nội dung/dự án." };
-    if (!/^\d{8}$/.test(date)) return { error: "Ngày không hợp lệ." };
-    if (!version) return { error: "Chọn version." };
+    let docType: string | null = null;
+    if (includeDocType) {
+      const docTypeRaw = String(formData.get("docType") ?? "").trim();
+      const docTypeOther = String(formData.get("docTypeOther") ?? "").trim();
+      docType = docTypeRaw === "Khác" ? docTypeOther : docTypeRaw;
+      if (!docType) return { error: "Chọn hoặc nhập loại tài liệu." };
+    }
+
+    let date: string | null = null;
+    if (includeDate) {
+      date = String(formData.get("date") ?? "").trim();
+      if (!/^\d{8}$/.test(date)) return { error: "Ngày không hợp lệ." };
+    }
+
+    let version: string | null = null;
+    if (includeVersion) {
+      version = String(formData.get("version") ?? "").trim();
+      if (!version) return { error: "Chọn version." };
+    }
 
     title = buildFileName({ org: org || null, department, docType, content, date, version, wip });
   }
+  if (!title) return { error: "Nội dung/tên không hợp lệ để đặt tên file." };
 
   if (title.length > MAX_FILENAME_LENGTH) {
     return { error: `Tên file dài ${title.length} ký tự, vượt giới hạn ${MAX_FILENAME_LENGTH}. Rút ngắn nội dung.` };

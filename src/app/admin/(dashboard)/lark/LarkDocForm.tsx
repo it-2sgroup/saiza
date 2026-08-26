@@ -64,23 +64,43 @@ export function LarkDocForm({
   const [wip, setWip] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  const [includeDept, setIncludeDept] = useState(true);
+  const [includeDocType, setIncludeDocType] = useState(true);
+  const [includeDate, setIncludeDate] = useState(true);
+  const [includeVersion, setIncludeVersion] = useState(true);
+
   const isFolder = fileType === "folder";
   const effectiveDocType = docType === "Khác" ? docTypeOther.trim() : docType;
 
   const preview = useMemo(() => {
-    if (!department || !content.trim()) return null;
-    if (isFolder) return buildFolderName({ org: org || null, department, name: content });
-    if (!effectiveDocType) return null;
+    if (!content.trim()) return null;
+    const dept = includeDept ? department || null : null;
+    if (includeDept && !department) return null;
+    if (isFolder) return buildFolderName({ org: org || null, department: dept, name: content });
+    if (includeDocType && !effectiveDocType) return null;
     return buildFileName({
       org: org || null,
-      department,
-      docType: effectiveDocType,
+      department: dept,
+      docType: includeDocType ? effectiveDocType || null : null,
       content,
-      date: dateInputToYYYYMMDD(dateInput),
-      version,
+      date: includeDate ? dateInputToYYYYMMDD(dateInput) : null,
+      version: includeVersion ? version : null,
       wip,
     });
-  }, [isFolder, org, department, effectiveDocType, content, dateInput, version, wip]);
+  }, [
+    isFolder,
+    org,
+    department,
+    includeDept,
+    effectiveDocType,
+    includeDocType,
+    content,
+    dateInput,
+    includeDate,
+    version,
+    includeVersion,
+    wip,
+  ]);
 
   const previewTooLong = preview !== null && preview.length > MAX_FILENAME_LENGTH;
 
@@ -129,29 +149,55 @@ export function LarkDocForm({
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className={labelClasses}>Phòng ban</label>
-            <Combobox
-              name="department"
-              value={department}
-              options={DEPARTMENT_OPTIONS}
-              onChange={setDepartment}
-              buttonClassName={`${fieldClasses} flex w-full items-center justify-between gap-2 text-left`}
-            />
+            <label className={`${labelClasses} flex items-center gap-1.5`}>
+              <input
+                type="checkbox"
+                name="includeDept"
+                checked={includeDept}
+                onChange={(e) => setIncludeDept(e.target.checked)}
+                className="h-3 w-3 accent-accent"
+              />
+              Phòng ban
+            </label>
+            {includeDept ? (
+              <Combobox
+                name="department"
+                value={department}
+                options={DEPARTMENT_OPTIONS}
+                onChange={setDepartment}
+                buttonClassName={`${fieldClasses} flex w-full items-center justify-between gap-2 text-left`}
+              />
+            ) : (
+              <div className={`${fieldClasses} text-ink-2/50`}>Không đưa vào tên file</div>
+            )}
           </div>
           {!isFolder && (
             <div className="flex flex-col gap-1.5">
-              <label className={labelClasses}>Loại tài liệu</label>
-              <Combobox
-                name="docType"
-                value={docType}
-                options={DOC_TYPE_OPTIONS}
-                onChange={setDocType}
-                buttonClassName={`${fieldClasses} flex w-full items-center justify-between gap-2 text-left`}
-              />
+              <label className={`${labelClasses} flex items-center gap-1.5`}>
+                <input
+                  type="checkbox"
+                  name="includeDocType"
+                  checked={includeDocType}
+                  onChange={(e) => setIncludeDocType(e.target.checked)}
+                  className="h-3 w-3 accent-accent"
+                />
+                Loại tài liệu
+              </label>
+              {includeDocType ? (
+                <Combobox
+                  name="docType"
+                  value={docType}
+                  options={DOC_TYPE_OPTIONS}
+                  onChange={setDocType}
+                  buttonClassName={`${fieldClasses} flex w-full items-center justify-between gap-2 text-left`}
+                />
+              ) : (
+                <div className={`${fieldClasses} text-ink-2/50`}>Không đưa vào tên file</div>
+              )}
             </div>
           )}
         </div>
-        {!defaultDepartment && (
+        {includeDept && !defaultDepartment && (
           <p className="-mt-1.5 text-xs text-amber-700">
             Hồ sơ của bạn chưa gán phòng ban cố định — chọn tạm ở đây, hoặc báo Quản trị vào Nhân sự để gán.
           </p>
@@ -191,26 +237,50 @@ export function LarkDocForm({
         {!isFolder && (
           <div className="grid grid-cols-3 items-end gap-3">
             <div className="flex flex-col gap-1.5">
-              <label className={labelClasses}>Version</label>
-              <Combobox
-                name="version"
-                value={version}
-                options={VERSION_SELECT_OPTIONS}
-                onChange={setVersion}
-                buttonClassName={`${fieldClasses} flex w-full items-center justify-between gap-2 text-left`}
-              />
+              <label className={`${labelClasses} flex items-center gap-1.5`}>
+                <input
+                  type="checkbox"
+                  name="includeVersion"
+                  checked={includeVersion}
+                  onChange={(e) => setIncludeVersion(e.target.checked)}
+                  className="h-3 w-3 accent-accent"
+                />
+                Version
+              </label>
+              {includeVersion ? (
+                <Combobox
+                  name="version"
+                  value={version}
+                  options={VERSION_SELECT_OPTIONS}
+                  onChange={setVersion}
+                  buttonClassName={`${fieldClasses} flex w-full items-center justify-between gap-2 text-left`}
+                />
+              ) : (
+                <div className={`${fieldClasses} text-ink-2/50`}>Không đưa vào tên file</div>
+              )}
             </div>
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="date" className={labelClasses}>
+              <label htmlFor="date" className={`${labelClasses} flex items-center gap-1.5`}>
+                <input
+                  type="checkbox"
+                  name="includeDate"
+                  checked={includeDate}
+                  onChange={(e) => setIncludeDate(e.target.checked)}
+                  className="h-3 w-3 accent-accent"
+                />
                 Ngày
               </label>
-              <input
-                id="date"
-                type="date"
-                value={dateInput}
-                onChange={(e) => setDateInput(e.target.value)}
-                className={fieldClasses}
-              />
+              {includeDate ? (
+                <input
+                  id="date"
+                  type="date"
+                  value={dateInput}
+                  onChange={(e) => setDateInput(e.target.value)}
+                  className={fieldClasses}
+                />
+              ) : (
+                <div className={`${fieldClasses} text-ink-2/50`}>Không đưa vào tên file</div>
+              )}
             </div>
             <label className="flex items-center gap-2 pb-2.5">
               <input
@@ -225,7 +295,7 @@ export function LarkDocForm({
           </div>
         )}
 
-        {!isFolder && <input type="hidden" name="date" value={dateInputToYYYYMMDD(dateInput)} />}
+        {!isFolder && includeDate && <input type="hidden" name="date" value={dateInputToYYYYMMDD(dateInput)} />}
 
         <div className="flex items-center gap-2 rounded-xl border border-line bg-wash px-3.5 py-2.5">
           <span className="min-w-0 flex-1 truncate font-mono text-[13.5px] text-ink">

@@ -26,20 +26,28 @@ export function dateInputToYYYYMMDD(value: string): string {
   return value.replaceAll("-", "");
 }
 
+// Mỗi tiền tố (phòng ban/loại tài liệu/ngày/version) là tuỳ chọn — truyền null
+// để bỏ qua đoạn đó khỏi tên file thay vì bắt buộc phải có đủ.
 export type FileNameParts = {
   org?: string | null;
-  department: string;
-  docType: string;
+  department: string | null;
+  docType: string | null;
   content: string;
-  date: string; // YYYYMMDD
-  version: string;
+  date: string | null; // YYYYMMDD
+  version: string | null;
   wip?: boolean;
 };
 
 export function buildFileName(parts: FileNameParts): string {
-  const deptSegment = parts.org ? `${parts.org}-${parts.department}` : parts.department;
-  const contentSegment = toPascalCaseVN(parts.content);
-  const base = [deptSegment, parts.docType, contentSegment, parts.date, parts.version].join("_");
+  const deptSegment = parts.department
+    ? parts.org
+      ? `${parts.org}-${parts.department}`
+      : parts.department
+    : parts.org;
+  const segments = [deptSegment, parts.docType, toPascalCaseVN(parts.content), parts.date, parts.version].filter(
+    (s): s is string => !!s,
+  );
+  const base = segments.join("_");
   return parts.wip ? `WIP_${base}` : base;
 }
 
@@ -49,11 +57,16 @@ export const MAX_FILENAME_LENGTH = 80;
 // ban + tên, không có LoạiTàiLiệu/Ngày/Version như file.
 export type FolderNameParts = {
   org?: string | null;
-  department: string;
+  department: string | null;
   name: string;
 };
 
 export function buildFolderName(parts: FolderNameParts): string {
-  const deptSegment = parts.org ? `${parts.org}-${parts.department}` : parts.department;
-  return [deptSegment, toPascalCaseVN(parts.name)].join("_");
+  const deptSegment = parts.department
+    ? parts.org
+      ? `${parts.org}-${parts.department}`
+      : parts.department
+    : parts.org;
+  const segments = [deptSegment, toPascalCaseVN(parts.name)].filter((s): s is string => !!s);
+  return segments.join("_");
 }
