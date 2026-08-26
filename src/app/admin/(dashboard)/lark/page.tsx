@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { departmentLabel } from "@/lib/admin/departments";
 import { canManageStaff } from "@/lib/admin/permissions";
 import { Avatar } from "../Avatar";
-import { LarkDocForm } from "./LarkDocForm";
+import { CreateFileModal } from "./CreateFileModal";
 import { ShareExistingDoc } from "./ShareExistingDoc";
 import { DeleteLarkFileButton } from "./DeleteLarkFileButton";
 import type { StaffOption } from "./StaffSharePicker";
@@ -99,7 +99,7 @@ export default async function AdminLarkPage() {
         </div>
       </div>
 
-      <LarkDocForm defaultDepartment={profile.department} staff={staff} foldersByOrg={foldersByOrg} />
+      <CreateFileModal defaultDepartment={profile.department} staff={staff} foldersByOrg={foldersByOrg} />
 
       <div className="flex flex-col gap-2.5">
         <div className="flex items-center justify-between gap-4">

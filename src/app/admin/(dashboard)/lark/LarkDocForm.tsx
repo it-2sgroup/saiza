@@ -19,15 +19,16 @@ const ORG_OPTIONS = [{ value: "", label: "Không riêng" }, ...ORG_CODES.map((o)
 const DEPARTMENT_OPTIONS = DEPARTMENTS.map((d) => ({ value: d.code, label: `${d.code} — ${d.label}` }));
 const DOC_TYPE_OPTIONS = [...DOC_TYPES.map((d) => ({ value: d.code, label: `${d.label} (${d.code})` })), { value: "Khác", label: "Khác…" }];
 const VERSION_SELECT_OPTIONS = VERSION_OPTIONS.map((v) => ({ value: v, label: v }));
-const FILE_TYPE_OPTIONS = (Object.entries(LARK_FILE_TYPE_LABELS) as [LarkFileType, string][]).map(
-  ([value, label]) => ({ value, label }),
-);
 
 export function LarkDocForm({
+  fileType,
+  onBack,
   defaultDepartment,
   staff,
   foldersByOrg,
 }: {
+  fileType: LarkFileType;
+  onBack: () => void;
   defaultDepartment: string | null;
   staff: StaffOption[];
   foldersByOrg: Record<string, FolderOption[]>;
@@ -37,7 +38,6 @@ export function LarkDocForm({
 
   const [shareOpen, setShareOpen] = useState(false);
   const [shares, setShares] = useState<ShareRow[]>([]);
-  const [fileType, setFileType] = useState<LarkFileType>("docx");
   const [targetFolder, setTargetFolder] = useState("");
   const [org, setOrg] = useState("");
 
@@ -77,32 +77,32 @@ export function LarkDocForm({
 
   return (
     <div className="flex flex-col gap-3">
+      <button
+        type="button"
+        onClick={onBack}
+        className="flex w-fit cursor-pointer items-center gap-1.5 text-sm font-medium text-ink-2 hover:text-ink"
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="m15 18-6-6 6-6" />
+        </svg>
+        Đổi loại file
+      </button>
+
       <form
         ref={formRef}
         action={(formData) => formAction(formData)}
         className="flex flex-col gap-4 rounded-card border border-line bg-card p-5"
       >
-        <div className="grid grid-cols-2 gap-3">
-          <div className="flex flex-col gap-1.5">
-            <label className={labelClasses}>Loại file</label>
-            <Combobox
-              name="fileType"
-              value={fileType}
-              options={FILE_TYPE_OPTIONS}
-              onChange={(v) => setFileType(v as LarkFileType)}
-              buttonClassName={`${fieldClasses} flex w-full items-center justify-between gap-2 text-left`}
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label className={labelClasses}>Tạo trong thư mục</label>
-            <Combobox
-              name="targetFolder"
-              value={targetFolder}
-              options={FOLDER_OPTIONS}
-              onChange={setTargetFolder}
-              buttonClassName={`${fieldClasses} flex w-full items-center justify-between gap-2 text-left`}
-            />
-          </div>
+        <input type="hidden" name="fileType" value={fileType} />
+        <div className="flex flex-col gap-1.5">
+          <label className={labelClasses}>Tạo trong thư mục</label>
+          <Combobox
+            name="targetFolder"
+            value={targetFolder}
+            options={FOLDER_OPTIONS}
+            onChange={setTargetFolder}
+            buttonClassName={`${fieldClasses} flex w-full items-center justify-between gap-2 text-left`}
+          />
         </div>
 
         <div className="grid grid-cols-3 gap-3">
@@ -278,13 +278,13 @@ export function LarkDocForm({
       </form>
 
       {state.url && (
-        <div className="flex flex-col gap-1.5 rounded-card border border-line bg-card p-4">
+        <div className="flex flex-col gap-2.5 rounded-card border border-line bg-card p-4">
           <span className="text-sm font-semibold">Đã tạo &quot;{state.title}&quot;</span>
           <a href={state.url} target="_blank" rel="noreferrer" className="text-sm text-accent underline break-all">
             {state.url}
           </a>
           {state.shareResults && state.shareResults.length > 0 && (
-            <div className="mt-1 flex flex-col gap-1 border-t border-line pt-3">
+            <div className="flex flex-col gap-1 border-t border-line pt-3">
               {state.shareResults.map((r) => (
                 <span key={r.email} className="text-xs text-ink-2">
                   {r.ok ? "✓" : "✗"} {r.email} {r.ok ? "" : "— chia sẻ thất bại, có thể chưa có tài khoản Lark"}
@@ -292,6 +292,13 @@ export function LarkDocForm({
               ))}
             </div>
           )}
+          <button
+            type="button"
+            onClick={onBack}
+            className="w-fit cursor-pointer text-xs font-semibold text-accent hover:text-ink"
+          >
+            + Tạo file khác
+          </button>
         </div>
       )}
     </div>
