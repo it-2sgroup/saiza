@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 type Option = { value: string; label: string };
 
@@ -13,15 +14,41 @@ type ComboboxProps = {
   panelClassName?: string;
 };
 
+type PanelRect = { top: number; left: number; width: number };
+
 export function Combobox({ value, options, onChange, name, buttonClassName, panelClassName }: ComboboxProps) {
   const [open, setOpen] = useState(false);
+  const [rect, setRect] = useState<PanelRect | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const selected = options.find((o) => o.value === value);
+
+  // Position the portaled panel from the trigger's real screen coordinates
+  // instead of relying on `position: absolute` inside whatever scroll
+  // container happens to wrap this Combobox (e.g. a modal) — that let the
+  // panel's overflow force the modal itself to grow a second scrollbar.
+  useLayoutEffect(() => {
+    if (!open || !rootRef.current) return;
+    const updateRect = () => {
+      const r = rootRef.current!.getBoundingClientRect();
+      setRect({ top: r.bottom + 6, left: r.left, width: r.width });
+    };
+    updateRect();
+    window.addEventListener("resize", updateRect);
+    window.addEventListener("scroll", updateRect, true);
+    return () => {
+      window.removeEventListener("resize", updateRect);
+      window.removeEventListener("scroll", updateRect, true);
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
     const onPointerDown = (e: MouseEvent) => {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      if (rootRef.current?.contains(target)) return;
+      if (panelRef.current?.contains(target)) return;
+      setOpen(false);
     };
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
@@ -61,33 +88,38 @@ export function Combobox({ value, options, onChange, name, buttonClassName, pane
         </svg>
       </button>
 
-      {open && (
-        <div
-          role="listbox"
-          className={
-            panelClassName ??
-            "absolute z-20 mt-1.5 max-h-72 w-full min-w-[160px] overflow-y-auto rounded-2xl border border-line bg-card p-1.5 shadow-[0_16px_32px_rgba(22,33,62,0.18)]"
-          }
-        >
-          {options.map((o) => (
-            <button
-              key={o.value}
-              type="button"
-              role="option"
-              aria-selected={o.value === value}
-              onClick={() => {
-                onChange(o.value);
-                setOpen(false);
-              }}
-              className={`flex w-full cursor-pointer items-center rounded-xl px-3 py-2 text-left text-sm font-medium transition-colors duration-200 ease-soft ${
-                o.value === value ? "bg-accent text-white" : "text-ink hover:bg-wash"
-              }`}
-            >
-              {o.label}
-            </button>
-          ))}
-        </div>
-      )}
+      {open &&
+        rect &&
+        createPortal(
+          <div
+            ref={panelRef}
+            role="listbox"
+            style={{ position: "fixed", top: rect.top, left: rect.left, width: rect.width }}
+            className={
+              panelClassName ??
+              "z-[100] max-h-72 min-w-[160px] overflow-y-auto rounded-2xl border border-line bg-card p-1.5 shadow-[0_16px_32px_rgba(22,33,62,0.18)]"
+            }
+          >
+            {options.map((o) => (
+              <button
+                key={o.value}
+                type="button"
+                role="option"
+                aria-selected={o.value === value}
+                onClick={() => {
+                  onChange(o.value);
+                  setOpen(false);
+                }}
+                className={`flex w-full cursor-pointer items-center rounded-xl px-3 py-2 text-left text-sm font-medium transition-colors duration-200 ease-soft ${
+                  o.value === value ? "bg-accent text-white" : "text-ink hover:bg-wash"
+                }`}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }
