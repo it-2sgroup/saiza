@@ -4,7 +4,7 @@ import { useActionState, useMemo, useRef, useState } from "react";
 import { createLarkDocument, type LarkDocFormState } from "./actions";
 import { Combobox } from "../Combobox";
 import { StaffSharePicker, type StaffOption, type ShareRow } from "./StaffSharePicker";
-import { DEPARTMENTS, ORG_CODES } from "@/lib/admin/departments";
+import { DEPARTMENTS, ORG_CODES, departmentLabel } from "@/lib/admin/departments";
 import { DOC_TYPES, VERSION_OPTIONS } from "@/lib/admin/docTypes";
 import {
   buildFileName,
@@ -49,12 +49,6 @@ export function LarkDocForm({
   const [shares, setShares] = useState<ShareRow[]>([]);
   const [targetFolder, setTargetFolder] = useState("");
   const [org, setOrg] = useState(prefs.defaultOrg ?? "");
-
-  const rootLabel = org ? `— Thư mục gốc (${org}) —` : "— Thư mục gốc (dùng chung) —";
-  const FOLDER_OPTIONS = [
-    { value: "", label: rootLabel },
-    ...(foldersByOrg[org] ?? []).map((f) => ({ value: f.token, label: `${"　".repeat(f.depth - 1)}└ ${f.name}` })),
-  ];
   const [department, setDepartment] = useState(defaultDepartment ?? "");
   const [docType, setDocType] = useState(DOC_TYPES[0].code);
   const [docTypeOther, setDocTypeOther] = useState("");
@@ -71,6 +65,17 @@ export function LarkDocForm({
   const [includeDocType, setIncludeDocType] = useState(prefs.includeDocType ?? DEFAULT_LARK_PREFS.includeDocType);
   const [includeDate, setIncludeDate] = useState(prefs.includeDate ?? DEFAULT_LARK_PREFS.includeDate);
   const [includeVersion, setIncludeVersion] = useState(prefs.includeVersion ?? DEFAULT_LARK_PREFS.includeVersion);
+
+  const autoDeptLabel = includeDept && department ? ` — thư mục ${departmentLabel(department) ?? department}` : "";
+  const rootLabel = org
+    ? `— Tự động (${org}${autoDeptLabel}) —`
+    : autoDeptLabel
+      ? `— Tự động (${departmentLabel(department) ?? department}) —`
+      : "— Thư mục gốc (dùng chung) —";
+  const FOLDER_OPTIONS = [
+    { value: "", label: rootLabel },
+    ...(foldersByOrg[org] ?? []).map((f) => ({ value: f.token, label: `${"　".repeat(f.depth - 1)}└ ${f.name}` })),
+  ];
 
   const isFolder = fileType === "folder";
   const effectiveDocType = docType === "Khác" ? docTypeOther.trim() : docType;
@@ -135,6 +140,12 @@ export function LarkDocForm({
             onChange={setTargetFolder}
             buttonClassName={`${fieldClasses} flex w-full items-center justify-between gap-2 text-left`}
           />
+          {!targetFolder && includeDept && department && (
+            <p className="text-xs text-ink-2">
+              Để trống sẽ tự động vào đúng thư mục phòng ban {departmentLabel(department) ?? department}, tạo sẵn nếu
+              chưa có.
+            </p>
+          )}
         </div>
 
         <div className={`grid gap-3 ${isFolder ? "grid-cols-2" : "grid-cols-3"}`}>

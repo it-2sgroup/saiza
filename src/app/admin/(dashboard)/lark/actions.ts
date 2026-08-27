@@ -7,6 +7,7 @@ import { recordAuditLog } from "@/lib/admin/audit";
 import { createLarkFile, deleteLarkFile, shareLarkDocByEmail, type LarkFileType } from "@/lib/lark/client";
 import { parseShareRows, applyShareRows, type ShareResult } from "@/lib/lark/shareRows";
 import { resolveRootFolderToken } from "@/lib/lark/orgFolders";
+import { getOrCreateDepartmentFolder } from "@/lib/lark/folderRegistry";
 import { DEPARTMENT_CODES, ORG_CODES } from "@/lib/admin/departments";
 import { buildFileName, buildFolderName, MAX_FILENAME_LENGTH } from "@/lib/admin/fileNaming";
 import { canDelete } from "@/lib/admin/permissions";
@@ -79,7 +80,13 @@ export async function createLarkDocument(_prev: LarkDocFormState, formData: Form
     return { error: `Tên file dài ${title.length} ký tự, vượt giới hạn ${MAX_FILENAME_LENGTH}. Rút ngắn nội dung.` };
   }
 
-  const effectiveFolder = targetFolder || resolveRootFolderToken(org || null);
+  // No explicit folder picked → route into the canonical (org, department)
+  // folder, auto-provisioned on first use (see folderRegistry.ts), instead of
+  // always dropping into the bare org root.
+  const effectiveFolder =
+    targetFolder ||
+    (department ? await getOrCreateDepartmentFolder(org, department) : undefined) ||
+    resolveRootFolderToken(org || null);
 
   let documentId: string;
   let url: string;
