@@ -47,6 +47,20 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Admin dashboard theme — scoped override, does not touch the public SAIZA palette above. */
+.admin-theme {
+  --color-ink: #1e1b4b;
+  --color-accent: #6366f1;
+  --color-accent-2: #818cf8;
+  --color-wash: #eef2ff;
+  --color-line: #e0e7ff;
+  --color-paper: #f7f7fb;
+  --gradient-admin-hero: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
+}
+.admin-hero-gradient {
+  background: var(--gradient-admin-hero);
+}
+
 ::selection {
   background: var(--color-accent);
   color: #fff;

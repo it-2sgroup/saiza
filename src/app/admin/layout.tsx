@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 export default function AdminRootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="vi" className={`${inter.variable} h-full antialiased`}>
-      <body className="h-full bg-paper text-ink">{children}</body>
+      <body className="admin-theme h-full bg-paper text-ink">{children}</body>
     </html>
   );
 }

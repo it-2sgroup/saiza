@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ActionButton } from "@/components/ui/Button";
+import { Modal, ModalHeader } from "../Modal";
 import { LARK_FILE_TYPE_LABELS, type LarkFileType } from "@/lib/lark/fileTypes";
 import type { FolderOption } from "@/lib/lark/folders";
 import type { StaffOption } from "./StaffSharePicker";
@@ -82,15 +83,6 @@ export function CreateFileModal({
     setFileType(null);
   };
 
-  useEffect(() => {
-    if (!open) return;
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") closeModal();
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [open]);
-
   return (
     <>
       <ActionButton variant="accent" onClick={() => setOpen(true)} className="px-6 py-3 text-sm">
@@ -100,66 +92,52 @@ export function CreateFileModal({
         Tạo file mới
       </ActionButton>
 
-      {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 p-4" onClick={closeModal}>
-          <div
-            className="max-h-[88vh] w-full max-w-[640px] animate-soft-in overflow-y-auto rounded-card bg-card p-6 shadow-[0_30px_60px_rgba(22,33,62,0.35)]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mb-5 flex items-start justify-between gap-4">
-              <div className="flex flex-col gap-1">
-                <h2 className="text-lg font-semibold">
-                  {fileType ? `Tạo ${LARK_FILE_TYPE_LABELS[fileType]}` : "Tạo file mới"}
-                </h2>
-                <p className="text-sm text-ink-2">
-                  {fileType ? "Điền thông tin bên dưới, tên file sẽ tự chuẩn hoá." : "Chọn loại file bạn muốn tạo trong Lark."}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={closeModal}
-                aria-label="Đóng"
-                className="flex h-8 w-8 flex-shrink-0 cursor-pointer items-center justify-center rounded-full text-ink-2 transition-colors duration-300 ease-soft hover:bg-wash hover:text-ink"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M18 6 6 18" />
-                  <path d="M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
+      <Modal open={open} onClose={closeModal} panelClassName="max-h-[88vh] w-full max-w-[640px] overflow-y-auto p-6">
+        <ModalHeader
+          title={fileType ? `Tạo ${LARK_FILE_TYPE_LABELS[fileType]}` : "Tạo file mới"}
+          subtitle={fileType ? "Điền thông tin bên dưới, tên file sẽ tự chuẩn hoá." : "Chọn loại file bạn muốn tạo trong Lark."}
+          onClose={closeModal}
+        />
 
-            {!fileType ? (
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                {TYPE_CARDS.map((card) => (
-                  <button
-                    key={card.type}
-                    type="button"
-                    onClick={() => setFileType(card.type)}
-                    className="flex cursor-pointer flex-col items-center gap-2.5 rounded-2xl border border-line p-4 text-center transition-colors duration-300 ease-soft hover:border-accent hover:bg-wash"
+        {!fileType ? (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {TYPE_CARDS.map((card) => (
+              <button
+                key={card.type}
+                type="button"
+                onClick={() => setFileType(card.type)}
+                className="flex cursor-pointer flex-col items-center gap-2.5 rounded-2xl border border-line p-4 text-center transition-colors duration-300 ease-soft hover:border-accent hover:bg-wash"
+              >
+                <span className={`flex h-11 w-11 items-center justify-center rounded-full ${card.badgeClassName}`}>
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
                   >
-                    <span className={`flex h-11 w-11 items-center justify-center rounded-full ${card.badgeClassName}`}>
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        {card.icon}
-                      </svg>
-                    </span>
-                    <span className="text-[13.5px] font-semibold text-ink">{LARK_FILE_TYPE_LABELS[card.type]}</span>
-                    <span className="text-[11.5px] leading-snug text-ink-2">{card.description}</span>
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <LarkDocForm
-                fileType={fileType}
-                onBack={() => setFileType(null)}
-                defaultDepartment={defaultDepartment}
-                staff={staff}
-                foldersByOrg={foldersByOrg}
-                prefs={prefs}
-              />
-            )}
+                    {card.icon}
+                  </svg>
+                </span>
+                <span className="text-[13.5px] font-semibold text-ink">{LARK_FILE_TYPE_LABELS[card.type]}</span>
+                <span className="text-[11.5px] leading-snug text-ink-2">{card.description}</span>
+              </button>
+            ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <LarkDocForm
+            fileType={fileType}
+            onBack={() => setFileType(null)}
+            defaultDepartment={defaultDepartment}
+            staff={staff}
+            foldersByOrg={foldersByOrg}
+            prefs={prefs}
+          />
+        )}
+      </Modal>
     </>
   );
 }

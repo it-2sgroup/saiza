@@ -121,6 +121,8 @@ export default async function AdminLarkPage() {
         const createdRows = ((allCreatedRows ?? []) as AuditRow[]).filter(
           (r) => r.target_id && !deletedIds.has(r.target_id),
         );
+        // Server component: renders once per request, so Date.now() here is not a purity violation.
+        // eslint-disable-next-line react-hooks/purity
         const now = Date.now();
         const DAY_MS = 24 * 60 * 60 * 1000;
 

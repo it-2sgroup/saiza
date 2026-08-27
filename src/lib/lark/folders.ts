@@ -13,7 +13,7 @@ const CACHE_TTL_MS = 10 * 60 * 1000;
 // blow up request time.
 async function crawlLarkFolderTree(rootToken: string): Promise<FolderOption[]> {
   const result: FolderOption[] = [];
-  let queue: { token: string; depth: number }[] = [{ token: rootToken, depth: 0 }];
+  const queue: { token: string; depth: number }[] = [{ token: rootToken, depth: 0 }];
 
   while (queue.length > 0 && result.length < MAX_FOLDERS) {
     const { token, depth } = queue.shift()!;

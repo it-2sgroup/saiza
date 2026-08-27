@@ -3,16 +3,16 @@
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid } from "recharts";
 
 const COLORS = {
-  draft: "#B9C4D9",
-  published: "#0B84D8",
-  open: "#0B84D8",
-  closed: "#4A5B78",
+  draft: "#C7D2FE",
+  published: "#6366F1",
+  open: "#6366F1",
+  closed: "#94A3B8",
   new: "#F88AAF",
-  contacted: "#0B84D8",
-  archived: "#B9C4D9",
-  admin: "#16213E",
-  editor: "#1D5FB8",
-  contributor: "#0B84D8",
+  contacted: "#6366F1",
+  archived: "#C7D2FE",
+  admin: "#1E1B4B",
+  editor: "#6366F1",
+  contributor: "#818CF8",
 } as const;
 
 type DashboardChartsProps = {
@@ -21,15 +21,6 @@ type DashboardChartsProps = {
   contacts?: { new: number; contacted: number; archived: number; trend: { date: string; count: number }[] };
   staff?: { admin: number; editor: number; contributor: number };
 };
-
-function StatCard({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="flex flex-col gap-1 rounded-card border border-line bg-card p-5">
-      <span className="text-xs tracking-[0.1em] text-ink-2 uppercase">{label}</span>
-      <span className="text-[28px] font-medium tabular-nums">{value}</span>
-    </div>
-  );
-}
 
 function DonutCard({ title, data }: { title: string; data: { name: string; value: number; color: string }[] }) {
   const total = data.reduce((sum, d) => sum + d.value, 0);
@@ -44,15 +35,7 @@ function DonutCard({ title, data }: { title: string; data: { name: string; value
           <div className="h-[160px] w-[160px] flex-shrink-0">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie
-                  data={data}
-                  dataKey="value"
-                  nameKey="name"
-                  innerRadius={48}
-                  outerRadius={72}
-                  paddingAngle={2}
-                  strokeWidth={0}
-                >
+                <Pie data={data} dataKey="value" nameKey="name" innerRadius={48} outerRadius={72} paddingAngle={2} strokeWidth={0}>
                   {data.map((entry) => (
                     <Cell key={entry.name} fill={entry.color} />
                   ))}
@@ -90,8 +73,8 @@ function TrendCard({ trend }: { trend: { date: string; count: number }[] }) {
             <AreaChart data={trend} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="contactTrend" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#0B84D8" stopOpacity={0.35} />
-                  <stop offset="100%" stopColor="#0B84D8" stopOpacity={0} />
+                  <stop offset="0%" stopColor="#6366F1" stopOpacity={0.35} />
+                  <stop offset="100%" stopColor="#6366F1" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(22,33,62,0.08)" vertical={false} />
@@ -102,15 +85,9 @@ function TrendCard({ trend }: { trend: { date: string; count: number }[] }) {
                 axisLine={false}
                 tickLine={false}
               />
-              <YAxis
-                allowDecimals={false}
-                tick={{ fontSize: 12, fill: "#4A5B78" }}
-                axisLine={false}
-                tickLine={false}
-                width={28}
-              />
+              <YAxis allowDecimals={false} tick={{ fontSize: 12, fill: "#4A5B78" }} axisLine={false} tickLine={false} width={28} />
               <Tooltip labelFormatter={(d) => `Ngày ${d}`} formatter={(value) => [value, "Lượt liên hệ"] as [number, string]} />
-              <Area type="monotone" dataKey="count" stroke="#0B84D8" strokeWidth={2.5} fill="url(#contactTrend)" />
+              <Area type="monotone" dataKey="count" stroke="#6366F1" strokeWidth={2.5} fill="url(#contactTrend)" />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -120,18 +97,8 @@ function TrendCard({ trend }: { trend: { date: string; count: number }[] }) {
 }
 
 export function DashboardCharts({ news, jobs, contacts, staff }: DashboardChartsProps) {
-  const newsTotal = news.draft + news.published;
-  const jobsTotal = jobs.draft + jobs.open + jobs.closed;
-
   return (
     <div className="flex flex-col gap-6">
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <StatCard label="Tổng bài tin tức" value={newsTotal} />
-        <StatCard label="Đang xuất bản" value={news.published} />
-        <StatCard label="Tổng tin tuyển dụng" value={jobsTotal} />
-        <StatCard label="Đang tuyển" value={jobs.open} />
-      </div>
-
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <DonutCard
           title="Tin tức theo trạng thái"
