@@ -135,12 +135,29 @@ export default async function AdminLarkPage() {
           .filter((p) => !statsByCreator.has(p.id as string))
           .map((p) => ({ id: p.id as string, fullName: p.full_name as string, department: p.department as string | null }));
 
+        const byType: Record<LarkFileType, number> = { docx: 0, sheet: 0, bitable: 0, folder: 0 };
+        for (const row of createdRows) byType[row.metadata?.fileType ?? "docx"] += 1;
+
+        const trend: { date: string; count: number }[] = [];
+        for (let i = 13; i >= 0; i--) {
+          const d = new Date();
+          d.setDate(d.getDate() - i);
+          trend.push({ date: d.toISOString().slice(0, 10), count: 0 });
+        }
+        for (const row of createdRows) {
+          const key = row.created_at.slice(0, 10);
+          const day = trend.find((t) => t.date === key);
+          if (day) day.count += 1;
+        }
+
         return {
           totalStaff: allStaffList.length,
           activeCreators: statsByCreator.size,
           totalFiles: createdRows.length,
           filesLast7Days: createdRows.filter((r) => now - new Date(r.created_at).getTime() <= 7 * DAY_MS).length,
           filesLast30Days: createdRows.filter((r) => now - new Date(r.created_at).getTime() <= 30 * DAY_MS).length,
+          byType,
+          trend,
           leaderboard,
           neverCreated,
         };

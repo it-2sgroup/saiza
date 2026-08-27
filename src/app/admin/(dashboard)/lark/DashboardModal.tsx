@@ -1,7 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid } from "recharts";
 import { departmentLabel } from "@/lib/admin/departments";
+import { LARK_FILE_TYPE_LABELS, type LarkFileType } from "@/lib/lark/fileTypes";
+
+const TYPE_COLORS: Record<LarkFileType, string> = {
+  docx: "#0B84D8",
+  sheet: "#2E9E5B",
+  bitable: "#8B5CF6",
+  folder: "#D89B0B",
+};
+const ADOPTION_COLORS = { active: "#0B84D8", inactive: "#B9C4D9" } as const;
 
 export type CreatorStat = {
   id: string;
@@ -17,6 +27,8 @@ export type DashboardData = {
   totalFiles: number;
   filesLast7Days: number;
   filesLast30Days: number;
+  byType: Record<LarkFileType, number>;
+  trend: { date: string; count: number }[];
   leaderboard: CreatorStat[];
   neverCreated: { id: string; fullName: string; department: string | null }[];
 };
@@ -27,6 +39,78 @@ function StatTile({ label, value, sub }: { label: string; value: string | number
       <div className="text-2xl font-semibold text-ink">{value}</div>
       <div className="text-xs text-ink-2">{label}</div>
       {sub && <div className="mt-0.5 text-[11px] text-ink-2/70">{sub}</div>}
+    </div>
+  );
+}
+
+function DonutCard({ title, data }: { title: string; data: { name: string; value: number; color: string }[] }) {
+  const total = data.reduce((sum, d) => sum + d.value, 0);
+  return (
+    <div className="flex flex-col gap-3 rounded-card border border-line bg-paper p-4">
+      <h3 className="text-xs font-semibold tracking-[0.06em] text-ink-2 uppercase">{title}</h3>
+      {total === 0 ? (
+        <p className="text-sm text-ink-2">Chưa có dữ liệu.</p>
+      ) : (
+        <div className="flex items-center gap-4">
+          <div className="h-[110px] w-[110px] flex-shrink-0">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={data} dataKey="value" nameKey="name" innerRadius={32} outerRadius={50} paddingAngle={2} strokeWidth={0}>
+                  {data.map((entry) => (
+                    <Cell key={entry.name} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            {data.map((d) => (
+              <div key={d.name} className="flex items-center gap-2 text-xs">
+                <span className="h-2 w-2 flex-shrink-0 rounded-full" style={{ background: d.color }} />
+                <span className="text-ink-2">{d.name}</span>
+                <span className="font-semibold tabular-nums">{d.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TrendCard({ trend }: { trend: { date: string; count: number }[] }) {
+  const hasData = trend.some((t) => t.count > 0);
+  return (
+    <div className="flex flex-col gap-3 rounded-card border border-line bg-paper p-4">
+      <h3 className="text-xs font-semibold tracking-[0.06em] text-ink-2 uppercase">File tạo — 14 ngày qua</h3>
+      {!hasData ? (
+        <p className="text-sm text-ink-2">Chưa có file nào trong 14 ngày qua.</p>
+      ) : (
+        <div className="h-[180px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={trend} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+              <defs>
+                <linearGradient id="larkTrend" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#0B84D8" stopOpacity={0.35} />
+                  <stop offset="100%" stopColor="#0B84D8" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(22,33,62,0.08)" vertical={false} />
+              <XAxis
+                dataKey="date"
+                tickFormatter={(d: string) => d.slice(5).replace("-", "/")}
+                tick={{ fontSize: 12, fill: "#4A5B78" }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis allowDecimals={false} tick={{ fontSize: 12, fill: "#4A5B78" }} axisLine={false} tickLine={false} width={28} />
+              <Tooltip labelFormatter={(d) => `Ngày ${d}`} formatter={(value) => [value, "File"] as [number, string]} />
+              <Area type="monotone" dataKey="count" stroke="#0B84D8" strokeWidth={2.5} fill="url(#larkTrend)" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      )}
     </div>
   );
 }
@@ -65,7 +149,7 @@ export function DashboardModal({ data }: { data: DashboardData }) {
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 p-4" onClick={() => setOpen(false)}>
           <div
-            className="flex max-h-[88vh] w-full max-w-[780px] animate-soft-in flex-col overflow-hidden rounded-card bg-card p-6 shadow-[0_30px_60px_rgba(22,33,62,0.35)]"
+            className="flex max-h-[88vh] w-full max-w-[860px] animate-soft-in flex-col overflow-hidden rounded-card bg-card p-6 shadow-[0_30px_60px_rgba(22,33,62,0.35)]"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-4 flex flex-shrink-0 items-start justify-between gap-4">
@@ -96,6 +180,26 @@ export function DashboardModal({ data }: { data: DashboardData }) {
                 />
                 <StatTile label="Tổng file đã tạo" value={data.totalFiles} />
                 <StatTile label="File trong 7 ngày qua" value={data.filesLast7Days} sub={`30 ngày: ${data.filesLast30Days}`} />
+              </div>
+
+              <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <DonutCard
+                  title="Mức độ sử dụng"
+                  data={[
+                    { name: "Đã tạo file", value: data.activeCreators, color: ADOPTION_COLORS.active },
+                    { name: "Chưa tạo file", value: data.totalStaff - data.activeCreators, color: ADOPTION_COLORS.inactive },
+                  ]}
+                />
+                <DonutCard
+                  title="File theo loại"
+                  data={(Object.keys(LARK_FILE_TYPE_LABELS) as LarkFileType[])
+                    .filter((t) => (data.byType[t] ?? 0) > 0)
+                    .map((t) => ({ name: LARK_FILE_TYPE_LABELS[t], value: data.byType[t], color: TYPE_COLORS[t] }))}
+                />
+              </div>
+
+              <div className="mb-5">
+                <TrendCard trend={data.trend} />
               </div>
 
               <div className="mb-5 flex flex-col gap-2.5">
