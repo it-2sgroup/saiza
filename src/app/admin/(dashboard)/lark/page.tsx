@@ -7,6 +7,7 @@ import { CreateFileModal } from "./CreateFileModal";
 import { LarkSettingsModal } from "./LarkSettingsModal";
 import { HistoryModal, type HistoryRow } from "./HistoryModal";
 import { OverviewModal, type OverviewRow } from "./OverviewModal";
+import { DashboardModal, type DashboardData, type CreatorStat } from "./DashboardModal";
 import { ShareExistingDoc } from "./ShareExistingDoc";
 import { DeleteLarkFileButton } from "./DeleteLarkFileButton";
 import type { StaffOption } from "./StaffSharePicker";
@@ -101,6 +102,51 @@ export default async function AdminLarkPage() {
         })
     : [];
 
+  const dashboardData: DashboardData | null = isAdmin
+    ? (() => {
+        const createdRows = ((allCreatedRows ?? []) as AuditRow[]).filter(
+          (r) => r.target_id && !deletedIds.has(r.target_id),
+        );
+        const now = Date.now();
+        const DAY_MS = 24 * 60 * 60 * 1000;
+
+        const statsByCreator = new Map<string, CreatorStat>();
+        for (const row of createdRows) {
+          if (!row.actor_id) continue;
+          const info = profileById.get(row.actor_id);
+          const existing = statsByCreator.get(row.actor_id);
+          if (existing) {
+            existing.count += 1;
+            if (row.created_at > existing.lastCreatedAt) existing.lastCreatedAt = row.created_at;
+          } else {
+            statsByCreator.set(row.actor_id, {
+              id: row.actor_id,
+              fullName: info?.fullName ?? "—",
+              department: info?.department ?? null,
+              count: 1,
+              lastCreatedAt: row.created_at,
+            });
+          }
+        }
+
+        const leaderboard = [...statsByCreator.values()].sort((a, b) => b.count - a.count);
+        const allStaffList = profilesData ?? [];
+        const neverCreated = allStaffList
+          .filter((p) => !statsByCreator.has(p.id as string))
+          .map((p) => ({ id: p.id as string, fullName: p.full_name as string, department: p.department as string | null }));
+
+        return {
+          totalStaff: allStaffList.length,
+          activeCreators: statsByCreator.size,
+          totalFiles: createdRows.length,
+          filesLast7Days: createdRows.filter((r) => now - new Date(r.created_at).getTime() <= 7 * DAY_MS).length,
+          filesLast30Days: createdRows.filter((r) => now - new Date(r.created_at).getTime() <= 30 * DAY_MS).length,
+          leaderboard,
+          neverCreated,
+        };
+      })()
+    : null;
+
   return (
     <div className="flex w-full flex-col gap-7">
       <div className="flex items-center justify-between gap-4">
@@ -115,6 +161,7 @@ export default async function AdminLarkPage() {
         </div>
         <div className="flex items-center gap-2">
           <LarkSettingsModal prefs={profile.lark_prefs} />
+          {isAdmin && dashboardData && <DashboardModal data={dashboardData} />}
           {isAdmin && <OverviewModal rows={overviewRows} />}
           <HistoryModal rows={historyRows} staff={staff} />
         </div>
