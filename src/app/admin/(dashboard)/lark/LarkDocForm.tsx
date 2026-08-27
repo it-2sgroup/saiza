@@ -80,6 +80,11 @@ export function LarkDocForm({
   const isFolder = fileType === "folder";
   const effectiveDocType = docType === "Khác" ? docTypeOther.trim() : docType;
 
+  const duplicateFolder =
+    isFolder && content.trim()
+      ? (foldersByOrg[org] ?? []).find((f) => f.name.trim().toLowerCase() === content.trim().toLowerCase())
+      : undefined;
+
   const preview = useMemo(() => {
     if (!content.trim()) return null;
     const dept = includeDept ? department || null : null;
@@ -246,6 +251,12 @@ export function LarkDocForm({
             placeholder={isFolder ? "Ví dụ: Hợp đồng khách hàng" : "Ví dụ: Chiến dịch Q3"}
             className={fieldClasses}
           />
+          {duplicateFolder && (
+            <p className="text-xs font-medium text-amber-700">
+              Đã có thư mục tên này trong cây thư mục — cân nhắc dùng lại (chọn ở &quot;Tạo trong thư mục&quot;) thay
+              vì tạo trùng.
+            </p>
+          )}
         </div>
 
         {!isFolder && (

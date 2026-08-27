@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { DeleteLarkFileButton } from "./DeleteLarkFileButton";
+import { MoveFileButton } from "./MoveFileButton";
 import { DEPARTMENTS, departmentLabel } from "@/lib/admin/departments";
 import { LARK_FILE_TYPE_LABELS, type LarkFileType } from "@/lib/lark/fileTypes";
 
@@ -15,7 +16,13 @@ export type OverviewRow = {
   creatorDepartment: string | null;
 };
 
-export function OverviewModal({ rows }: { rows: OverviewRow[] }) {
+export function OverviewModal({
+  rows,
+  folderOptions,
+}: {
+  rows: OverviewRow[];
+  folderOptions: { value: string; label: string }[];
+}) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const [department, setDepartment] = useState("");
@@ -190,7 +197,10 @@ export function OverviewModal({ rows }: { rows: OverviewRow[] }) {
                           </a>
                         )}
                       </div>
-                      <DeleteLarkFileButton documentId={row.targetId} fileType={row.fileType} />
+                      <div className="flex items-center justify-between gap-4">
+                        <MoveFileButton documentId={row.targetId} fileType={row.fileType} folderOptions={folderOptions} />
+                        <DeleteLarkFileButton documentId={row.targetId} fileType={row.fileType} />
+                      </div>
                     </div>
                   ))}
                 </div>

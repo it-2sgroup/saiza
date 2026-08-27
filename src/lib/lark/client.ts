@@ -95,6 +95,20 @@ export async function listFolderChildren(folderToken: string): Promise<LarkFolde
     .map((f) => ({ token: f.token, name: f.name }));
 }
 
+export async function moveLarkFile(documentId: string, targetFolderToken: string, type: LarkFileType): Promise<void> {
+  const token = await getTenantAccessToken();
+  const res = await fetch(`${LARK_API_BASE}/drive/v1/files/${documentId}/move`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ type, folder_token: targetFolderToken }),
+    cache: "no-store",
+  });
+  const data = await res.json();
+  if (!res.ok || data.code !== 0) {
+    throw new Error(`Không di chuyển được file: ${data.msg ?? res.statusText}`);
+  }
+}
+
 export async function deleteLarkFile(documentId: string, type: LarkFileType): Promise<void> {
   const token = await getTenantAccessToken();
   const res = await fetch(`${LARK_API_BASE}/drive/v1/files/${documentId}?type=${type}`, {

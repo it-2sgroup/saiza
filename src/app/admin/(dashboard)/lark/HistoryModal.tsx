@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ShareExistingDoc } from "./ShareExistingDoc";
 import { DeleteLarkFileButton } from "./DeleteLarkFileButton";
+import { MoveFileButton } from "./MoveFileButton";
 import type { StaffOption } from "./StaffSharePicker";
 import { LARK_FILE_TYPE_LABELS, type LarkFileType } from "@/lib/lark/fileTypes";
 
@@ -14,7 +15,15 @@ export type HistoryRow = {
   createdAt: string;
 };
 
-export function HistoryModal({ rows, staff }: { rows: HistoryRow[]; staff: StaffOption[] }) {
+export function HistoryModal({
+  rows,
+  staff,
+  folderOptions,
+}: {
+  rows: HistoryRow[];
+  staff: StaffOption[];
+  folderOptions: { value: string; label: string }[];
+}) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
 
@@ -106,8 +115,11 @@ export function HistoryModal({ rows, staff }: { rows: HistoryRow[]; staff: Staff
                           </a>
                         )}
                       </div>
-                      <div className="flex items-center justify-between gap-2">
-                        <ShareExistingDoc documentId={row.targetId} fileType={row.fileType} staff={staff} />
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                          <ShareExistingDoc documentId={row.targetId} fileType={row.fileType} staff={staff} />
+                          <MoveFileButton documentId={row.targetId} fileType={row.fileType} folderOptions={folderOptions} />
+                        </div>
                         <DeleteLarkFileButton documentId={row.targetId} fileType={row.fileType} />
                       </div>
                     </div>

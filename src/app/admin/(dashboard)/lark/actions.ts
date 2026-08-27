@@ -4,10 +4,11 @@ import { revalidatePath } from "next/cache";
 import { getCurrentProfile } from "@/lib/supabase/profile";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { recordAuditLog } from "@/lib/admin/audit";
-import { createLarkFile, deleteLarkFile, shareLarkDocByEmail, type LarkFileType } from "@/lib/lark/client";
+import { createLarkFile, deleteLarkFile, moveLarkFile, shareLarkDocByEmail, type LarkFileType } from "@/lib/lark/client";
 import { parseShareRows, applyShareRows, type ShareResult } from "@/lib/lark/shareRows";
 import { resolveRootFolderToken } from "@/lib/lark/orgFolders";
 import { getOrCreateDepartmentFolder } from "@/lib/lark/folderRegistry";
+import { addFolderToCache } from "@/lib/lark/folders";
 import { DEPARTMENT_CODES, ORG_CODES } from "@/lib/admin/departments";
 import { buildFileName, buildFolderName, MAX_FILENAME_LENGTH } from "@/lib/admin/fileNaming";
 import { canDelete } from "@/lib/admin/permissions";
@@ -96,6 +97,12 @@ export async function createLarkDocument(_prev: LarkDocFormState, formData: Form
     return { error: err instanceof Error ? err.message : "Không tạo được file Lark." };
   }
 
+  // Write-through: a manually-created subfolder should appear in the picker
+  // right away instead of waiting for the next cache crawl.
+  if (fileType === "folder" && effectiveFolder) {
+    await addFolderToCache(org || "", { token: documentId, name: title, parentToken: effectiveFolder });
+  }
+
   let shared = false;
   const admin = createAdminClient();
   const { data: userData } = await admin.auth.admin.getUserById(profile.id);
@@ -117,7 +124,7 @@ export async function createLarkDocument(_prev: LarkDocFormState, formData: Form
     action: "lark_doc_created",
     targetTable: "lark_docs",
     targetId: documentId,
-    metadata: { title, url, shared, shares: shareResults, fileType },
+    metadata: { title, url, shared, shares: shareResults, fileType, org: org || null },
   });
 
   revalidatePath("/admin/lark");
@@ -180,6 +187,51 @@ export async function updateLarkPrefs(_prev: LarkPrefsState, formData: FormData)
 
   revalidatePath("/admin/lark");
   return { error: null, success: true };
+}
+
+export type MoveLarkDocState = { error: string | null; done?: boolean };
+
+export async function moveLarkDocument(
+  documentId: string,
+  fileType: LarkFileType,
+  _prev: MoveLarkDocState,
+  formData: FormData,
+): Promise<MoveLarkDocState> {
+  const profile = await getCurrentProfile();
+  if (!profile) return { error: "Bạn cần đăng nhập lại." };
+
+  const targetFolder = String(formData.get("targetFolder") ?? "").trim();
+  if (!targetFolder) return { error: "Chọn thư mục đích." };
+
+  const admin = createAdminClient();
+  const { data: creationRow } = await admin
+    .from("audit_log")
+    .select("actor_id")
+    .eq("action", "lark_doc_created")
+    .eq("target_id", documentId)
+    .maybeSingle();
+
+  const isOwner = creationRow?.actor_id === profile.id;
+  if (!isOwner && !canDelete(profile.role)) {
+    return { error: "Bạn không có quyền di chuyển file này." };
+  }
+
+  try {
+    await moveLarkFile(documentId, targetFolder, fileType);
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Không di chuyển được file." };
+  }
+
+  await recordAuditLog({
+    actorId: profile.id,
+    action: "lark_doc_moved",
+    targetTable: "lark_docs",
+    targetId: documentId,
+    metadata: { targetFolder },
+  });
+
+  revalidatePath("/admin/lark");
+  return { error: null, done: true };
 }
 
 export type DeleteLarkDocState = { error: string | null; done?: boolean };

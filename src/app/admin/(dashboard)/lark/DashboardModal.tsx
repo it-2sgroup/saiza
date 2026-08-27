@@ -31,6 +31,7 @@ export type DashboardData = {
   trend: { date: string; count: number }[];
   leaderboard: CreatorStat[];
   neverCreated: { id: string; fullName: string; department: string | null }[];
+  staleWip: { targetId: string; title: string; url: string | null; creatorName: string; createdAt: string }[];
 };
 
 function StatTile({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
@@ -231,7 +232,7 @@ export function DashboardModal({ data }: { data: DashboardData }) {
                 )}
               </div>
 
-              <div className="flex flex-col gap-2.5">
+              <div className="mb-5 flex flex-col gap-2.5">
                 <h3 className="text-xs font-semibold tracking-[0.06em] text-ink-2 uppercase">
                   Chưa từng tạo file ({data.neverCreated.length})
                 </h3>
@@ -247,6 +248,38 @@ export function DashboardModal({ data }: { data: DashboardData }) {
                         {p.fullName}
                         {p.department && <span className="text-ink-2/60"> · {departmentLabel(p.department)}</span>}
                       </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-2.5">
+                <h3 className="text-xs font-semibold tracking-[0.06em] text-ink-2 uppercase">
+                  WIP quá hạn — hơn 30 ngày ({data.staleWip.length})
+                </h3>
+                {data.staleWip.length === 0 ? (
+                  <p className="text-sm text-ink-2">Không có file WIP nào tồn đọng quá 30 ngày.</p>
+                ) : (
+                  <div className="flex flex-col divide-y divide-line rounded-card border border-amber-200 bg-amber-50/40">
+                    {data.staleWip.map((w) => (
+                      <div key={w.targetId} className="flex items-center justify-between gap-4 px-4 py-2.5">
+                        <div className="flex min-w-0 flex-col">
+                          <span className="truncate text-[14px] font-medium">{w.title}</span>
+                          <span className="text-xs text-ink-2">
+                            {w.creatorName} · tạo {new Date(w.createdAt).toLocaleDateString("vi-VN")}
+                          </span>
+                        </div>
+                        {w.url && (
+                          <a
+                            href={w.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex-shrink-0 text-sm font-medium text-accent hover:text-ink"
+                          >
+                            Mở →
+                          </a>
+                        )}
+                      </div>
                     ))}
                   </div>
                 )}

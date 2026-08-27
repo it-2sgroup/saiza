@@ -10,6 +10,7 @@ import { OverviewModal, type OverviewRow } from "./OverviewModal";
 import { DashboardModal, type DashboardData, type CreatorStat } from "./DashboardModal";
 import { ShareExistingDoc } from "./ShareExistingDoc";
 import { DeleteLarkFileButton } from "./DeleteLarkFileButton";
+import { MoveFileButton } from "./MoveFileButton";
 import type { StaffOption } from "./StaffSharePicker";
 import { LARK_FILE_TYPE_LABELS, type LarkFileType } from "@/lib/lark/client";
 import { listLarkFolderTree, type FolderOption } from "@/lib/lark/folders";
@@ -58,12 +59,25 @@ export default async function AdminLarkPage() {
     Promise.all(
       orgKeys.map(async (org) => {
         const root = resolveRootFolderToken(org || null);
-        return [org, root ? await listLarkFolderTree(root) : []] as [string, FolderOption[]];
+        return [org, root ? await listLarkFolderTree(root, org) : []] as [string, FolderOption[]];
       }),
     ),
   ]);
 
   const foldersByOrg: Record<string, FolderOption[]> = Object.fromEntries(folderTrees);
+  const flatFolderOptions = [
+    { value: "", label: "— Chọn thư mục —" },
+    ...orgKeys.flatMap((org) => {
+      const rootToken = resolveRootFolderToken(org || null);
+      const orgLabel = org || "Dùng chung";
+      const entries: { value: string; label: string }[] = [];
+      if (rootToken) entries.push({ value: rootToken, label: `[${orgLabel}] — Thư mục gốc —` });
+      for (const f of foldersByOrg[org] ?? []) {
+        entries.push({ value: f.token, label: `[${orgLabel}] ${"　".repeat(f.depth - 1)}${f.name}` });
+      }
+      return entries;
+    }),
+  ];
   const deletedIds = new Set((deletedRows ?? []).map((r) => r.target_id));
   const emailById = new Map(usersData?.users.map((u) => [u.id, u.email]) ?? []);
   const profileById = new Map(
@@ -150,6 +164,22 @@ export default async function AdminLarkPage() {
           if (day) day.count += 1;
         }
 
+        // File đặt tên bắt đầu bằng "WIP_" mà đã tạo hơn 30 ngày — nhắc admin
+        // theo dõi/finalize thay vì để rơi vào quên lãng.
+        const staleWip = createdRows
+          .filter((r) => (r.metadata?.title ?? "").startsWith("WIP_") && now - new Date(r.created_at).getTime() > 30 * DAY_MS)
+          .map((r) => {
+            const creator = r.actor_id ? profileById.get(r.actor_id) : undefined;
+            return {
+              targetId: r.target_id as string,
+              title: r.metadata?.title ?? "(không có tiêu đề)",
+              url: r.metadata?.url ?? null,
+              creatorName: creator?.fullName ?? "—",
+              createdAt: r.created_at,
+            };
+          })
+          .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+
         return {
           totalStaff: allStaffList.length,
           activeCreators: statsByCreator.size,
@@ -160,6 +190,7 @@ export default async function AdminLarkPage() {
           trend,
           leaderboard,
           neverCreated,
+          staleWip,
         };
       })()
     : null;
@@ -179,8 +210,8 @@ export default async function AdminLarkPage() {
         <div className="flex items-center gap-2">
           <LarkSettingsModal prefs={profile.lark_prefs} />
           {isAdmin && dashboardData && <DashboardModal data={dashboardData} />}
-          {isAdmin && <OverviewModal rows={overviewRows} />}
-          <HistoryModal rows={historyRows} staff={staff} />
+          {isAdmin && <OverviewModal rows={overviewRows} folderOptions={flatFolderOptions} />}
+          <HistoryModal rows={historyRows} staff={staff} folderOptions={flatFolderOptions} />
         </div>
       </div>
 
@@ -222,7 +253,14 @@ export default async function AdminLarkPage() {
                 </div>
                 {row.target_id && (
                   <div className="flex items-center justify-between gap-4">
-                    <ShareExistingDoc documentId={row.target_id} fileType={row.metadata?.fileType} staff={staff} />
+                    <div className="flex items-center gap-4">
+                      <ShareExistingDoc documentId={row.target_id} fileType={row.metadata?.fileType} staff={staff} />
+                      <MoveFileButton
+                        documentId={row.target_id}
+                        fileType={row.metadata?.fileType}
+                        folderOptions={flatFolderOptions}
+                      />
+                    </div>
                     <DeleteLarkFileButton documentId={row.target_id} fileType={row.metadata?.fileType} />
                   </div>
                 )}

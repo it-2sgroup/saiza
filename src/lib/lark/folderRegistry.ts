@@ -2,6 +2,7 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createLarkFile, shareLarkDocByEmail } from "./client";
 import { resolveRootFolderToken } from "./orgFolders";
+import { addFolderToCache } from "./folders";
 import { departmentLabel } from "@/lib/admin/departments";
 
 // Canonical folder per (org, department) — see supabase/migrations/0012_lark_folders.sql.
@@ -60,6 +61,10 @@ export async function getOrCreateDepartmentFolder(org: string, department: strin
     .eq("department", department)
     .maybeSingle();
   const winningToken = winner?.lark_token ?? folderToken;
+
+  if (winningToken === folderToken) {
+    await addFolderToCache(orgKey, { token: folderToken, name, parentToken });
+  }
 
   // Best-effort: share the (newly won) department folder with everyone
   // currently assigned to that department, so files dropped in it are
