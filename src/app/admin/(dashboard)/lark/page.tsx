@@ -244,27 +244,28 @@ export default async function AdminLarkPage() {
                       {LARK_FILE_TYPE_LABELS[row.metadata?.fileType ?? "docx"]} · {new Date(row.created_at).toLocaleString("vi-VN")}
                     </span>
                   </div>
-                  <div className="mt-auto flex flex-col gap-2 border-t border-line pt-2.5">
-                    <div className="flex items-center justify-between gap-2">
-                      {row.metadata?.url ? (
-                        <a
-                          href={row.metadata.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-sm font-medium text-accent hover:text-ink"
-                        >
-                          Mở →
-                        </a>
-                      ) : (
-                        <span />
-                      )}
-                      {row.target_id && <DeleteLarkFileButton documentId={row.target_id} fileType={row.metadata?.fileType} />}
-                    </div>
+                  <div className="mt-auto flex flex-wrap items-center gap-2 border-t border-line pt-2.5">
+                    {row.metadata?.url && (
+                      <a
+                        href={row.metadata.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="rounded-full border border-line px-3 py-1.5 text-xs font-medium text-ink-2 transition-colors duration-300 ease-soft hover:border-accent hover:text-accent"
+                      >
+                        Mở
+                      </a>
+                    )}
                     {row.target_id && (
-                      <div className="flex items-center gap-4">
-                        <ShareExistingDoc documentId={row.target_id} fileType={row.metadata?.fileType} staff={staff} />
-                        <MoveFileButton documentId={row.target_id} fileType={row.metadata?.fileType} folderOptions={flatFolderOptions} />
-                      </div>
+                      <>
+                        <ShareExistingDoc documentId={row.target_id} fileType={row.metadata?.fileType} staff={staff} variant="button" />
+                        <MoveFileButton
+                          documentId={row.target_id}
+                          fileType={row.metadata?.fileType}
+                          folderOptions={flatFolderOptions}
+                          variant="button"
+                        />
+                        <DeleteLarkFileButton documentId={row.target_id} fileType={row.metadata?.fileType} variant="button" />
+                      </>
                     )}
                   </div>
                 </div>

@@ -11,26 +11,26 @@ export function ShareExistingDoc({
   documentId,
   fileType = "docx",
   staff,
+  variant = "link",
 }: {
   documentId: string;
   fileType?: LarkFileType;
   staff: StaffOption[];
+  variant?: "link" | "button";
 }) {
   const [open, setOpen] = useState(false);
   const [shares, setShares] = useState<ShareRow[]>([]);
-  const [state, formAction, pending] = useActionState(
-    shareExistingDocument.bind(null, documentId, fileType),
-    initialState,
-  );
+  const [state, formAction, pending] = useActionState(shareExistingDocument.bind(null, documentId, fileType), initialState);
+
+  const triggerClassName =
+    variant === "button"
+      ? "w-fit cursor-pointer rounded-full border border-line px-3 py-1.5 text-xs font-medium text-ink-2 transition-colors duration-300 ease-soft hover:border-accent hover:text-accent"
+      : "w-fit cursor-pointer text-xs font-medium text-accent hover:text-ink";
 
   return (
     <div className="flex flex-col gap-2.5">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="w-fit cursor-pointer text-xs font-medium text-accent hover:text-ink"
-      >
-        {open ? "Đóng" : "Chia sẻ thêm →"}
+      <button type="button" onClick={() => setOpen((o) => !o)} className={triggerClassName}>
+        {open ? "Đóng" : variant === "button" ? "Chia sẻ" : "Chia sẻ thêm →"}
       </button>
       {open && (
         <form action={formAction} className="flex flex-col gap-2.5 rounded-xl border border-line bg-paper p-3">

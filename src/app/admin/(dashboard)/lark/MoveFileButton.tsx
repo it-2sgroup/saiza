@@ -11,34 +11,31 @@ export function MoveFileButton({
   documentId,
   fileType = "docx",
   folderOptions,
+  variant = "link",
 }: {
   documentId: string;
   fileType?: LarkFileType;
   folderOptions: { value: string; label: string }[];
+  variant?: "link" | "button";
 }) {
   const [open, setOpen] = useState(false);
   const [targetFolder, setTargetFolder] = useState("");
-  const [state, formAction, pending] = useActionState(
-    moveLarkDocument.bind(null, documentId, fileType),
-    initialState,
-  );
+  const [state, formAction, pending] = useActionState(moveLarkDocument.bind(null, documentId, fileType), initialState);
+
+  const triggerClassName =
+    variant === "button"
+      ? "w-fit cursor-pointer rounded-full border border-line px-3 py-1.5 text-xs font-medium text-ink-2 transition-colors duration-300 ease-soft hover:border-accent hover:text-accent"
+      : "w-fit cursor-pointer text-xs font-medium text-accent hover:text-ink";
 
   if (state.done) return <span className="text-xs text-ink-2">Đã di chuyển.</span>;
 
   return (
     <div className="flex flex-col gap-2.5">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="w-fit cursor-pointer text-xs font-medium text-accent hover:text-ink"
-      >
-        {open ? "Đóng" : "Di chuyển →"}
+      <button type="button" onClick={() => setOpen((o) => !o)} className={triggerClassName}>
+        {open ? "Đóng" : variant === "button" ? "Di chuyển" : "Di chuyển →"}
       </button>
       {open && (
-        <form
-          action={formAction}
-          className="flex flex-col gap-2.5 rounded-xl border border-line bg-paper p-3"
-        >
+        <form action={formAction} className="flex flex-col gap-2.5 rounded-xl border border-line bg-paper p-3">
           <Combobox
             name="targetFolder"
             value={targetFolder}
