@@ -32,37 +32,31 @@ export default async function AdminLarkPage() {
   const isAdmin = canManageStaff(profile.role);
   const admin = createAdminClient();
   const orgKeys = ["", ...listConfiguredOrgs()];
-  const [
-    { data: ownRows },
-    { data: allCreatedRows },
-    { data: deletedRows },
-    { data: profilesData },
-    { data: usersData },
-    folderTrees,
-  ] = await Promise.all([
-    admin
-      .from("audit_log")
-      .select("actor_id, target_id, metadata, created_at")
-      .eq("action", "lark_doc_created")
-      .eq("actor_id", profile.id)
-      .order("created_at", { ascending: false }),
-    isAdmin
-      ? admin
-          .from("audit_log")
-          .select("actor_id, target_id, metadata, created_at")
-          .eq("action", "lark_doc_created")
-          .order("created_at", { ascending: false })
-      : Promise.resolve({ data: [] }),
-    admin.from("audit_log").select("target_id").eq("action", "lark_doc_deleted"),
-    admin.from("profiles").select("id, full_name, department"),
-    admin.auth.admin.listUsers(),
-    Promise.all(
-      orgKeys.map(async (org) => {
-        const root = resolveRootFolderToken(org || null);
-        return [org, root ? await listLarkFolderTree(root, org) : []] as [string, FolderOption[]];
-      }),
-    ),
-  ]);
+  const [{ data: ownRows }, { data: allCreatedRows }, { data: deletedRows }, { data: profilesData }, { data: usersData }, folderTrees] =
+    await Promise.all([
+      admin
+        .from("audit_log")
+        .select("actor_id, target_id, metadata, created_at")
+        .eq("action", "lark_doc_created")
+        .eq("actor_id", profile.id)
+        .order("created_at", { ascending: false }),
+      isAdmin
+        ? admin
+            .from("audit_log")
+            .select("actor_id, target_id, metadata, created_at")
+            .eq("action", "lark_doc_created")
+            .order("created_at", { ascending: false })
+        : Promise.resolve({ data: [] }),
+      admin.from("audit_log").select("target_id").eq("action", "lark_doc_deleted"),
+      admin.from("profiles").select("id, full_name, department"),
+      admin.auth.admin.listUsers(),
+      Promise.all(
+        orgKeys.map(async (org) => {
+          const root = resolveRootFolderToken(org || null);
+          return [org, root ? await listLarkFolderTree(root, org) : []] as [string, FolderOption[]];
+        }),
+      ),
+    ]);
 
   const foldersByOrg: Record<string, FolderOption[]> = Object.fromEntries(folderTrees);
   const flatFolderOptions = [
@@ -118,9 +112,7 @@ export default async function AdminLarkPage() {
 
   const dashboardData: DashboardData | null = isAdmin
     ? (() => {
-        const createdRows = ((allCreatedRows ?? []) as AuditRow[]).filter(
-          (r) => r.target_id && !deletedIds.has(r.target_id),
-        );
+        const createdRows = ((allCreatedRows ?? []) as AuditRow[]).filter((r) => r.target_id && !deletedIds.has(r.target_id));
         // Server component: renders once per request, so Date.now() here is not a purity violation.
         // eslint-disable-next-line react-hooks/purity
         const now = Date.now();
@@ -199,7 +191,7 @@ export default async function AdminLarkPage() {
 
   return (
     <div className="flex w-full flex-col gap-7">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <Avatar fullName={profile.full_name} avatarUrl={profile.avatar_url} size={9} />
           <div className="flex flex-col gap-0.5">
@@ -209,7 +201,8 @@ export default async function AdminLarkPage() {
             </span>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <CreateFileModal defaultDepartment={profile.department} staff={staff} foldersByOrg={foldersByOrg} prefs={profile.lark_prefs} />
           <LarkSettingsModal prefs={profile.lark_prefs} />
           {isAdmin && dashboardData && <DashboardModal data={dashboardData} />}
           {isAdmin && <OverviewModal rows={overviewRows} folderOptions={flatFolderOptions} />}
@@ -217,55 +210,64 @@ export default async function AdminLarkPage() {
         </div>
       </div>
 
-      <CreateFileModal
-        defaultDepartment={profile.department}
-        staff={staff}
-        foldersByOrg={foldersByOrg}
-        prefs={profile.lark_prefs}
-      />
-
       <div className="flex flex-col gap-2.5">
         <h2 className="text-sm font-semibold text-ink-2 uppercase tracking-[0.06em]">File của bạn — gần đây</h2>
         {recentRows.length === 0 ? (
           <p className="text-sm text-ink-2">Chưa có tài liệu nào được tạo.</p>
         ) : (
-          <div className="flex flex-col divide-y divide-line rounded-card border border-line bg-card">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {recentRows.map((row) => (
-              <div key={row.target_id} className="flex flex-col gap-2 px-4 py-3">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex min-w-0 flex-col gap-0.5">
-                    <span className="truncate text-[14.5px] font-medium">
-                      {row.metadata?.title ?? "(không có tiêu đề)"}
-                    </span>
-                    <span className="text-xs text-ink-2">
-                      {LARK_FILE_TYPE_LABELS[row.metadata?.fileType ?? "docx"]} ·{" "}
-                      {new Date(row.created_at).toLocaleString("vi-VN")}
-                    </span>
-                  </div>
-                  {row.metadata?.url && (
-                    <a
-                      href={row.metadata.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex-shrink-0 text-sm font-medium text-accent hover:text-ink"
-                    >
-                      Mở →
-                    </a>
-                  )}
+              <div
+                key={row.target_id}
+                className="flex flex-col overflow-hidden rounded-card border border-line bg-card transition-shadow duration-300 ease-soft hover:shadow-[0_8px_24px_rgba(30,27,75,0.10)]"
+              >
+                <div className="flex h-20 flex-shrink-0 items-center justify-center bg-wash text-accent-2">
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.75"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <path d="M14 2v6h6" />
+                    <path d="M9 13h6M9 17h6" />
+                  </svg>
                 </div>
-                {row.target_id && (
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                      <ShareExistingDoc documentId={row.target_id} fileType={row.metadata?.fileType} staff={staff} />
-                      <MoveFileButton
-                        documentId={row.target_id}
-                        fileType={row.metadata?.fileType}
-                        folderOptions={flatFolderOptions}
-                      />
-                    </div>
-                    <DeleteLarkFileButton documentId={row.target_id} fileType={row.metadata?.fileType} />
+                <div className="flex flex-1 flex-col gap-2.5 p-4">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="line-clamp-2 text-[14.5px] font-semibold">{row.metadata?.title ?? "(không có tiêu đề)"}</span>
+                    <span className="text-xs text-ink-2">
+                      {LARK_FILE_TYPE_LABELS[row.metadata?.fileType ?? "docx"]} · {new Date(row.created_at).toLocaleString("vi-VN")}
+                    </span>
                   </div>
-                )}
+                  <div className="mt-auto flex flex-col gap-2 border-t border-line pt-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      {row.metadata?.url ? (
+                        <a
+                          href={row.metadata.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-sm font-medium text-accent hover:text-ink"
+                        >
+                          Mở →
+                        </a>
+                      ) : (
+                        <span />
+                      )}
+                      {row.target_id && <DeleteLarkFileButton documentId={row.target_id} fileType={row.metadata?.fileType} />}
+                    </div>
+                    {row.target_id && (
+                      <div className="flex items-center gap-4">
+                        <ShareExistingDoc documentId={row.target_id} fileType={row.metadata?.fileType} staff={staff} />
+                        <MoveFileButton documentId={row.target_id} fileType={row.metadata?.fileType} folderOptions={flatFolderOptions} />
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             ))}
           </div>
