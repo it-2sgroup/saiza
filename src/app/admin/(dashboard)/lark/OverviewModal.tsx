@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import { Modal, ModalHeader } from "../Modal";
 import { DeleteLarkFileButton } from "./DeleteLarkFileButton";
 import { MoveFileButton } from "./MoveFileButton";
+import { TransferOwnerButton } from "./TransferOwnerButton";
+import type { StaffOption } from "./StaffSharePicker";
 import { DEPARTMENTS, departmentLabel } from "@/lib/admin/departments";
 import { LARK_FILE_TYPE_LABELS, type LarkFileType } from "@/lib/lark/fileTypes";
 
@@ -17,7 +19,15 @@ export type OverviewRow = {
   creatorDepartment: string | null;
 };
 
-export function OverviewModal({ rows, folderOptions }: { rows: OverviewRow[]; folderOptions: { value: string; label: string }[] }) {
+export function OverviewModal({
+  rows,
+  folderOptions,
+  staff = [],
+}: {
+  rows: OverviewRow[];
+  folderOptions: { value: string; label: string }[];
+  staff?: StaffOption[];
+}) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const [department, setDepartment] = useState("");
@@ -176,8 +186,11 @@ export function OverviewModal({ rows, folderOptions }: { rows: OverviewRow[]; fo
                       </a>
                     )}
                   </div>
-                  <div className="flex items-center justify-between gap-4">
-                    <MoveFileButton documentId={row.targetId} fileType={row.fileType} folderOptions={folderOptions} />
+                  <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex flex-wrap items-center gap-4">
+                      <MoveFileButton documentId={row.targetId} fileType={row.fileType} folderOptions={folderOptions} />
+                      <TransferOwnerButton documentId={row.targetId} fileType={row.fileType} staff={staff} />
+                    </div>
                     <DeleteLarkFileButton documentId={row.targetId} fileType={row.fileType} />
                   </div>
                 </div>

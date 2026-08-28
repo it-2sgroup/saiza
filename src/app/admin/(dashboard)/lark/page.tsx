@@ -11,6 +11,7 @@ import { DashboardModal, type DashboardData, type CreatorStat } from "./Dashboar
 import { ShareExistingDoc } from "./ShareExistingDoc";
 import { DeleteLarkFileButton } from "./DeleteLarkFileButton";
 import { MoveFileButton } from "./MoveFileButton";
+import { TransferOwnerButton } from "./TransferOwnerButton";
 import type { StaffOption } from "./StaffSharePicker";
 import { LARK_FILE_TYPE_LABELS, type LarkFileType } from "@/lib/lark/client";
 import { listLarkFolderTree, type FolderOption } from "@/lib/lark/folders";
@@ -205,7 +206,7 @@ export default async function AdminLarkPage() {
           <CreateFileModal defaultDepartment={profile.department} staff={staff} foldersByOrg={foldersByOrg} prefs={profile.lark_prefs} />
           <LarkSettingsModal prefs={profile.lark_prefs} />
           {isAdmin && dashboardData && <DashboardModal data={dashboardData} />}
-          {isAdmin && <OverviewModal rows={overviewRows} folderOptions={flatFolderOptions} />}
+          {isAdmin && <OverviewModal rows={overviewRows} folderOptions={flatFolderOptions} staff={staff} />}
           <HistoryModal rows={historyRows} staff={staff} folderOptions={flatFolderOptions} />
         </div>
       </div>
@@ -264,6 +265,7 @@ export default async function AdminLarkPage() {
                           folderOptions={flatFolderOptions}
                           variant="button"
                         />
+                        <TransferOwnerButton documentId={row.target_id} fileType={row.metadata?.fileType} staff={staff} variant="button" />
                         <DeleteLarkFileButton documentId={row.target_id} fileType={row.metadata?.fileType} variant="button" />
                       </>
                     )}

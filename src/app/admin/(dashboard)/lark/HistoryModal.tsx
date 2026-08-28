@@ -5,6 +5,7 @@ import { Modal, ModalHeader } from "../Modal";
 import { ShareExistingDoc } from "./ShareExistingDoc";
 import { DeleteLarkFileButton } from "./DeleteLarkFileButton";
 import { MoveFileButton } from "./MoveFileButton";
+import { TransferOwnerButton } from "./TransferOwnerButton";
 import type { StaffOption } from "./StaffSharePicker";
 import { LARK_FILE_TYPE_LABELS, type LarkFileType } from "@/lib/lark/fileTypes";
 
@@ -99,10 +100,11 @@ export function HistoryModal({
                       </a>
                     )}
                   </div>
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
+                  <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex flex-wrap items-center gap-4">
                       <ShareExistingDoc documentId={row.targetId} fileType={row.fileType} staff={staff} />
                       <MoveFileButton documentId={row.targetId} fileType={row.fileType} folderOptions={folderOptions} />
+                      <TransferOwnerButton documentId={row.targetId} fileType={row.fileType} staff={staff} />
                     </div>
                     <DeleteLarkFileButton documentId={row.targetId} fileType={row.fileType} />
                   </div>

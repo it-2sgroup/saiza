@@ -292,3 +292,48 @@ export async function deleteLarkDocument(
   revalidatePath("/admin/lark");
   return { error: null, done: true };
 }
+
+export type TransferOwnerState = { error: string | null; done?: boolean };
+
+export async function transferLarkDocumentOwner(
+  documentId: string,
+  fileType: LarkFileType,
+  _prev: TransferOwnerState,
+  formData: FormData,
+): Promise<TransferOwnerState> {
+  const profile = await getCurrentProfile();
+  if (!profile) return { error: "Bạn cần đăng nhập lại." };
+
+  const email = String(formData.get("email") ?? "").trim();
+  if (!email) return { error: "Nhập email người nhận." };
+
+  const admin = createAdminClient();
+  const { data: creationRow } = await admin
+    .from("audit_log")
+    .select("actor_id")
+    .eq("action", "lark_doc_created")
+    .eq("target_id", documentId)
+    .maybeSingle();
+
+  const isOwner = creationRow?.actor_id === profile.id;
+  if (!isOwner && !canDelete(profile.role)) {
+    return { error: "Bạn không có quyền chuyển quyền sở hữu file này." };
+  }
+
+  try {
+    await transferLarkFileOwner(documentId, email, fileType);
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Không chuyển được quyền sở hữu." };
+  }
+
+  await recordAuditLog({
+    actorId: profile.id,
+    action: "lark_doc_owner_transferred",
+    targetTable: "lark_docs",
+    targetId: documentId,
+    metadata: { email },
+  });
+
+  revalidatePath("/admin/lark");
+  return { error: null, done: true };
+}
