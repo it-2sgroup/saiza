@@ -95,6 +95,12 @@ export async function listFolderChildren(folderToken: string): Promise<LarkFolde
     .map((f) => ({ token: f.token, name: f.name }));
 }
 
+// The app loses drive access to a file/folder once its ownership has been
+// transferred to a person (see transferLarkFileOwner below) — Lark answers
+// with this generic node-permission error, which is confusing on its own.
+const OWNERSHIP_TRANSFERRED_HINT =
+  "File này đã được chuyển quyền sở hữu cho một người dùng, app không còn quản lý được nữa — thao tác trực tiếp trong Lark.";
+
 export async function moveLarkFile(documentId: string, targetFolderToken: string, type: LarkFileType): Promise<void> {
   const token = await getTenantAccessToken();
   const res = await fetch(`${LARK_API_BASE}/drive/v1/files/${documentId}/move`, {
@@ -105,6 +111,7 @@ export async function moveLarkFile(documentId: string, targetFolderToken: string
   });
   const data = await res.json();
   if (!res.ok || data.code !== 0) {
+    if (data.code === 1062501) throw new Error(OWNERSHIP_TRANSFERRED_HINT);
     throw new Error(`Không di chuyển được file: ${data.msg ?? res.statusText}`);
   }
 }
@@ -118,7 +125,34 @@ export async function deleteLarkFile(documentId: string, type: LarkFileType): Pr
   });
   const data = await res.json();
   if (!res.ok || data.code !== 0) {
+    if (data.code === 1062501) throw new Error(OWNERSHIP_TRANSFERRED_HINT);
     throw new Error(`Không xoá được file: ${data.msg ?? res.statusText}`);
+  }
+}
+
+// Makes `email` the actual Lark owner of the file/folder, not just a
+// full_access collaborator. Matters for folders especially: delete/manage
+// permission on a shared-space item is gated by the PARENT folder's settings
+// for anyone who isn't the owner, so a plain full_access grant still shows
+// "Yêu cầu xoá — liên hệ 2SGROUP" when the person tries to delete it from
+// the Lark UI directly. Best-effort — callers must not fail file creation
+// when this throws (e.g. email isn't a real tenant member, or transfer
+// isn't supported for this file type).
+export async function transferLarkFileOwner(documentId: string, email: string, type: LarkFileType = "docx"): Promise<void> {
+  const token = await getTenantAccessToken();
+
+  const res = await fetch(
+    `${LARK_API_BASE}/drive/v1/permissions/${documentId}/members/transfer_owner?type=${type}&need_notification=false`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ member_type: "email", member_id: email }),
+      cache: "no-store",
+    },
+  );
+  const data = await res.json();
+  if (!res.ok || data.code !== 0) {
+    throw new Error(`Không chuyển được quyền sở hữu cho ${email}: ${data.msg ?? res.statusText}`);
   }
 }
 

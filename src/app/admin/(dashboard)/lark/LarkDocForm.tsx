@@ -6,13 +6,7 @@ import { Combobox } from "../Combobox";
 import { StaffSharePicker, type StaffOption, type ShareRow } from "./StaffSharePicker";
 import { DEPARTMENTS, ORG_CODES, departmentLabel } from "@/lib/admin/departments";
 import { DOC_TYPES, VERSION_OPTIONS } from "@/lib/admin/docTypes";
-import {
-  buildFileName,
-  buildFolderName,
-  todayYYYYMMDD,
-  dateInputToYYYYMMDD,
-  MAX_FILENAME_LENGTH,
-} from "@/lib/admin/fileNaming";
+import { buildFileName, buildFolderName, todayYYYYMMDD, dateInputToYYYYMMDD, MAX_FILENAME_LENGTH } from "@/lib/admin/fileNaming";
 import { LARK_FILE_TYPE_LABELS, type LarkFileType } from "@/lib/lark/fileTypes";
 import type { FolderOption } from "@/lib/lark/folders";
 import { DEFAULT_LARK_PREFS, type LarkPrefs } from "@/lib/lark/prefs";
@@ -60,6 +54,7 @@ export function LarkDocForm({
   const [version, setVersion] = useState<string>(prefs.defaultVersion ?? VERSION_OPTIONS[0]);
   const [wip, setWip] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [transferOwnership, setTransferOwnership] = useState(false);
 
   const [includeDept, setIncludeDept] = useState(prefs.includeDept ?? DEFAULT_LARK_PREFS.includeDept);
   const [includeDocType, setIncludeDocType] = useState(prefs.includeDocType ?? DEFAULT_LARK_PREFS.includeDocType);
@@ -124,7 +119,16 @@ export function LarkDocForm({
         onClick={onBack}
         className="flex w-fit cursor-pointer items-center gap-1.5 text-sm font-medium text-ink-2 hover:text-ink"
       >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
           <path d="m15 18-6-6 6-6" />
         </svg>
         Đổi loại file
@@ -147,8 +151,7 @@ export function LarkDocForm({
           />
           {!targetFolder && includeDept && department && (
             <p className="text-xs text-ink-2">
-              Để trống sẽ tự động vào đúng thư mục phòng ban {departmentLabel(department) ?? department}, tạo sẵn nếu
-              chưa có.
+              Để trống sẽ tự động vào đúng thư mục phòng ban {departmentLabel(department) ?? department}, tạo sẵn nếu chưa có.
             </p>
           )}
         </div>
@@ -253,8 +256,7 @@ export function LarkDocForm({
           />
           {duplicateFolder && (
             <p className="text-xs font-medium text-amber-700">
-              Đã có thư mục tên này trong cây thư mục — cân nhắc dùng lại (chọn ở &quot;Tạo trong thư mục&quot;) thay
-              vì tạo trùng.
+              Đã có thư mục tên này trong cây thư mục — cân nhắc dùng lại (chọn ở &quot;Tạo trong thư mục&quot;) thay vì tạo trùng.
             </p>
           )}
         </div>
@@ -296,13 +298,7 @@ export function LarkDocForm({
                 Ngày
               </label>
               {includeDate ? (
-                <input
-                  id="date"
-                  type="date"
-                  value={dateInput}
-                  onChange={(e) => setDateInput(e.target.value)}
-                  className={fieldClasses}
-                />
+                <input id="date" type="date" value={dateInput} onChange={(e) => setDateInput(e.target.value)} className={fieldClasses} />
               ) : (
                 <div className={`${fieldClasses} text-ink-2/50`}>Không đưa vào tên file</div>
               )}
@@ -323,9 +319,7 @@ export function LarkDocForm({
         {!isFolder && includeDate && <input type="hidden" name="date" value={dateInputToYYYYMMDD(dateInput)} />}
 
         <div className="flex items-center gap-2 rounded-xl border border-line bg-wash px-3.5 py-2.5">
-          <span className="min-w-0 flex-1 truncate font-mono text-[13.5px] text-ink">
-            {preview ?? "— điền đủ các mục ở trên —"}
-          </span>
+          <span className="min-w-0 flex-1 truncate font-mono text-[13.5px] text-ink">{preview ?? "— điền đủ các mục ở trên —"}</span>
           {preview && (
             <button
               type="button"
@@ -345,6 +339,23 @@ export function LarkDocForm({
             Tên dài {preview?.length} ký tự, vượt giới hạn {MAX_FILENAME_LENGTH}. Rút ngắn phần nội dung.
           </p>
         )}
+
+        <label className="flex items-start gap-2.5 rounded-xl border border-line px-3.5 py-2.5">
+          <input
+            type="checkbox"
+            name="transferOwnership"
+            checked={transferOwnership}
+            onChange={(e) => setTransferOwnership(e.target.checked)}
+            className="mt-0.5 h-4 w-4 flex-shrink-0 accent-accent"
+          />
+          <span className="flex flex-col gap-0.5">
+            <span className="text-[13.5px] font-medium text-ink">Chuyển quyền sở hữu cho tôi</span>
+            <span className="text-xs text-ink-2">
+              Cho phép bạn tự xoá/đổi tên trực tiếp trong Lark. Đổi lại, nút &quot;Xoá&quot;/&quot;Di chuyển&quot; trên trang web này sẽ
+              không dùng được cho file/thư mục này nữa.
+            </span>
+          </span>
+        </label>
 
         <div className="flex flex-col gap-2">
           <button
@@ -400,11 +411,7 @@ export function LarkDocForm({
               ))}
             </div>
           )}
-          <button
-            type="button"
-            onClick={onBack}
-            className="w-fit cursor-pointer text-xs font-semibold text-accent hover:text-ink"
-          >
+          <button type="button" onClick={onBack} className="w-fit cursor-pointer text-xs font-semibold text-accent hover:text-ink">
             + Tạo file khác
           </button>
         </div>

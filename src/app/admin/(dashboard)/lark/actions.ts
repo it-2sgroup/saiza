@@ -4,7 +4,14 @@ import { revalidatePath } from "next/cache";
 import { getCurrentProfile } from "@/lib/supabase/profile";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { recordAuditLog } from "@/lib/admin/audit";
-import { createLarkFile, deleteLarkFile, moveLarkFile, shareLarkDocByEmail, type LarkFileType } from "@/lib/lark/client";
+import {
+  createLarkFile,
+  deleteLarkFile,
+  moveLarkFile,
+  shareLarkDocByEmail,
+  transferLarkFileOwner,
+  type LarkFileType,
+} from "@/lib/lark/client";
 import { parseShareRows, applyShareRows, type ShareResult } from "@/lib/lark/shareRows";
 import { resolveRootFolderToken } from "@/lib/lark/orgFolders";
 import { getOrCreateDepartmentFolder } from "@/lib/lark/folderRegistry";
@@ -85,9 +92,7 @@ export async function createLarkDocument(_prev: LarkDocFormState, formData: Form
   // folder, auto-provisioned on first use (see folderRegistry.ts), instead of
   // always dropping into the bare org root.
   const effectiveFolder =
-    targetFolder ||
-    (department ? await getOrCreateDepartmentFolder(org, department) : undefined) ||
-    resolveRootFolderToken(org || null);
+    targetFolder || (department ? await getOrCreateDepartmentFolder(org, department) : undefined) || resolveRootFolderToken(org || null);
 
   let documentId: string;
   let url: string;
@@ -103,13 +108,26 @@ export async function createLarkDocument(_prev: LarkDocFormState, formData: Form
     await addFolderToCache(org || "", { token: documentId, name: title, parentToken: effectiveFolder });
   }
 
+  // Transferring ownership makes the creator the real Lark owner instead of a
+  // full_access collaborator, which is what lets them delete/rename it straight
+  // from the Lark UI without hitting "Yêu cầu xoá — liên hệ 2SGROUP" (delete
+  // rights on a shared-space item are gated by the parent folder's settings for
+  // anyone but the owner). The tradeoff: once the app isn't the owner anymore,
+  // it also loses the ability to move/delete that item through this website's
+  // own buttons — so this is opt-in per file, not the default.
+  const wantsOwnershipTransfer = formData.get("transferOwnership") === "on";
+
   let shared = false;
   const admin = createAdminClient();
   const { data: userData } = await admin.auth.admin.getUserById(profile.id);
   const email = userData?.user?.email;
   if (email) {
     try {
-      await shareLarkDocByEmail(documentId, email, "full_access", fileType);
+      if (wantsOwnershipTransfer) {
+        await transferLarkFileOwner(documentId, email, fileType);
+      } else {
+        await shareLarkDocByEmail(documentId, email, "full_access", fileType);
+      }
       shared = true;
     } catch {
       // Best-effort — employee still gets the link, just may need manual access.
@@ -124,7 +142,7 @@ export async function createLarkDocument(_prev: LarkDocFormState, formData: Form
     action: "lark_doc_created",
     targetTable: "lark_docs",
     targetId: documentId,
-    metadata: { title, url, shared, shares: shareResults, fileType, org: org || null },
+    metadata: { title, url, shared, shares: shareResults, fileType, org: org || null, ownerTransferred: wantsOwnershipTransfer && shared },
   });
 
   revalidatePath("/admin/lark");
