@@ -6,33 +6,92 @@ export { LARK_FILE_TYPE_LABELS } from "./fileTypes";
 
 const LARK_API_BASE = "https://open.larksuite.com/open-apis";
 
-type TokenCache = { token: string; expiresAt: number };
-let tokenCache: TokenCache | null = null;
+export type LarkAppConfig = {
+  key: string;
+  label: string;
+  appId: string;
+  appSecret: string;
+  docFolderToken?: string;
+  orgFolderTokens?: Record<string, string>;
+};
 
-async function getTenantAccessToken(): Promise<string> {
-  if (tokenCache && tokenCache.expiresAt > Date.now()) return tokenCache.token;
+let cachedApps: LarkAppConfig[] | null = null;
+
+// Every connected Lark app has its own Drive/My Space — files created by one
+// app are invisible to another. LARK_APPS holds the full list (see
+// .env.local); if unset, fall back to a single app built from the original
+// standalone env vars so existing deployments don't need to change anything.
+export function getLarkApps(): LarkAppConfig[] {
+  if (cachedApps) return cachedApps;
+
+  const raw = process.env.LARK_APPS?.trim();
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw) as LarkAppConfig[];
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        cachedApps = parsed;
+        return cachedApps;
+      }
+    } catch {
+      // Malformed LARK_APPS — fall through to the single-app fallback below.
+    }
+  }
+
+  let orgFolderTokens: Record<string, string> | undefined;
+  try {
+    orgFolderTokens = process.env.LARK_ORG_FOLDER_TOKENS ? JSON.parse(process.env.LARK_ORG_FOLDER_TOKENS) : undefined;
+  } catch {
+    orgFolderTokens = undefined;
+  }
+
+  cachedApps = [
+    {
+      key: "default",
+      label: "Lark",
+      appId: process.env.LARK_APP_ID ?? "",
+      appSecret: process.env.LARK_APP_SECRET ?? "",
+      docFolderToken: process.env.LARK_DOC_FOLDER_TOKEN,
+      orgFolderTokens,
+    },
+  ];
+  return cachedApps;
+}
+
+export function getDefaultAppKey(): string {
+  return getLarkApps()[0]?.key ?? "default";
+}
+
+export function getLarkAppConfig(appKey?: string): LarkAppConfig {
+  const apps = getLarkApps();
+  return (appKey ? apps.find((a) => a.key === appKey) : undefined) ?? apps[0];
+}
+
+const tokenCache = new Map<string, { token: string; expiresAt: number }>();
+
+async function getTenantAccessToken(appKey?: string): Promise<string> {
+  const app = getLarkAppConfig(appKey);
+  const cached = tokenCache.get(app.key);
+  if (cached && cached.expiresAt > Date.now()) return cached.token;
 
   const res = await fetch(`${LARK_API_BASE}/auth/v3/tenant_access_token/internal`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      app_id: process.env.LARK_APP_ID,
-      app_secret: process.env.LARK_APP_SECRET,
-    }),
+    body: JSON.stringify({ app_id: app.appId, app_secret: app.appSecret }),
     cache: "no-store",
   });
   const data = await res.json();
   if (!res.ok || data.code !== 0) {
-    throw new Error(`Không lấy được Lark access token: ${data.msg ?? res.statusText}`);
+    throw new Error(`Không lấy được Lark access token (${app.label}): ${data.msg ?? res.statusText}`);
   }
 
   // Refresh a bit early to avoid using a token that expires mid-request.
-  tokenCache = { token: data.tenant_access_token, expiresAt: Date.now() + (data.expire - 60) * 1000 };
-  return tokenCache.token;
+  const token = data.tenant_access_token as string;
+  tokenCache.set(app.key, { token, expiresAt: Date.now() + (data.expire - 60) * 1000 });
+  return token;
 }
 
-async function larkFetch(path: string, body: Record<string, unknown>) {
-  const token = await getTenantAccessToken();
+async function larkFetch(path: string, body: Record<string, unknown>, appKey?: string) {
+  const token = await getTenantAccessToken(appKey);
   const res = await fetch(`${LARK_API_BASE}${path}`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -46,16 +105,19 @@ async function larkFetch(path: string, body: Record<string, unknown>) {
   return data.data;
 }
 
-let cachedMySpaceRootToken: string | null = null;
+const mySpaceRootTokenCache = new Map<string, string>();
 
 // Unlike docx/sheet/bitable creation (folder_token optional, defaults to the
 // app's own "My Space" when omitted), Lark's create_folder endpoint rejects
 // the request outright ("folder_token is required") if no parent is given —
 // so when no target/env root is configured, resolve the app's own My Space
 // root explicitly instead of failing.
-async function getMySpaceRootFolderToken(): Promise<string> {
-  if (cachedMySpaceRootToken) return cachedMySpaceRootToken;
-  const token = await getTenantAccessToken();
+async function getMySpaceRootFolderToken(appKey?: string): Promise<string> {
+  const app = getLarkAppConfig(appKey);
+  const cached = mySpaceRootTokenCache.get(app.key);
+  if (cached) return cached;
+
+  const token = await getTenantAccessToken(app.key);
   const res = await fetch(`${LARK_API_BASE}/drive/explorer/v2/root_folder/meta`, {
     headers: { Authorization: `Bearer ${token}` },
     cache: "no-store",
@@ -64,34 +126,36 @@ async function getMySpaceRootFolderToken(): Promise<string> {
   if (!res.ok || data.code !== 0) {
     throw new Error(`Không lấy được thư mục gốc của app: ${data.msg ?? res.statusText}`);
   }
-  cachedMySpaceRootToken = data.data.token as string;
-  return cachedMySpaceRootToken;
+  const rootToken = data.data.token as string;
+  mySpaceRootTokenCache.set(app.key, rootToken);
+  return rootToken;
 }
 
 export type LarkFile = { documentId: string; url: string; type: LarkFileType };
 
-export async function createLarkFile(type: LarkFileType, title: string, targetFolderToken?: string): Promise<LarkFile> {
-  const folderToken = targetFolderToken?.trim() || process.env.LARK_DOC_FOLDER_TOKEN?.trim();
+export async function createLarkFile(type: LarkFileType, title: string, targetFolderToken?: string, appKey?: string): Promise<LarkFile> {
+  const app = getLarkAppConfig(appKey);
+  const folderToken = targetFolderToken?.trim() || app.docFolderToken?.trim();
   const folderField = folderToken ? { folder_token: folderToken } : {};
 
   try {
     switch (type) {
       case "docx": {
-        const data = await larkFetch("/docx/v1/documents", { title, ...folderField });
+        const data = await larkFetch("/docx/v1/documents", { title, ...folderField }, app.key);
         const documentId = data.document.document_id as string;
         return { documentId, url: `https://${process.env.LARK_WORKSPACE_DOMAIN}/docx/${documentId}`, type };
       }
       case "sheet": {
-        const data = await larkFetch("/sheets/v3/spreadsheets", { title, ...folderField });
+        const data = await larkFetch("/sheets/v3/spreadsheets", { title, ...folderField }, app.key);
         return { documentId: data.spreadsheet.spreadsheet_token, url: data.spreadsheet.url, type };
       }
       case "bitable": {
-        const data = await larkFetch("/bitable/v1/apps", { name: title, ...folderField });
+        const data = await larkFetch("/bitable/v1/apps", { name: title, ...folderField }, app.key);
         return { documentId: data.app.app_token, url: data.app.url, type };
       }
       case "folder": {
-        const folderTokenForCreate = folderToken || (await getMySpaceRootFolderToken());
-        const data = await larkFetch("/drive/v1/files/create_folder", { name: title, folder_token: folderTokenForCreate });
+        const folderTokenForCreate = folderToken || (await getMySpaceRootFolderToken(app.key));
+        const data = await larkFetch("/drive/v1/files/create_folder", { name: title, folder_token: folderTokenForCreate }, app.key);
         return { documentId: data.token, url: data.url, type };
       }
     }
@@ -103,8 +167,8 @@ export async function createLarkFile(type: LarkFileType, title: string, targetFo
 
 export type LarkFolderEntry = { token: string; name: string };
 
-export async function listFolderChildren(folderToken: string): Promise<LarkFolderEntry[]> {
-  const token = await getTenantAccessToken();
+export async function listFolderChildren(folderToken: string, appKey?: string): Promise<LarkFolderEntry[]> {
+  const token = await getTenantAccessToken(appKey);
   const res = await fetch(`${LARK_API_BASE}/drive/v1/files?folder_token=${folderToken}&page_size=200`, {
     headers: { Authorization: `Bearer ${token}` },
     cache: "no-store",
@@ -124,8 +188,8 @@ export async function listFolderChildren(folderToken: string): Promise<LarkFolde
 const OWNERSHIP_TRANSFERRED_HINT =
   "File này đã được chuyển quyền sở hữu cho một người dùng, app không còn quản lý được nữa — thao tác trực tiếp trong Lark.";
 
-export async function moveLarkFile(documentId: string, targetFolderToken: string, type: LarkFileType): Promise<void> {
-  const token = await getTenantAccessToken();
+export async function moveLarkFile(documentId: string, targetFolderToken: string, type: LarkFileType, appKey?: string): Promise<void> {
+  const token = await getTenantAccessToken(appKey);
   const res = await fetch(`${LARK_API_BASE}/drive/v1/files/${documentId}/move`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -139,8 +203,8 @@ export async function moveLarkFile(documentId: string, targetFolderToken: string
   }
 }
 
-export async function deleteLarkFile(documentId: string, type: LarkFileType): Promise<void> {
-  const token = await getTenantAccessToken();
+export async function deleteLarkFile(documentId: string, type: LarkFileType, appKey?: string): Promise<void> {
+  const token = await getTenantAccessToken(appKey);
   const res = await fetch(`${LARK_API_BASE}/drive/v1/files/${documentId}?type=${type}`, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${token}` },
@@ -161,8 +225,13 @@ export async function deleteLarkFile(documentId: string, type: LarkFileType): Pr
 // the Lark UI directly. Best-effort — callers must not fail file creation
 // when this throws (e.g. email isn't a real tenant member, or transfer
 // isn't supported for this file type).
-export async function transferLarkFileOwner(documentId: string, email: string, type: LarkFileType = "docx"): Promise<void> {
-  const token = await getTenantAccessToken();
+export async function transferLarkFileOwner(
+  documentId: string,
+  email: string,
+  type: LarkFileType = "docx",
+  appKey?: string,
+): Promise<void> {
+  const token = await getTenantAccessToken(appKey);
 
   const res = await fetch(
     `${LARK_API_BASE}/drive/v1/permissions/${documentId}/members/transfer_owner?type=${type}&need_notification=false`,
@@ -186,8 +255,9 @@ export async function shareLarkDocByEmail(
   email: string,
   perm: "view" | "edit" | "full_access",
   type: LarkFileType = "docx",
+  appKey?: string,
 ): Promise<void> {
-  const token = await getTenantAccessToken();
+  const token = await getTenantAccessToken(appKey);
 
   const res = await fetch(`${LARK_API_BASE}/drive/v1/permissions/${documentId}/members?type=${type}`, {
     method: "POST",

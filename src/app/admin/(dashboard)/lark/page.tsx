@@ -12,8 +12,9 @@ import { ShareExistingDoc } from "./ShareExistingDoc";
 import { DeleteLarkFileButton } from "./DeleteLarkFileButton";
 import { MoveFileButton } from "./MoveFileButton";
 import { TransferOwnerButton } from "./TransferOwnerButton";
+import { AppSwitcher } from "./AppSwitcher";
 import type { StaffOption } from "./StaffSharePicker";
-import { LARK_FILE_TYPE_LABELS, type LarkFileType } from "@/lib/lark/client";
+import { LARK_FILE_TYPE_LABELS, getLarkApps, getDefaultAppKey, type LarkFileType } from "@/lib/lark/client";
 import { listLarkFolderTree, type FolderOption } from "@/lib/lark/folders";
 import { resolveRootFolderToken, listConfiguredOrgs } from "@/lib/lark/orgFolders";
 
@@ -32,7 +33,9 @@ export default async function AdminLarkPage() {
 
   const isAdmin = canManageStaff(profile.role);
   const admin = createAdminClient();
-  const orgKeys = ["", ...listConfiguredOrgs()];
+  const larkApps = getLarkApps();
+  const activeAppKey = profile.lark_prefs.activeApp || getDefaultAppKey();
+  const orgKeys = ["", ...listConfiguredOrgs(activeAppKey)];
   const [{ data: ownRows }, { data: allCreatedRows }, { data: deletedRows }, { data: profilesData }, { data: usersData }, folderTrees] =
     await Promise.all([
       admin
@@ -53,8 +56,8 @@ export default async function AdminLarkPage() {
       admin.auth.admin.listUsers(),
       Promise.all(
         orgKeys.map(async (org) => {
-          const root = resolveRootFolderToken(org || null);
-          return [org, root ? await listLarkFolderTree(root, org) : []] as [string, FolderOption[]];
+          const root = resolveRootFolderToken(org || null, activeAppKey);
+          return [org, root ? await listLarkFolderTree(root, org, activeAppKey) : []] as [string, FolderOption[]];
         }),
       ),
     ]);
@@ -63,7 +66,7 @@ export default async function AdminLarkPage() {
   const flatFolderOptions = [
     { value: "", label: "— Chọn thư mục —" },
     ...orgKeys.flatMap((org) => {
-      const rootToken = resolveRootFolderToken(org || null);
+      const rootToken = resolveRootFolderToken(org || null, activeAppKey);
       const orgLabel = org || "Dùng chung";
       const entries: { value: string; label: string }[] = [];
       if (rootToken) entries.push({ value: rootToken, label: `[${orgLabel}] — Thư mục gốc —` });
@@ -203,6 +206,7 @@ export default async function AdminLarkPage() {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <AppSwitcher apps={larkApps.map((a) => ({ key: a.key, label: a.label }))} activeKey={activeAppKey} />
           <CreateFileModal defaultDepartment={profile.department} staff={staff} foldersByOrg={foldersByOrg} prefs={profile.lark_prefs} />
           <LarkSettingsModal prefs={profile.lark_prefs} />
           {isAdmin && dashboardData && <DashboardModal data={dashboardData} />}

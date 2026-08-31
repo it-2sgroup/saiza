@@ -1,22 +1,28 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createLarkFile, shareLarkDocByEmail } from "./client";
+import { createLarkFile, shareLarkDocByEmail, getDefaultAppKey } from "./client";
 import { resolveRootFolderToken } from "./orgFolders";
 import { addFolderToCache } from "./folders";
 import { departmentLabel } from "@/lib/admin/departments";
 
-// Canonical folder per (org, department) — see supabase/migrations/0012_lark_folders.sql.
+// Canonical folder per (app, org, department) — see
+// supabase/migrations/0012_lark_folders.sql and 0014_lark_multi_app.sql.
 // Looked up first; created lazily (and auto-shared to the department's
 // current staff) the first time it's needed. This is what makes files land
 // in the same predictable place automatically instead of relying on someone
 // manually creating/browsing a folder every time.
-export async function getOrCreateDepartmentFolder(org: string, department: string): Promise<string | undefined> {
+export async function getOrCreateDepartmentFolder(
+  org: string,
+  department: string,
+  appKey: string = getDefaultAppKey(),
+): Promise<string | undefined> {
   const admin = createAdminClient();
   const orgKey = org || "";
 
   const { data: existing, error: selectError } = await admin
     .from("lark_folders")
     .select("lark_token")
+    .eq("app_key", appKey)
     .eq("org", orgKey)
     .eq("department", department)
     .maybeSingle();
@@ -27,15 +33,15 @@ export async function getOrCreateDepartmentFolder(org: string, department: strin
   // persist to dedupe against until the migration runs).
   if (selectError) return undefined;
 
-  const parentToken = resolveRootFolderToken(org || null);
+  const parentToken = resolveRootFolderToken(org || null, appKey);
   if (!parentToken) return undefined;
 
-  const name = org ? `${org} - ${departmentLabel(department) ?? department}` : departmentLabel(department) ?? department;
+  const name = org ? `${org} - ${departmentLabel(department) ?? department}` : (departmentLabel(department) ?? department);
 
   let folderToken: string;
   let folderUrl: string;
   try {
-    const created = await createLarkFile("folder", name, parentToken);
+    const created = await createLarkFile("folder", name, parentToken, appKey);
     folderToken = created.documentId;
     folderUrl = created.url;
   } catch {
@@ -43,27 +49,29 @@ export async function getOrCreateDepartmentFolder(org: string, department: strin
     return parentToken;
   }
 
-  // Insert-or-get: another request may have created the same (org, department)
-  // folder concurrently. onConflict + ignoreDuplicates makes this a no-op if
-  // so, then we always re-select to use whichever row actually won the race
-  // — our own just-created folder becomes a harmless orphan in that rare case.
+  // Insert-or-get: another request may have created the same (app, org,
+  // department) folder concurrently. onConflict + ignoreDuplicates makes
+  // this a no-op if so, then we always re-select to use whichever row
+  // actually won the race — our own just-created folder becomes a harmless
+  // orphan in that rare case.
   await admin
     .from("lark_folders")
     .upsert(
-      { org: orgKey, department, lark_token: folderToken, lark_url: folderUrl },
-      { onConflict: "org,department", ignoreDuplicates: true },
+      { app_key: appKey, org: orgKey, department, lark_token: folderToken, lark_url: folderUrl },
+      { onConflict: "app_key,org,department", ignoreDuplicates: true },
     );
 
   const { data: winner } = await admin
     .from("lark_folders")
     .select("lark_token")
+    .eq("app_key", appKey)
     .eq("org", orgKey)
     .eq("department", department)
     .maybeSingle();
   const winningToken = winner?.lark_token ?? folderToken;
 
   if (winningToken === folderToken) {
-    await addFolderToCache(orgKey, { token: folderToken, name, parentToken });
+    await addFolderToCache(orgKey, { token: folderToken, name, parentToken }, appKey);
   }
 
   // Best-effort: share the (newly won) department folder with everyone
@@ -76,7 +84,7 @@ export async function getOrCreateDepartmentFolder(org: string, department: strin
     ]);
     const emailById = new Map(usersData?.users.map((u) => [u.id, u.email]) ?? []);
     const emails = (deptProfiles ?? []).map((p) => emailById.get(p.id as string)).filter((e): e is string => !!e);
-    await Promise.all(emails.map((email) => shareLarkDocByEmail(winningToken, email, "full_access", "folder").catch(() => {})));
+    await Promise.all(emails.map((email) => shareLarkDocByEmail(winningToken, email, "full_access", "folder", appKey).catch(() => {})));
   } catch {
     // Non-fatal — folder still usable, just not pre-shared.
   }

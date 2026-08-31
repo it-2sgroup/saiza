@@ -7,11 +7,12 @@ export type LarkPrefs = {
   includeVersion?: boolean;
   defaultOrg?: string;
   defaultVersion?: string;
+  // Which connected Lark app (see LARK_APPS) this employee is currently
+  // acting as — different apps have separate Drive spaces/folder trees.
+  activeApp?: string;
 };
 
-export const DEFAULT_LARK_PREFS: Required<
-  Pick<LarkPrefs, "includeDept" | "includeDocType" | "includeDate" | "includeVersion">
-> = {
+export const DEFAULT_LARK_PREFS: Required<Pick<LarkPrefs, "includeDept" | "includeDocType" | "includeDate" | "includeVersion">> = {
   includeDept: true,
   includeDocType: true,
   includeDate: true,
@@ -28,5 +29,6 @@ export function normalizeLarkPrefs(raw: unknown): LarkPrefs {
   if (typeof p.includeVersion === "boolean") prefs.includeVersion = p.includeVersion;
   if (typeof p.defaultOrg === "string") prefs.defaultOrg = p.defaultOrg;
   if (typeof p.defaultVersion === "string") prefs.defaultVersion = p.defaultVersion;
+  if (typeof p.activeApp === "string") prefs.activeApp = p.activeApp;
   return prefs;
 }

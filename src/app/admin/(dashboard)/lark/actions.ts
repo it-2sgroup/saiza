@@ -10,6 +10,7 @@ import {
   moveLarkFile,
   shareLarkDocByEmail,
   transferLarkFileOwner,
+  getDefaultAppKey,
   type LarkFileType,
 } from "@/lib/lark/client";
 import { parseShareRows, applyShareRows, type ShareResult } from "@/lib/lark/shareRows";
@@ -23,6 +24,22 @@ import { VERSION_OPTIONS } from "@/lib/admin/docTypes";
 import type { LarkPrefs } from "@/lib/lark/prefs";
 
 const VALID_FILE_TYPES: LarkFileType[] = ["docx", "sheet", "bitable", "folder"];
+
+// A file/folder always belongs to whichever app created it, regardless of
+// which app the current user has active for NEW creations — using the
+// wrong one fails outright since apps have separate Drive spaces. Rows
+// created before this feature existed never recorded an appKey, so they
+// default to the original (first-configured) app.
+async function resolveDocAppKey(admin: ReturnType<typeof createAdminClient>, documentId: string): Promise<string> {
+  const { data } = await admin
+    .from("audit_log")
+    .select("metadata")
+    .eq("action", "lark_doc_created")
+    .eq("target_id", documentId)
+    .maybeSingle();
+  const appKey = (data?.metadata as { appKey?: string } | null)?.appKey;
+  return appKey ?? getDefaultAppKey();
+}
 
 export type LarkDocFormState = {
   error: string | null;
@@ -88,16 +105,20 @@ export async function createLarkDocument(_prev: LarkDocFormState, formData: Form
     return { error: `Tên file dài ${title.length} ký tự, vượt giới hạn ${MAX_FILENAME_LENGTH}. Rút ngắn nội dung.` };
   }
 
+  const appKey = profile.lark_prefs.activeApp || getDefaultAppKey();
+
   // No explicit folder picked → route into the canonical (org, department)
   // folder, auto-provisioned on first use (see folderRegistry.ts), instead of
   // always dropping into the bare org root.
   const effectiveFolder =
-    targetFolder || (department ? await getOrCreateDepartmentFolder(org, department) : undefined) || resolveRootFolderToken(org || null);
+    targetFolder ||
+    (department ? await getOrCreateDepartmentFolder(org, department, appKey) : undefined) ||
+    resolveRootFolderToken(org || null, appKey);
 
   let documentId: string;
   let url: string;
   try {
-    ({ documentId, url } = await createLarkFile(fileType, title, effectiveFolder));
+    ({ documentId, url } = await createLarkFile(fileType, title, effectiveFolder, appKey));
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Không tạo được file Lark." };
   }
@@ -105,7 +126,7 @@ export async function createLarkDocument(_prev: LarkDocFormState, formData: Form
   // Write-through: a manually-created subfolder should appear in the picker
   // right away instead of waiting for the next cache crawl.
   if (fileType === "folder" && effectiveFolder) {
-    await addFolderToCache(org || "", { token: documentId, name: title, parentToken: effectiveFolder });
+    await addFolderToCache(org || "", { token: documentId, name: title, parentToken: effectiveFolder }, appKey);
   }
 
   // Transferring ownership makes the creator the real Lark owner instead of a
@@ -124,9 +145,9 @@ export async function createLarkDocument(_prev: LarkDocFormState, formData: Form
   if (email) {
     try {
       if (wantsOwnershipTransfer) {
-        await transferLarkFileOwner(documentId, email, fileType);
+        await transferLarkFileOwner(documentId, email, fileType, appKey);
       } else {
-        await shareLarkDocByEmail(documentId, email, "full_access", fileType);
+        await shareLarkDocByEmail(documentId, email, "full_access", fileType, appKey);
       }
       shared = true;
     } catch {
@@ -135,14 +156,23 @@ export async function createLarkDocument(_prev: LarkDocFormState, formData: Form
   }
 
   const shareRows = parseShareRows(String(formData.get("shares") ?? "[]")).filter((r) => r.email !== email);
-  const shareResults = await applyShareRows(documentId, shareRows, fileType);
+  const shareResults = await applyShareRows(documentId, shareRows, fileType, appKey);
 
   await recordAuditLog({
     actorId: profile.id,
     action: "lark_doc_created",
     targetTable: "lark_docs",
     targetId: documentId,
-    metadata: { title, url, shared, shares: shareResults, fileType, org: org || null, ownerTransferred: wantsOwnershipTransfer && shared },
+    metadata: {
+      title,
+      url,
+      shared,
+      shares: shareResults,
+      fileType,
+      org: org || null,
+      ownerTransferred: wantsOwnershipTransfer && shared,
+      appKey,
+    },
   });
 
   revalidatePath("/admin/lark");
@@ -163,7 +193,9 @@ export async function shareExistingDocument(
   const rows = parseShareRows(String(formData.get("shares") ?? "[]"));
   if (rows.length === 0) return { error: "Chọn ít nhất một người để chia sẻ." };
 
-  const shareResults = await applyShareRows(documentId, rows, fileType);
+  const admin = createAdminClient();
+  const appKey = await resolveDocAppKey(admin, documentId);
+  const shareResults = await applyShareRows(documentId, rows, fileType, appKey);
 
   await recordAuditLog({
     actorId: profile.id,
@@ -195,6 +227,8 @@ export async function updateLarkPrefs(_prev: LarkPrefsState, formData: FormData)
     includeVersion: formData.get("includeVersion") === "on",
     ...(org ? { defaultOrg: org } : {}),
     ...(version ? { defaultVersion: version } : {}),
+    // Preserve the app switcher's selection — this form doesn't edit it.
+    ...(profile.lark_prefs.activeApp ? { activeApp: profile.lark_prefs.activeApp } : {}),
   };
 
   // Service-role client, but hard-coded to only ever touch `lark_prefs` —
@@ -205,6 +239,21 @@ export async function updateLarkPrefs(_prev: LarkPrefsState, formData: FormData)
 
   revalidatePath("/admin/lark");
   return { error: null, success: true };
+}
+
+// Lightweight, separate from updateLarkPrefs so switching apps in the header
+// doesn't need to resubmit the whole naming-prefs form.
+export async function switchLarkApp(appKey: string): Promise<void> {
+  const profile = await getCurrentProfile();
+  if (!profile) return;
+
+  const admin = createAdminClient();
+  await admin
+    .from("profiles")
+    .update({ lark_prefs: { ...profile.lark_prefs, activeApp: appKey } })
+    .eq("id", profile.id);
+
+  revalidatePath("/admin/lark");
 }
 
 export type MoveLarkDocState = { error: string | null; done?: boolean };
@@ -234,8 +283,10 @@ export async function moveLarkDocument(
     return { error: "Bạn không có quyền di chuyển file này." };
   }
 
+  const appKey = await resolveDocAppKey(admin, documentId);
+
   try {
-    await moveLarkFile(documentId, targetFolder, fileType);
+    await moveLarkFile(documentId, targetFolder, fileType, appKey);
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Không di chuyển được file." };
   }
@@ -275,8 +326,10 @@ export async function deleteLarkDocument(
     return { error: "Bạn không có quyền xoá file này." };
   }
 
+  const appKey = await resolveDocAppKey(admin, documentId);
+
   try {
-    await deleteLarkFile(documentId, fileType);
+    await deleteLarkFile(documentId, fileType, appKey);
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Không xoá được file." };
   }
@@ -320,8 +373,10 @@ export async function transferLarkDocumentOwner(
     return { error: "Bạn không có quyền chuyển quyền sở hữu file này." };
   }
 
+  const appKey = await resolveDocAppKey(admin, documentId);
+
   try {
-    await transferLarkFileOwner(documentId, email, fileType);
+    await transferLarkFileOwner(documentId, email, fileType, appKey);
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Không chuyển được quyền sở hữu." };
   }

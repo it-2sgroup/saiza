@@ -33,11 +33,12 @@ export async function applyShareRows(
   documentId: string,
   rows: ShareRow[],
   fileType: LarkFileType = "docx",
+  appKey?: string,
 ): Promise<ShareResult[]> {
   const results: ShareResult[] = [];
   for (const row of rows) {
     try {
-      await shareLarkDocByEmail(documentId, row.email, row.perm, fileType);
+      await shareLarkDocByEmail(documentId, row.email, row.perm, fileType, appKey);
       results.push({ email: row.email, ok: true });
     } catch {
       results.push({ email: row.email, ok: false });
