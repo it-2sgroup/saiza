@@ -46,6 +46,28 @@ async function larkFetch(path: string, body: Record<string, unknown>) {
   return data.data;
 }
 
+let cachedMySpaceRootToken: string | null = null;
+
+// Unlike docx/sheet/bitable creation (folder_token optional, defaults to the
+// app's own "My Space" when omitted), Lark's create_folder endpoint rejects
+// the request outright ("folder_token is required") if no parent is given —
+// so when no target/env root is configured, resolve the app's own My Space
+// root explicitly instead of failing.
+async function getMySpaceRootFolderToken(): Promise<string> {
+  if (cachedMySpaceRootToken) return cachedMySpaceRootToken;
+  const token = await getTenantAccessToken();
+  const res = await fetch(`${LARK_API_BASE}/drive/explorer/v2/root_folder/meta`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const data = await res.json();
+  if (!res.ok || data.code !== 0) {
+    throw new Error(`Không lấy được thư mục gốc của app: ${data.msg ?? res.statusText}`);
+  }
+  cachedMySpaceRootToken = data.data.token as string;
+  return cachedMySpaceRootToken;
+}
+
 export type LarkFile = { documentId: string; url: string; type: LarkFileType };
 
 export async function createLarkFile(type: LarkFileType, title: string, targetFolderToken?: string): Promise<LarkFile> {
@@ -68,7 +90,8 @@ export async function createLarkFile(type: LarkFileType, title: string, targetFo
         return { documentId: data.app.app_token, url: data.app.url, type };
       }
       case "folder": {
-        const data = await larkFetch("/drive/v1/files/create_folder", { name: title, ...folderField });
+        const folderTokenForCreate = folderToken || (await getMySpaceRootFolderToken());
+        const data = await larkFetch("/drive/v1/files/create_folder", { name: title, folder_token: folderTokenForCreate });
         return { documentId: data.token, url: data.url, type };
       }
     }
