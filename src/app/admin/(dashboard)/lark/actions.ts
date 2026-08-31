@@ -11,6 +11,9 @@ import {
   shareLarkDocByEmail,
   transferLarkFileOwner,
   getDefaultAppKey,
+  getAppRootFolderToken,
+  listFolderContents,
+  type LarkDriveItem,
   type LarkFileType,
 } from "@/lib/lark/client";
 import { parseShareRows, applyShareRows, type ShareResult } from "@/lib/lark/shareRows";
@@ -344,6 +347,24 @@ export async function deleteLarkDocument(
 
   revalidatePath("/admin/lark");
   return { error: null, done: true };
+}
+
+export type DriveBrowseState = { error: string | null; folderToken?: string; items?: LarkDriveItem[] };
+
+// Reads the LIVE folder contents of the given app, regardless of whether
+// anything in it was ever created through this website — unlike the
+// audit_log-based lists above, this is what surfaces pre-existing content.
+export async function browseLarkFolder(folderToken: string | null, appKey: string): Promise<DriveBrowseState> {
+  const profile = await getCurrentProfile();
+  if (!profile) return { error: "Bạn cần đăng nhập lại." };
+
+  try {
+    const resolvedToken = folderToken || (await getAppRootFolderToken(appKey));
+    const items = await listFolderContents(resolvedToken, appKey);
+    return { error: null, folderToken: resolvedToken, items };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Không đọc được thư mục." };
+  }
 }
 
 export type TransferOwnerState = { error: string | null; done?: boolean };

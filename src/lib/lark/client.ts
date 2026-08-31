@@ -182,6 +182,37 @@ export async function listFolderChildren(folderToken: string, appKey?: string): 
     .map((f) => ({ token: f.token, name: f.name }));
 }
 
+export type LarkDriveItem = { token: string; name: string; type: string; url?: string };
+
+// Unlike listFolderChildren (folders only, used for the destination picker),
+// this returns EVERY item in a folder — used by the Drive Explorer, which
+// needs to show real files too, including ones that existed long before this
+// website's own tracking (audit_log) did.
+export async function listFolderContents(folderToken: string, appKey?: string): Promise<LarkDriveItem[]> {
+  const token = await getTenantAccessToken(appKey);
+  const res = await fetch(`${LARK_API_BASE}/drive/v1/files?folder_token=${folderToken}&page_size=200`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const data = await res.json();
+  if (!res.ok || data.code !== 0) {
+    throw new Error(`Không đọc được thư mục: ${data.msg ?? res.statusText}`);
+  }
+  return (data.data.files as { token: string; name: string; type: string; url?: string }[]).map((f) => ({
+    token: f.token,
+    name: f.name,
+    type: f.type,
+    url: f.url,
+  }));
+}
+
+// Where the Drive Explorer starts browsing for a given app: its configured
+// root if one was set, otherwise its true My Space root.
+export async function getAppRootFolderToken(appKey?: string): Promise<string> {
+  const app = getLarkAppConfig(appKey);
+  return app.docFolderToken?.trim() || (await getMySpaceRootFolderToken(app.key));
+}
+
 // The app loses drive access to a file/folder once its ownership has been
 // transferred to a person (see transferLarkFileOwner below) — Lark answers
 // with this generic node-permission error, which is confusing on its own.
