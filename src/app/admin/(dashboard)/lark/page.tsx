@@ -138,7 +138,7 @@ export default async function AdminLarkPage() {
     { data: profilesData },
     { data: usersData },
     folderTrees,
-    tenantContacts,
+    tenantContactsByApp,
   ] = await Promise.all([
     admin
       .from("audit_log")
@@ -162,7 +162,10 @@ export default async function AdminLarkPage() {
         return [org, root ? await listLarkFolderTree(root, org, activeAppKey) : []] as [string, FolderOption[]];
       }),
     ),
-    listTenantContacts(activeAppKey).catch(() => []),
+    // Sharing needs to reach people across ALL connected orgs, not just the
+    // one currently active for new creations — merge every app's directory
+    // into one suggestion pool instead of scoping it to activeAppKey.
+    Promise.all(larkApps.map((a) => listTenantContacts(a.key).catch(() => []))),
   ]);
 
   const foldersByOrg: Record<string, FolderOption[]> = Object.fromEntries(folderTrees);
@@ -192,12 +195,22 @@ export default async function AdminLarkPage() {
       avatar_url: p.avatar_url as string | null,
     }))
     .filter((s): s is StaffOption => !!s.email);
-  // Lark's org directory (scoped to whatever "visible range" the active app
-  // was granted in its own Admin Console) is the real population people
-  // actually want to share with — far more complete than the handful of
-  // people who happen to have a login on this website. Website staff fills
-  // in anyone missing from that range (e.g. contacts scope not opened yet).
-  const seenEmails = new Set(tenantContacts.map((c) => c.email.toLowerCase()));
+  // Sharing/transferring ownership needs to reach people across every
+  // connected org, not just whichever app is active for new creations — so
+  // the suggestion pool is every app's directory merged together (deduped by
+  // email, since the same person can show up via more than one org).
+  // Website staff fills in anyone still missing (e.g. contacts scope not
+  // opened for their org yet).
+  const seenEmails = new Set<string>();
+  const tenantContacts: StaffOption[] = [];
+  for (const contacts of tenantContactsByApp) {
+    for (const c of contacts) {
+      const key = c.email.toLowerCase();
+      if (seenEmails.has(key)) continue;
+      seenEmails.add(key);
+      tenantContacts.push(c);
+    }
+  }
   const staff: StaffOption[] = [...tenantContacts, ...websiteStaff.filter((s) => !seenEmails.has(s.email.toLowerCase()))];
 
   // Rows created before multi-app support existed never recorded an appKey —
