@@ -1,9 +1,10 @@
 "use client";
 
-import { useActionState, useId, useState } from "react";
+import { useActionState, useState } from "react";
 import { transferLarkDocumentOwner, type TransferOwnerState } from "./actions";
 import type { LarkFileType } from "@/lib/lark/client";
 import type { StaffOption } from "./StaffSharePicker";
+import { PeoplePicker } from "./PeoplePicker";
 
 const initialState: TransferOwnerState = { error: null };
 
@@ -20,7 +21,6 @@ export function TransferOwnerButton({
 }) {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
-  const datalistId = useId();
   const [state, formAction, pending] = useActionState(transferLarkDocumentOwner.bind(null, documentId, fileType), initialState);
 
   const triggerClassName =
@@ -40,23 +40,14 @@ export function TransferOwnerButton({
           <p className="text-xs text-ink-2">
             Người này sẽ trở thành chủ sở hữu thật trên Lark. App sẽ mất quyền quản lý (Xoá/Di chuyển trên web này) file này sau khi chuyển.
           </p>
-          <input
-            type="email"
-            name="email"
-            list={datalistId}
+          <PeoplePicker
+            staff={staff}
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="email@2sgroup.vn"
-            required
-            className="rounded-xl border border-line bg-card px-3.5 py-2.5 text-[13.5px] text-ink outline-none transition-all duration-300 ease-soft focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/30"
+            onChange={setEmail}
+            name="email"
+            placeholder="Nhập tên hoặc email@2sgroup.vn"
+            inputClassName="w-full rounded-xl border border-line bg-card px-3.5 py-2.5 text-[13.5px] text-ink outline-none transition-all duration-300 ease-soft focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/30"
           />
-          <datalist id={datalistId}>
-            {staff.map((s) => (
-              <option key={s.id} value={s.email}>
-                {s.full_name}
-              </option>
-            ))}
-          </datalist>
           {state.error && <p className="text-xs font-medium text-red-600">{state.error}</p>}
           <button
             type="submit"

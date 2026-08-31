@@ -1,9 +1,9 @@
 "use client";
 
-import { useId } from "react";
 import { Combobox } from "../Combobox";
+import { PeoplePicker } from "./PeoplePicker";
 
-export type StaffOption = { id: string; full_name: string; email: string };
+export type StaffOption = { id: string; full_name: string; email: string; avatar_url: string | null };
 export type ShareRow = { email: string; perm: "view" | "edit" | "full_access" };
 
 const PERM_OPTIONS = [
@@ -31,8 +31,6 @@ export function StaffSharePicker({
   value: ShareRow[];
   onChange: (rows: ShareRow[]) => void;
 }) {
-  const datalistId = useId();
-
   const updateRow = (index: number, patch: Partial<ShareRow>) => {
     onChange(value.map((row, i) => (i === index ? { ...row, ...patch } : row)));
   };
@@ -42,22 +40,14 @@ export function StaffSharePicker({
   return (
     <div className="flex flex-col gap-2.5">
       <input type="hidden" name={hiddenFieldName} value={JSON.stringify(value)} />
-      <datalist id={datalistId}>
-        {staff.map((s) => (
-          <option key={s.id} value={s.email}>
-            {s.full_name}
-          </option>
-        ))}
-      </datalist>
       {value.map((row, i) => (
         <div key={i} className="flex items-center gap-2.5">
-          <input
-            type="email"
-            list={datalistId}
+          <PeoplePicker
+            staff={staff}
             value={row.email}
-            onChange={(e) => updateRow(i, { email: e.target.value })}
-            placeholder="email@2sgroup.vn"
-            className={`${fieldClasses} flex-1`}
+            onChange={(email) => updateRow(i, { email })}
+            placeholder="Nhập tên hoặc email@2sgroup.vn"
+            inputClassName={`${fieldClasses} w-full`}
           />
           <div className="w-36 flex-shrink-0">
             <Combobox
@@ -79,11 +69,7 @@ export function StaffSharePicker({
           </button>
         </div>
       ))}
-      <button
-        type="button"
-        onClick={addRow}
-        className="w-fit cursor-pointer text-sm font-semibold text-accent hover:text-ink"
-      >
+      <button type="button" onClick={addRow} className="w-fit cursor-pointer text-sm font-semibold text-accent hover:text-ink">
         + Thêm người
       </button>
     </div>

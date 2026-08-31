@@ -147,7 +147,7 @@ export default async function AdminLarkPage() {
             .order("created_at", { ascending: false })
         : Promise.resolve({ data: [] }),
       admin.from("audit_log").select("target_id").eq("action", "lark_doc_deleted"),
-      admin.from("profiles").select("id, full_name, department"),
+      admin.from("profiles").select("id, full_name, department, avatar_url"),
       admin.auth.admin.listUsers(),
       Promise.all(
         orgKeys.map(async (org) => {
@@ -177,7 +177,12 @@ export default async function AdminLarkPage() {
     (profilesData ?? []).map((p) => [p.id as string, { fullName: p.full_name as string, department: p.department as string | null }]),
   );
   const staff: StaffOption[] = (profilesData ?? [])
-    .map((p) => ({ id: p.id as string, full_name: p.full_name as string, email: emailById.get(p.id) ?? "" }))
+    .map((p) => ({
+      id: p.id as string,
+      full_name: p.full_name as string,
+      email: emailById.get(p.id) ?? "",
+      avatar_url: p.avatar_url as string | null,
+    }))
     .filter((s): s is StaffOption => !!s.email);
 
   // Rows created before multi-app support existed never recorded an appKey —
