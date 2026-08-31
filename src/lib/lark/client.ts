@@ -206,6 +206,53 @@ export async function listFolderContents(folderToken: string, appKey?: string): 
   }));
 }
 
+export type LarkContact = { id: string; full_name: string; email: string; avatar_url: string | null };
+
+// The people-picker (share/transfer-owner) needs the app's actual Lark org
+// directory, not this website's own small list of staff with admin logins.
+// contact:user.base:readonly is scoped to an admin-configured "visible
+// range" (see Admin Console → App Management → Contacts Settings) — this
+// simply returns whatever that range currently allows, which may be a
+// subset of the real org if it hasn't been opened to "All members".
+export async function listTenantContacts(appKey?: string): Promise<LarkContact[]> {
+  const token = await getTenantAccessToken(appKey);
+
+  const scopesRes = await fetch(`${LARK_API_BASE}/contact/v3/scopes`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const scopesData = await scopesRes.json();
+  if (!scopesRes.ok || scopesData.code !== 0) return [];
+  const userIds = (scopesData.data?.user_ids as string[] | undefined) ?? [];
+  if (userIds.length === 0) return [];
+
+  const contacts: LarkContact[] = [];
+  // Batch endpoint caps how many ids can be requested at once — chunk to stay safe.
+  for (let i = 0; i < userIds.length; i += 50) {
+    const chunk = userIds.slice(i, i + 50);
+    const query = chunk.map((id) => `user_ids=${id}`).join("&");
+    const res = await fetch(`${LARK_API_BASE}/contact/v3/users/batch?${query}&user_id_type=open_id`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+    const data = await res.json();
+    if (!res.ok || data.code !== 0) continue;
+    type ContactUser = {
+      open_id: string;
+      name: string;
+      enterprise_email?: string;
+      email?: string;
+      avatar?: { avatar_240?: string };
+    };
+    for (const u of (data.data?.items ?? []) as ContactUser[]) {
+      const email = u.enterprise_email || u.email || "";
+      if (!email) continue;
+      contacts.push({ id: u.open_id, full_name: u.name, email, avatar_url: u.avatar?.avatar_240 ?? null });
+    }
+  }
+  return contacts;
+}
+
 // Where the Drive Explorer starts browsing for a given app: its configured
 // root if one was set, otherwise its true My Space root.
 export async function getAppRootFolderToken(appKey?: string): Promise<string> {

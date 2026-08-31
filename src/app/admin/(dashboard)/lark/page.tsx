@@ -15,7 +15,7 @@ import { TransferOwnerButton } from "./TransferOwnerButton";
 import { AppSwitcher } from "./AppSwitcher";
 import { DriveExplorer } from "./DriveExplorer";
 import type { StaffOption } from "./StaffSharePicker";
-import { LARK_FILE_TYPE_LABELS, getLarkApps, getDefaultAppKey, type LarkFileType } from "@/lib/lark/client";
+import { LARK_FILE_TYPE_LABELS, getLarkApps, getDefaultAppKey, listTenantContacts, type LarkFileType } from "@/lib/lark/client";
 import { listLarkFolderTree, type FolderOption } from "@/lib/lark/folders";
 import { resolveRootFolderToken, listConfiguredOrgs } from "@/lib/lark/orgFolders";
 
@@ -131,31 +131,39 @@ export default async function AdminLarkPage() {
   const larkApps = getLarkApps();
   const activeAppKey = profile.lark_prefs.activeApp || getDefaultAppKey();
   const orgKeys = ["", ...listConfiguredOrgs(activeAppKey)];
-  const [{ data: ownRows }, { data: allCreatedRows }, { data: deletedRows }, { data: profilesData }, { data: usersData }, folderTrees] =
-    await Promise.all([
-      admin
-        .from("audit_log")
-        .select("actor_id, target_id, metadata, created_at")
-        .eq("action", "lark_doc_created")
-        .eq("actor_id", profile.id)
-        .order("created_at", { ascending: false }),
-      isAdmin
-        ? admin
-            .from("audit_log")
-            .select("actor_id, target_id, metadata, created_at")
-            .eq("action", "lark_doc_created")
-            .order("created_at", { ascending: false })
-        : Promise.resolve({ data: [] }),
-      admin.from("audit_log").select("target_id").eq("action", "lark_doc_deleted"),
-      admin.from("profiles").select("id, full_name, department, avatar_url"),
-      admin.auth.admin.listUsers(),
-      Promise.all(
-        orgKeys.map(async (org) => {
-          const root = resolveRootFolderToken(org || null, activeAppKey);
-          return [org, root ? await listLarkFolderTree(root, org, activeAppKey) : []] as [string, FolderOption[]];
-        }),
-      ),
-    ]);
+  const [
+    { data: ownRows },
+    { data: allCreatedRows },
+    { data: deletedRows },
+    { data: profilesData },
+    { data: usersData },
+    folderTrees,
+    tenantContacts,
+  ] = await Promise.all([
+    admin
+      .from("audit_log")
+      .select("actor_id, target_id, metadata, created_at")
+      .eq("action", "lark_doc_created")
+      .eq("actor_id", profile.id)
+      .order("created_at", { ascending: false }),
+    isAdmin
+      ? admin
+          .from("audit_log")
+          .select("actor_id, target_id, metadata, created_at")
+          .eq("action", "lark_doc_created")
+          .order("created_at", { ascending: false })
+      : Promise.resolve({ data: [] }),
+    admin.from("audit_log").select("target_id").eq("action", "lark_doc_deleted"),
+    admin.from("profiles").select("id, full_name, department, avatar_url"),
+    admin.auth.admin.listUsers(),
+    Promise.all(
+      orgKeys.map(async (org) => {
+        const root = resolveRootFolderToken(org || null, activeAppKey);
+        return [org, root ? await listLarkFolderTree(root, org, activeAppKey) : []] as [string, FolderOption[]];
+      }),
+    ),
+    listTenantContacts(activeAppKey).catch(() => []),
+  ]);
 
   const foldersByOrg: Record<string, FolderOption[]> = Object.fromEntries(folderTrees);
   const flatFolderOptions = [
@@ -176,7 +184,7 @@ export default async function AdminLarkPage() {
   const profileById = new Map(
     (profilesData ?? []).map((p) => [p.id as string, { fullName: p.full_name as string, department: p.department as string | null }]),
   );
-  const staff: StaffOption[] = (profilesData ?? [])
+  const websiteStaff: StaffOption[] = (profilesData ?? [])
     .map((p) => ({
       id: p.id as string,
       full_name: p.full_name as string,
@@ -184,6 +192,13 @@ export default async function AdminLarkPage() {
       avatar_url: p.avatar_url as string | null,
     }))
     .filter((s): s is StaffOption => !!s.email);
+  // Lark's org directory (scoped to whatever "visible range" the active app
+  // was granted in its own Admin Console) is the real population people
+  // actually want to share with — far more complete than the handful of
+  // people who happen to have a login on this website. Website staff fills
+  // in anyone missing from that range (e.g. contacts scope not opened yet).
+  const seenEmails = new Set(tenantContacts.map((c) => c.email.toLowerCase()));
+  const staff: StaffOption[] = [...tenantContacts, ...websiteStaff.filter((s) => !seenEmails.has(s.email.toLowerCase()))];
 
   // Rows created before multi-app support existed never recorded an appKey —
   // treat those as belonging to the original (default) app so switching apps

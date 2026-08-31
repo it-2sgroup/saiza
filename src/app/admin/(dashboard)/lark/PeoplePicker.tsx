@@ -69,7 +69,7 @@ export function PeoplePicker({
   const needle = value.trim().toLowerCase();
   const matches = (
     needle ? staff.filter((s) => s.full_name.toLowerCase().includes(needle) || s.email.toLowerCase().includes(needle)) : staff
-  ).slice(0, 8);
+  ).slice(0, 50);
 
   const pick = (s: StaffOption) => {
     onChange(s.email);
