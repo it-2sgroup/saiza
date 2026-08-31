@@ -2,9 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Modal, ModalHeader } from "../Modal";
-import { DeleteLarkFileButton } from "./DeleteLarkFileButton";
-import { MoveFileButton } from "./MoveFileButton";
-import { TransferOwnerButton } from "./TransferOwnerButton";
+import { ItemActionsMenu } from "./ItemActionsMenu";
 import type { StaffOption } from "./StaffSharePicker";
 import { DEPARTMENTS, departmentLabel } from "@/lib/admin/departments";
 import { LARK_FILE_TYPE_LABELS, type LarkFileType } from "@/lib/lark/fileTypes";
@@ -23,10 +21,12 @@ export function OverviewModal({
   rows,
   folderOptions,
   staff = [],
+  renderTrigger,
 }: {
   rows: OverviewRow[];
   folderOptions: { value: string; label: string }[];
   staff?: StaffOption[];
+  renderTrigger?: (open: () => void) => React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
@@ -58,31 +58,39 @@ export function OverviewModal({
     });
   }, [rows, q, department, fileType]);
 
+  const overviewIcon = (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="3" y="3" width="7" height="7" rx="1.5" />
+      <rect x="14" y="3" width="7" height="7" rx="1.5" />
+      <rect x="14" y="14" width="7" height="7" rx="1.5" />
+      <rect x="3" y="14" width="7" height="7" rx="1.5" />
+    </svg>
+  );
+
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        title="Tổng quan toàn công ty"
-        aria-label="Tổng quan toàn công ty"
-        className="flex h-10 w-10 flex-shrink-0 cursor-pointer items-center justify-center rounded-full border border-line bg-card text-ink-2 transition-colors duration-300 ease-soft hover:border-ink hover:text-ink"
-      >
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+      {renderTrigger ? (
+        renderTrigger(() => setOpen(true))
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          title="Tổng quan toàn công ty"
+          aria-label="Tổng quan toàn công ty"
+          className="flex h-10 w-10 flex-shrink-0 cursor-pointer items-center justify-center rounded-full border border-line bg-card text-ink-2 transition-colors duration-300 ease-soft hover:border-ink hover:text-ink"
         >
-          <rect x="3" y="3" width="7" height="7" rx="1.5" />
-          <rect x="14" y="3" width="7" height="7" rx="1.5" />
-          <rect x="14" y="14" width="7" height="7" rx="1.5" />
-          <rect x="3" y="14" width="7" height="7" rx="1.5" />
-        </svg>
-      </button>
+          {overviewIcon}
+        </button>
+      )}
 
       <Modal
         open={open}
@@ -166,33 +174,21 @@ export function OverviewModal({
           ) : (
             <div className="flex flex-col divide-y divide-line">
               {filtered.map((row) => (
-                <div key={row.targetId} className="flex flex-col gap-2 py-3">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex min-w-0 flex-col gap-0.5">
-                      <span className="truncate text-[14.5px] font-medium">{row.title}</span>
-                      <span className="text-xs text-ink-2">
-                        {LARK_FILE_TYPE_LABELS[row.fileType]} · {row.creatorName} ·{" "}
-                        {departmentLabel(row.creatorDepartment) ?? "chưa gán phòng ban"} · {new Date(row.createdAt).toLocaleString("vi-VN")}
-                      </span>
-                    </div>
-                    {row.url && (
-                      <a
-                        href={row.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex-shrink-0 text-sm font-medium text-accent hover:text-ink"
-                      >
-                        Mở →
-                      </a>
-                    )}
+                <div key={row.targetId} className="flex items-center justify-between gap-4 py-3">
+                  <div className="flex min-w-0 flex-col gap-0.5">
+                    <span className="truncate text-[14.5px] font-medium">{row.title}</span>
+                    <span className="text-xs text-ink-2">
+                      {LARK_FILE_TYPE_LABELS[row.fileType]} · {row.creatorName} ·{" "}
+                      {departmentLabel(row.creatorDepartment) ?? "chưa gán phòng ban"} · {new Date(row.createdAt).toLocaleString("vi-VN")}
+                    </span>
                   </div>
-                  <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div className="flex flex-wrap items-center gap-4">
-                      <MoveFileButton documentId={row.targetId} fileType={row.fileType} folderOptions={folderOptions} />
-                      <TransferOwnerButton documentId={row.targetId} fileType={row.fileType} staff={staff} />
-                    </div>
-                    <DeleteLarkFileButton documentId={row.targetId} fileType={row.fileType} />
-                  </div>
+                  <ItemActionsMenu
+                    documentId={row.targetId}
+                    fileType={row.fileType}
+                    url={row.url}
+                    staff={staff}
+                    folderOptions={folderOptions}
+                  />
                 </div>
               ))}
             </div>

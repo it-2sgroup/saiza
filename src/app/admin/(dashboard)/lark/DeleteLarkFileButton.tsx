@@ -10,12 +10,14 @@ export function DeleteLarkFileButton({
   documentId,
   fileType = "docx",
   variant = "link",
+  embedded = false,
 }: {
   documentId: string;
   fileType?: LarkFileType;
   variant?: "link" | "button";
+  embedded?: boolean;
 }) {
-  const [confirming, setConfirming] = useState(false);
+  const [confirming, setConfirming] = useState(embedded);
   const [state, formAction, pending] = useActionState(deleteLarkDocument.bind(null, documentId, fileType), initialState);
 
   const triggerClassName =
@@ -47,9 +49,11 @@ export function DeleteLarkFileButton({
       <button type="submit" disabled={pending} className={confirmClassName}>
         {pending ? "Đang xoá..." : "Xác nhận xoá"}
       </button>
-      <button type="button" onClick={() => setConfirming(false)} disabled={pending} className={cancelClassName}>
-        Huỷ
-      </button>
+      {!embedded && (
+        <button type="button" onClick={() => setConfirming(false)} disabled={pending} className={cancelClassName}>
+          Huỷ
+        </button>
+      )}
       {state.error && <span className="text-xs font-medium text-red-600">{state.error}</span>}
     </form>
   );

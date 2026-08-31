@@ -2,10 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Modal, ModalHeader } from "../Modal";
-import { ShareExistingDoc } from "./ShareExistingDoc";
-import { DeleteLarkFileButton } from "./DeleteLarkFileButton";
-import { MoveFileButton } from "./MoveFileButton";
-import { TransferOwnerButton } from "./TransferOwnerButton";
+import { ItemActionsMenu } from "./ItemActionsMenu";
 import type { StaffOption } from "./StaffSharePicker";
 import { LARK_FILE_TYPE_LABELS, type LarkFileType } from "@/lib/lark/fileTypes";
 
@@ -21,10 +18,12 @@ export function HistoryModal({
   rows,
   staff,
   folderOptions,
+  renderTrigger,
 }: {
   rows: HistoryRow[];
   staff: StaffOption[];
   folderOptions: { value: string; label: string }[];
+  renderTrigger?: (open: () => void) => React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
@@ -35,30 +34,38 @@ export function HistoryModal({
     return rows.filter((r) => r.title.toLowerCase().includes(needle));
   }, [rows, q]);
 
+  const historyIcon = (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <path d="M14 2v6h6" />
+      <path d="M9 13h6M9 17h6" />
+    </svg>
+  );
+
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        title="Lịch sử tạo file của tôi"
-        aria-label="Lịch sử tạo file của tôi"
-        className="flex h-10 w-10 flex-shrink-0 cursor-pointer items-center justify-center rounded-full border border-line bg-card text-ink-2 transition-colors duration-300 ease-soft hover:border-ink hover:text-ink"
-      >
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+      {renderTrigger ? (
+        renderTrigger(() => setOpen(true))
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          title="Lịch sử tạo file của tôi"
+          aria-label="Lịch sử tạo file của tôi"
+          className="flex h-10 w-10 flex-shrink-0 cursor-pointer items-center justify-center rounded-full border border-line bg-card text-ink-2 transition-colors duration-300 ease-soft hover:border-ink hover:text-ink"
         >
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-          <path d="M14 2v6h6" />
-          <path d="M9 13h6M9 17h6" />
-        </svg>
-      </button>
+          {historyIcon}
+        </button>
+      )}
 
       <Modal
         open={open}
@@ -81,33 +88,20 @@ export function HistoryModal({
           ) : (
             <div className="flex flex-col divide-y divide-line">
               {filtered.map((row) => (
-                <div key={row.targetId} className="flex flex-col gap-2 py-3">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex min-w-0 flex-col gap-0.5">
-                      <span className="truncate text-[14.5px] font-medium">{row.title}</span>
-                      <span className="text-xs text-ink-2">
-                        {LARK_FILE_TYPE_LABELS[row.fileType]} · {new Date(row.createdAt).toLocaleString("vi-VN")}
-                      </span>
-                    </div>
-                    {row.url && (
-                      <a
-                        href={row.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex-shrink-0 text-sm font-medium text-accent hover:text-ink"
-                      >
-                        Mở →
-                      </a>
-                    )}
+                <div key={row.targetId} className="flex items-center justify-between gap-4 py-3">
+                  <div className="flex min-w-0 flex-col gap-0.5">
+                    <span className="truncate text-[14.5px] font-medium">{row.title}</span>
+                    <span className="text-xs text-ink-2">
+                      {LARK_FILE_TYPE_LABELS[row.fileType]} · {new Date(row.createdAt).toLocaleString("vi-VN")}
+                    </span>
                   </div>
-                  <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div className="flex flex-wrap items-center gap-4">
-                      <ShareExistingDoc documentId={row.targetId} fileType={row.fileType} staff={staff} />
-                      <MoveFileButton documentId={row.targetId} fileType={row.fileType} folderOptions={folderOptions} />
-                      <TransferOwnerButton documentId={row.targetId} fileType={row.fileType} staff={staff} />
-                    </div>
-                    <DeleteLarkFileButton documentId={row.targetId} fileType={row.fileType} />
-                  </div>
+                  <ItemActionsMenu
+                    documentId={row.targetId}
+                    fileType={row.fileType}
+                    url={row.url}
+                    staff={staff}
+                    folderOptions={folderOptions}
+                  />
                 </div>
               ))}
             </div>
