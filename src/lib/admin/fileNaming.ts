@@ -66,12 +66,12 @@ export function buildNamingSegments(
   department: string | null,
   today: string,
 ): NamingSegment[] {
-  const segments: NamingSegment[] = [{ text: prefs.defaultOrg || "SAIZA", color: "#A5B4FC" }];
-  if (prefs.includeDept) segments.push({ text: `-${department || "IT"}`, color: "#5EEAD4" });
-  if (prefs.includeDocType) segments.push({ text: "_Báo Cáo", color: "#FCD34D" });
-  segments.push({ text: "_Báo Cáo Tuần 36", color: "#FAFAFA" });
-  if (prefs.includeDate) segments.push({ text: `_${today}`, color: "#93C5FD" });
-  if (prefs.includeVersion) segments.push({ text: `_${prefs.defaultVersion || "v1"}`, color: "#F0ABFC" });
+  const segments: NamingSegment[] = [{ text: prefs.defaultOrg || "SAIZA", color: "#4F46E5" }];
+  if (prefs.includeDept) segments.push({ text: `-${department || "IT"}`, color: "#0D9488" });
+  if (prefs.includeDocType) segments.push({ text: "_Báo Cáo", color: "#B45309" });
+  segments.push({ text: "_Báo Cáo Tuần 36", color: "#18181B" });
+  if (prefs.includeDate) segments.push({ text: `_${today}`, color: "#2563EB" });
+  if (prefs.includeVersion) segments.push({ text: `_${prefs.defaultVersion || "v1"}`, color: "#A21CAF" });
   return segments;
 }
 
