@@ -3,6 +3,7 @@
 import { useActionState, useMemo, useRef, useState } from "react";
 import { createLarkDocument, type LarkDocFormState } from "./actions";
 import { Combobox } from "../Combobox";
+import { LarkSettingsModal } from "./LarkSettingsModal";
 import { StaffSharePicker, type StaffOption, type ShareRow } from "./StaffSharePicker";
 import { DEPARTMENTS, ORG_CODES, departmentLabel } from "@/lib/admin/departments";
 import { DOC_TYPES, VERSION_OPTIONS } from "@/lib/admin/docTypes";
@@ -23,14 +24,12 @@ const VERSION_SELECT_OPTIONS = VERSION_OPTIONS.map((v) => ({ value: v, label: v 
 
 export function LarkDocForm({
   fileType,
-  onBack,
   defaultDepartment,
   staff,
   foldersByOrg,
   prefs,
 }: {
   fileType: LarkFileType;
-  onBack: () => void;
   defaultDepartment: string | null;
   staff: StaffOption[];
   foldersByOrg: Record<string, FolderOption[]>;
@@ -55,6 +54,8 @@ export function LarkDocForm({
   const [wip, setWip] = useState(false);
   const [copied, setCopied] = useState(false);
   const [transferOwnership, setTransferOwnership] = useState(false);
+  const [dismissedUrl, setDismissedUrl] = useState<string | null>(null);
+  const [namingOpen, setNamingOpen] = useState(false);
 
   const [includeDept, setIncludeDept] = useState(prefs.includeDept ?? DEFAULT_LARK_PREFS.includeDept);
   const [includeDocType, setIncludeDocType] = useState(prefs.includeDocType ?? DEFAULT_LARK_PREFS.includeDocType);
@@ -114,26 +115,6 @@ export function LarkDocForm({
 
   return (
     <div className="flex flex-col gap-3">
-      <button
-        type="button"
-        onClick={onBack}
-        className="flex w-fit cursor-pointer items-center gap-1.5 text-sm font-medium text-ink-2 hover:text-ink"
-      >
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="m15 18-6-6 6-6" />
-        </svg>
-        Đổi loại file
-      </button>
-
       <form
         ref={formRef}
         action={(formData) => formAction(formData)}
@@ -340,6 +321,14 @@ export function LarkDocForm({
           </p>
         )}
 
+        <button
+          type="button"
+          onClick={() => setNamingOpen(true)}
+          className="w-fit cursor-pointer text-xs font-semibold text-accent hover:text-ink"
+        >
+          Sửa quy ước tên
+        </button>
+
         <label className="flex items-start gap-2.5 rounded-xl border border-line px-3.5 py-2.5">
           <input
             type="checkbox"
@@ -396,7 +385,9 @@ export function LarkDocForm({
         </button>
       </form>
 
-      {state.url && (
+      <LarkSettingsModal prefs={prefs} department={department || defaultDepartment} open={namingOpen} onOpenChange={setNamingOpen} />
+
+      {state.url && state.url !== dismissedUrl && (
         <div className="flex flex-col gap-2.5 rounded-card border border-line bg-card p-4">
           <span className="text-sm font-semibold">Đã tạo &quot;{state.title}&quot;</span>
           <a href={state.url} target="_blank" rel="noreferrer" className="text-sm text-accent underline break-all">
@@ -411,7 +402,14 @@ export function LarkDocForm({
               ))}
             </div>
           )}
-          <button type="button" onClick={onBack} className="w-fit cursor-pointer text-xs font-semibold text-accent hover:text-ink">
+          <button
+            type="button"
+            onClick={() => {
+              setDismissedUrl(state.url ?? null);
+              setContent("");
+            }}
+            className="w-fit cursor-pointer text-xs font-semibold text-accent hover:text-ink"
+          >
             + Tạo file khác
           </button>
         </div>

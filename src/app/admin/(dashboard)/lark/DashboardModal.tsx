@@ -13,7 +13,7 @@ const TYPE_COLORS: Record<LarkFileType, string> = {
   bitable: "#8B5CF6",
   folder: "#D89B0B",
 };
-const ADOPTION_COLORS = { active: "#0B84D8", inactive: "#B9C4D9" } as const;
+export const ADOPTION_COLORS = { active: "#0B84D8", inactive: "#B9C4D9" } as const;
 
 export type CreatorStat = {
   id: string;
@@ -36,7 +36,7 @@ export type DashboardData = {
   staleWip: { targetId: string; title: string; url: string | null; creatorName: string; createdAt: string }[];
 };
 
-function DonutCard({ title, data }: { title: string; data: { name: string; value: number; color: string }[] }) {
+export function DonutCard({ title, data }: { title: string; data: { name: string; value: number; color: string }[] }) {
   const total = data.reduce((sum, d) => sum + d.value, 0);
   return (
     <div className="flex flex-col gap-3 rounded-card border border-line bg-paper p-4">

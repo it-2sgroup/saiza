@@ -5,62 +5,20 @@ import { canManageStaff } from "@/lib/admin/permissions";
 import { Avatar } from "../Avatar";
 import { CreateFileModal } from "./CreateFileModal";
 import { LarkSettingsModal } from "./LarkSettingsModal";
+import { NamingSettingsPanel } from "./NamingSettingsPanel";
 import { HistoryModal, type HistoryRow } from "./HistoryModal";
 import { OverviewModal, type OverviewRow } from "./OverviewModal";
-import { DashboardModal, type DashboardData, type CreatorStat } from "./DashboardModal";
+import { DashboardModal, DonutCard, ADOPTION_COLORS, type DashboardData, type CreatorStat } from "./DashboardModal";
 import { ItemActionsMenu } from "./ItemActionsMenu";
 import { AppSwitcher } from "./AppSwitcher";
 import { DriveExplorer } from "./DriveExplorer";
 import { LarkTabs, LarkTabPanel } from "./LarkTabs";
+import { TypeBadge } from "./TypeBadge";
 import type { StaffOption } from "./StaffSharePicker";
-import { DEFAULT_LARK_PREFS } from "@/lib/lark/prefs";
-import { buildNamingSegments, todayYYYYMMDD } from "@/lib/admin/fileNaming";
-import { NamingPreviewBox } from "./NamingPreviewBox";
 import { StatTile } from "../StatTile";
 import { LARK_FILE_TYPE_LABELS, getLarkApps, getDefaultAppKey, listTenantContacts, type LarkFileType } from "@/lib/lark/client";
 import { listLarkFolderTree, type FolderOption } from "@/lib/lark/folders";
 import { resolveRootFolderToken, listConfiguredOrgs } from "@/lib/lark/orgFolders";
-
-const FILE_TYPE_ICON_PATHS: Record<LarkFileType, React.ReactNode> = {
-  docx: (
-    <>
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-      <path d="M14 2v6h6" />
-      <path d="M9 13h6M9 17h6" />
-    </>
-  ),
-  sheet: (
-    <>
-      <rect x="3" y="3" width="18" height="18" rx="2" />
-      <path d="M3 9h18M3 15h18M9 3v18M15 3v18" />
-    </>
-  ),
-  bitable: (
-    <>
-      <ellipse cx="12" cy="5" rx="8" ry="3" />
-      <path d="M4 5v6c0 1.66 3.58 3 8 3s8-1.34 8-3V5" />
-      <path d="M4 11v6c0 1.66 3.58 3 8 3s8-1.34 8-3v-6" />
-    </>
-  ),
-  folder: <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />,
-};
-
-function FileTypeIcon({ type }: { type: LarkFileType }) {
-  return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      {FILE_TYPE_ICON_PATHS[type]}
-    </svg>
-  );
-}
 
 const QUICK_CREATE_TYPES: { type: LarkFileType; label: string; badgeClassName: string }[] = [
   { type: "docx", label: "Docs", badgeClassName: "bg-blue-100 text-blue-600" },
@@ -283,15 +241,6 @@ export default async function AdminLarkPage() {
       })()
     : null;
 
-  const namingPrefs = { ...DEFAULT_LARK_PREFS, ...profile.lark_prefs };
-  const namingParts = [
-    namingPrefs.includeDept && "Mã phòng ban",
-    namingPrefs.includeDocType && "Loại tài liệu",
-    namingPrefs.includeDate && "Ngày tạo",
-    namingPrefs.includeVersion && "Version",
-  ].filter(Boolean) as string[];
-  const namingSegments = buildNamingSegments(namingPrefs, profile.department, todayYYYYMMDD());
-
   // Server component: renders once per request, so Date.now() here is not a purity violation.
   // eslint-disable-next-line react-hooks/purity
   const nowTs = Date.now();
@@ -357,9 +306,7 @@ export default async function AdminLarkPage() {
               <div className="flex flex-col divide-y divide-line">
                 {historyRows.slice(0, 8).map((row) => (
                   <div key={row.targetId} className="flex items-center gap-3 py-2.5">
-                    <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-wash text-accent-2">
-                      <FileTypeIcon type={row.fileType} />
-                    </span>
+                    <TypeBadge type={row.fileType} />
                     <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                       <span className="truncate text-[14.5px] font-medium">{row.title}</span>
                       <span className="text-xs text-ink-2">
@@ -383,46 +330,20 @@ export default async function AdminLarkPage() {
           </div>
         </div>
 
-        <div className="flex w-full flex-col gap-4 lg:w-[280px] lg:flex-shrink-0">
-          <div className="flex flex-col gap-2.5 rounded-card border border-line bg-card p-4">
-            <div className="flex items-center justify-between gap-2">
-              <h3 className="text-sm font-semibold text-ink">Quy ước đặt tên</h3>
-              <LarkSettingsModal
-                prefs={profile.lark_prefs}
-                department={profile.department}
-                trigger={
-                  <button type="button" className="cursor-pointer text-xs font-medium text-accent hover:text-ink">
-                    Sửa
-                  </button>
-                }
-              />
-            </div>
-            <NamingPreviewBox segments={namingSegments} />
-            {namingParts.length === 0 ? (
-              <p className="text-sm text-ink-2">Chưa bật thành phần nào — tên file sẽ chỉ gồm tiêu đề bạn nhập.</p>
-            ) : (
-              <ul className="flex flex-wrap gap-x-4 gap-y-1.5">
-                {namingParts.map((p) => (
-                  <li key={p} className="flex items-center gap-2 text-xs text-ink-2">
-                    <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-accent" />
-                    {p}
-                  </li>
-                ))}
-              </ul>
-            )}
+        <div className="flex w-full flex-col gap-4 lg:w-[400px] lg:flex-shrink-0">
+          <div className="flex flex-col gap-4 rounded-card border border-line bg-card p-4">
+            <h3 className="text-sm font-semibold text-ink">Quy ước đặt tên</h3>
+            <NamingSettingsPanel prefs={profile.lark_prefs} department={profile.department} />
           </div>
 
           {isAdmin && dashboardData && (
-            <div className="flex flex-col gap-1 rounded-card border border-line bg-paper p-4">
-              <span className="text-xs font-semibold tracking-[0.06em] text-ink-2 uppercase">Nhân viên dùng hệ thống</span>
-              <span className="text-2xl font-semibold text-ink">
-                {dashboardData.activeCreators}/{dashboardData.totalStaff}
-              </span>
-              <span className="text-xs text-ink-2">{adoptionPct}% đã tạo ít nhất 1 file</span>
-              {dashboardData.neverCreated.length > 0 && (
-                <span className="text-xs text-ink-2">{dashboardData.neverCreated.length} người chưa dùng</span>
-              )}
-            </div>
+            <DonutCard
+              title="Nhân viên dùng hệ thống"
+              data={[
+                { name: "Đã tạo file", value: dashboardData.activeCreators, color: ADOPTION_COLORS.active },
+                { name: "Chưa tạo file", value: dashboardData.totalStaff - dashboardData.activeCreators, color: ADOPTION_COLORS.inactive },
+              ]}
+            />
           )}
         </div>
       </div>

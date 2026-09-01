@@ -5,7 +5,7 @@ import { Modal, ModalHeader } from "../Modal";
 import { browseLarkFolder } from "./actions";
 import type { LarkDriveItem } from "@/lib/lark/client";
 import type { FolderOption } from "@/lib/lark/folders";
-import { LARK_FILE_TYPE_LABELS, type LarkFileType } from "@/lib/lark/fileTypes";
+import { TypeBadge, fileTypeLabel } from "./TypeBadge";
 
 type Crumb = { token: string | null; name: string };
 
@@ -14,26 +14,6 @@ type Crumb = { token: string | null; name: string };
 // exposed to this component, so this just needs to be a value that never
 // collides with a real Lark token, not match anything specific.
 const ROOT_PARENT = "";
-
-const TYPE_BADGE: Record<string, { label: string; className: string }> = {
-  folder: { label: "DIR", className: "bg-amber-100 text-amber-700" },
-  docx: { label: "DOC", className: "bg-blue-100 text-blue-700" },
-  sheet: { label: "XLS", className: "bg-green-100 text-green-700" },
-  bitable: { label: "BASE", className: "bg-purple-100 text-purple-700" },
-};
-
-function TypeBadge({ type }: { type: string }) {
-  const badge = TYPE_BADGE[type] ?? { label: type.slice(0, 3).toUpperCase(), className: "bg-wash text-ink-2" };
-  return (
-    <span className={`flex h-7 w-9 flex-shrink-0 items-center justify-center rounded-md text-[10px] font-bold ${badge.className}`}>
-      {badge.label}
-    </span>
-  );
-}
-
-function fileTypeLabel(type: string) {
-  return LARK_FILE_TYPE_LABELS[type as LarkFileType] ?? type;
-}
 
 // Reconstructs the ancestor chain (for the breadcrumb) for a folder clicked
 // directly in the tree sidebar, since FolderOption only carries a
@@ -234,7 +214,7 @@ export function DriveExplorer({
                     onClick={() => enterFolder(f)}
                     className="flex cursor-pointer items-center gap-3 px-4 py-2.5 text-left transition-colors duration-300 ease-soft hover:bg-wash"
                   >
-                    <TypeBadge type={f.type} />
+                    <TypeBadge type={f.type} size="sm" />
                     <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                       <span className="truncate text-[14px] font-medium">{f.name}</span>
                       <span className="text-xs text-ink-2">{fileTypeLabel(f.type)}</span>
@@ -242,7 +222,7 @@ export function DriveExplorer({
                   </button>
                 ) : (
                   <div key={f.token} className="flex items-center gap-3 px-4 py-2.5">
-                    <TypeBadge type={f.type} />
+                    <TypeBadge type={f.type} size="sm" />
                     <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                       <span className="truncate text-[14px] font-medium">{f.name}</span>
                       <span className="text-xs text-ink-2">{fileTypeLabel(f.type)}</span>

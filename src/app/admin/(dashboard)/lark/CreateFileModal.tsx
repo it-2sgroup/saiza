@@ -64,6 +64,8 @@ const TYPE_CARDS: TypeCard[] = [
   },
 ];
 
+const DEFAULT_TYPE: LarkFileType = "docx";
+
 export function CreateFileModal({
   defaultDepartment,
   staff,
@@ -80,11 +82,11 @@ export function CreateFileModal({
   initialType?: LarkFileType;
 }) {
   const [open, setOpen] = useState(false);
-  const [fileType, setFileType] = useState<LarkFileType | null>(initialType ?? null);
+  const [fileType, setFileType] = useState<LarkFileType>(initialType ?? DEFAULT_TYPE);
 
   const closeModal = () => {
     setOpen(false);
-    setFileType(initialType ?? null);
+    setFileType(initialType ?? DEFAULT_TYPE);
   };
 
   return (
@@ -102,51 +104,62 @@ export function CreateFileModal({
         </ActionButton>
       )}
 
-      <Modal open={open} onClose={closeModal} panelClassName="max-h-[88vh] w-full max-w-[640px] overflow-y-auto p-6">
-        <ModalHeader
-          title={fileType ? `Tạo ${LARK_FILE_TYPE_LABELS[fileType]}` : "Tạo file mới"}
-          subtitle={fileType ? "Điền thông tin bên dưới, tên file sẽ tự chuẩn hoá." : "Chọn loại file bạn muốn tạo trong Lark."}
-          onClose={closeModal}
-        />
+      <Modal open={open} onClose={closeModal} panelClassName="max-h-[88vh] w-full max-w-[820px] overflow-y-auto p-6">
+        <ModalHeader title="Tạo file mới" subtitle="Chọn loại file, điền thông tin — tên file sẽ tự chuẩn hoá." onClose={closeModal} />
 
-        {!fileType ? (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {TYPE_CARDS.map((card) => (
-              <button
-                key={card.type}
-                type="button"
-                onClick={() => setFileType(card.type)}
-                className="flex cursor-pointer flex-col items-center gap-2.5 rounded-2xl border border-line p-4 text-center transition-colors duration-300 ease-soft hover:border-accent hover:bg-wash"
-              >
-                <span className={`flex h-11 w-11 items-center justify-center rounded-full ${card.badgeClassName}`}>
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
+        <div className="flex flex-col gap-5 sm:flex-row">
+          <div className="flex flex-shrink-0 flex-col gap-1.5 sm:w-[220px]">
+            {TYPE_CARDS.map((card, i) => {
+              const active = card.type === fileType;
+              return (
+                <button
+                  key={card.type}
+                  type="button"
+                  onClick={() => setFileType(card.type)}
+                  className={`flex cursor-pointer items-center gap-2.5 rounded-xl border p-2.5 text-left transition-colors duration-300 ease-soft ${
+                    active ? "border-accent bg-wash" : "border-line hover:border-accent/50 hover:bg-wash/60"
+                  }`}
+                >
+                  <span
+                    className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-[10.5px] font-bold ${
+                      active ? "bg-accent text-white" : "bg-line text-ink-2"
+                    }`}
                   >
-                    {card.icon}
-                  </svg>
-                </span>
-                <span className="text-[13.5px] font-semibold text-ink">{LARK_FILE_TYPE_LABELS[card.type]}</span>
-                <span className="text-[11.5px] leading-snug text-ink-2">{card.description}</span>
-              </button>
-            ))}
+                    {i + 1}
+                  </span>
+                  <span className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full ${card.badgeClassName}`}>
+                    <svg
+                      width="17"
+                      height="17"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      {card.icon}
+                    </svg>
+                  </span>
+                  <span className="flex min-w-0 flex-col">
+                    <span className="text-[13.5px] font-semibold text-ink">{LARK_FILE_TYPE_LABELS[card.type]}</span>
+                    <span className="truncate text-[11px] leading-snug text-ink-2">{card.description}</span>
+                  </span>
+                </button>
+              );
+            })}
           </div>
-        ) : (
-          <LarkDocForm
-            fileType={fileType}
-            onBack={() => setFileType(null)}
-            defaultDepartment={defaultDepartment}
-            staff={staff}
-            foldersByOrg={foldersByOrg}
-            prefs={prefs}
-          />
-        )}
+
+          <div className="min-w-0 flex-1">
+            <LarkDocForm
+              fileType={fileType}
+              defaultDepartment={defaultDepartment}
+              staff={staff}
+              foldersByOrg={foldersByOrg}
+              prefs={prefs}
+            />
+          </div>
+        </div>
       </Modal>
     </>
   );
