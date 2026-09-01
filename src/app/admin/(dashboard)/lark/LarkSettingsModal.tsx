@@ -22,7 +22,7 @@ const TOGGLES: { key: keyof typeof DEFAULT_LARK_PREFS; label: string; hint: stri
   { key: "includeVersion", label: "Version", hint: "Đưa version (v1, v2...) vào tên file" },
 ];
 
-export function LarkSettingsModal({ prefs, renderTrigger }: { prefs: LarkPrefs; renderTrigger?: (open: () => void) => React.ReactNode }) {
+export function LarkSettingsModal({ prefs, trigger }: { prefs: LarkPrefs; trigger?: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const [state, formAction, pending] = useActionState(updateLarkPrefs, initialState);
 
@@ -48,8 +48,10 @@ export function LarkSettingsModal({ prefs, renderTrigger }: { prefs: LarkPrefs; 
 
   return (
     <>
-      {renderTrigger ? (
-        renderTrigger(() => setOpen(true))
+      {trigger ? (
+        <span className="contents" onClick={() => setOpen(true)}>
+          {trigger}
+        </span>
       ) : (
         <button
           type="button"

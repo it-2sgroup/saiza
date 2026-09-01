@@ -10,7 +10,7 @@ export function HubCard({
   icon: React.ReactNode;
   title: string;
   description: string;
-  onClick: () => void;
+  onClick?: () => void;
   accent?: boolean;
 }) {
   return (

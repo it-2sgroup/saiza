@@ -30,15 +30,7 @@ function fileTypeLabel(type: string) {
   return LARK_FILE_TYPE_LABELS[type as LarkFileType] ?? type;
 }
 
-export function DriveExplorer({
-  appKey,
-  appLabel,
-  renderTrigger,
-}: {
-  appKey: string;
-  appLabel: string;
-  renderTrigger?: (open: () => void) => React.ReactNode;
-}) {
+export function DriveExplorer({ appKey, appLabel, trigger }: { appKey: string; appLabel: string; trigger?: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const [path, setPath] = useState<Crumb[]>([{ token: null, name: appLabel }]);
   const [items, setItems] = useState<LarkDriveItem[]>([]);
@@ -94,8 +86,10 @@ export function DriveExplorer({
 
   return (
     <>
-      {renderTrigger ? (
-        renderTrigger(openExplorer)
+      {trigger ? (
+        <span className="contents" onClick={openExplorer}>
+          {trigger}
+        </span>
       ) : (
         <button
           type="button"

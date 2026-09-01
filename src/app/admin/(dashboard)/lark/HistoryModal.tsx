@@ -18,12 +18,12 @@ export function HistoryModal({
   rows,
   staff,
   folderOptions,
-  renderTrigger,
+  trigger,
 }: {
   rows: HistoryRow[];
   staff: StaffOption[];
   folderOptions: { value: string; label: string }[];
-  renderTrigger?: (open: () => void) => React.ReactNode;
+  trigger?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
@@ -53,8 +53,10 @@ export function HistoryModal({
 
   return (
     <>
-      {renderTrigger ? (
-        renderTrigger(() => setOpen(true))
+      {trigger ? (
+        <span className="contents" onClick={() => setOpen(true)}>
+          {trigger}
+        </span>
       ) : (
         <button
           type="button"

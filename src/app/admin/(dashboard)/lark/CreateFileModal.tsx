@@ -69,13 +69,13 @@ export function CreateFileModal({
   staff,
   foldersByOrg,
   prefs,
-  renderTrigger,
+  trigger,
 }: {
   defaultDepartment: string | null;
   staff: StaffOption[];
   foldersByOrg: Record<string, FolderOption[]>;
   prefs: LarkPrefs;
-  renderTrigger?: (open: () => void) => React.ReactNode;
+  trigger?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const [fileType, setFileType] = useState<LarkFileType | null>(null);
@@ -87,8 +87,10 @@ export function CreateFileModal({
 
   return (
     <>
-      {renderTrigger ? (
-        renderTrigger(() => setOpen(true))
+      {trigger ? (
+        <span className="contents" onClick={() => setOpen(true)}>
+          {trigger}
+        </span>
       ) : (
         <ActionButton variant="accent" onClick={() => setOpen(true)} className="w-fit flex-shrink-0 px-5 py-2.5 text-sm">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">

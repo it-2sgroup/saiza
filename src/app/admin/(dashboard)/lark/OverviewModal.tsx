@@ -21,12 +21,12 @@ export function OverviewModal({
   rows,
   folderOptions,
   staff = [],
-  renderTrigger,
+  trigger,
 }: {
   rows: OverviewRow[];
   folderOptions: { value: string; label: string }[];
   staff?: StaffOption[];
-  renderTrigger?: (open: () => void) => React.ReactNode;
+  trigger?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
@@ -78,8 +78,10 @@ export function OverviewModal({
 
   return (
     <>
-      {renderTrigger ? (
-        renderTrigger(() => setOpen(true))
+      {trigger ? (
+        <span className="contents" onClick={() => setOpen(true)}>
+          {trigger}
+        </span>
       ) : (
         <button
           type="button"

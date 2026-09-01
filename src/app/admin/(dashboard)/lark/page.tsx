@@ -76,8 +76,8 @@ function FileCard({
 }) {
   const fileType = row.metadata?.fileType ?? "docx";
   return (
-    <div className="flex flex-col overflow-hidden rounded-card border border-line bg-card transition-shadow duration-300 ease-soft hover:shadow-[0_8px_24px_rgba(30,27,75,0.10)]">
-      <div className="flex h-20 flex-shrink-0 items-center justify-center bg-wash text-accent-2">
+    <div className="flex flex-col rounded-card border border-line bg-card transition-shadow duration-300 ease-soft hover:shadow-[0_8px_24px_rgba(30,27,75,0.10)]">
+      <div className="flex h-20 flex-shrink-0 items-center justify-center rounded-t-card bg-wash text-accent-2">
         <FileTypeIcon type={fileType} />
       </div>
       <div className="flex flex-1 flex-col gap-2.5 p-4">
@@ -426,37 +426,27 @@ export default async function AdminLarkPage() {
           staff={staff}
           foldersByOrg={foldersByOrg}
           prefs={profile.lark_prefs}
-          renderTrigger={(open) => (
-            <HubCard icon={createIcon} title="Tạo file mới" description="Docx, Sheet, Bitable, Thư mục" onClick={open} accent />
-          )}
+          trigger={<HubCard icon={createIcon} title="Tạo file mới" description="Docx, Sheet, Bitable, Thư mục" accent />}
         />
         <DriveExplorer
           appKey={activeAppKey}
           appLabel={larkApps.find((a) => a.key === activeAppKey)?.label ?? activeAppKey}
-          renderTrigger={(open) => (
-            <HubCard icon={driveIcon} title="Duyệt Drive" description="Xem toàn bộ thư mục & file thật trên Lark" onClick={open} />
-          )}
+          trigger={<HubCard icon={driveIcon} title="Duyệt Drive" description="Xem toàn bộ thư mục & file thật trên Lark" />}
         />
         <HistoryModal
           rows={historyRows}
           staff={staff}
           folderOptions={flatFolderOptions}
-          renderTrigger={(open) => (
-            <HubCard icon={historyIcon} title="Lịch sử của tôi" description={`${historyRows.length} file bạn đã tạo`} onClick={open} />
-          )}
+          trigger={<HubCard icon={historyIcon} title="Lịch sử của tôi" description={`${historyRows.length} file bạn đã tạo`} />}
         />
         <LarkSettingsModal
           prefs={profile.lark_prefs}
-          renderTrigger={(open) => (
-            <HubCard icon={settingsIcon} title="Cài đặt mặc định" description="Đặt sẵn phòng ban, loại tài liệu, version" onClick={open} />
-          )}
+          trigger={<HubCard icon={settingsIcon} title="Cài đặt mặc định" description="Đặt sẵn phòng ban, loại tài liệu, version" />}
         />
         {isAdmin && dashboardData && (
           <DashboardModal
             data={dashboardData}
-            renderTrigger={(open) => (
-              <HubCard icon={dashboardIcon} title="Thống kê sử dụng" description="Mức độ dùng hệ thống toàn công ty" onClick={open} />
-            )}
+            trigger={<HubCard icon={dashboardIcon} title="Thống kê sử dụng" description="Mức độ dùng hệ thống toàn công ty" />}
           />
         )}
         {isAdmin && (
@@ -464,14 +454,9 @@ export default async function AdminLarkPage() {
             rows={overviewRows}
             folderOptions={flatFolderOptions}
             staff={staff}
-            renderTrigger={(open) => (
-              <HubCard
-                icon={overviewIcon}
-                title="Tổng quan toàn công ty"
-                description={`${overviewRows.length} file toàn công ty`}
-                onClick={open}
-              />
-            )}
+            trigger={
+              <HubCard icon={overviewIcon} title="Tổng quan toàn công ty" description={`${overviewRows.length} file toàn công ty`} />
+            }
           />
         )}
       </div>

@@ -108,7 +108,7 @@ function TrendCard({ trend }: { trend: { date: string; count: number }[] }) {
   );
 }
 
-export function DashboardModal({ data, renderTrigger }: { data: DashboardData; renderTrigger?: (open: () => void) => React.ReactNode }) {
+export function DashboardModal({ data, trigger }: { data: DashboardData; trigger?: React.ReactNode }) {
   const [open, setOpen] = useState(false);
 
   const adoptionPct = data.totalStaff > 0 ? Math.round((data.activeCreators / data.totalStaff) * 100) : 0;
@@ -133,8 +133,10 @@ export function DashboardModal({ data, renderTrigger }: { data: DashboardData; r
 
   return (
     <>
-      {renderTrigger ? (
-        renderTrigger(() => setOpen(true))
+      {trigger ? (
+        <span className="contents" onClick={() => setOpen(true)}>
+          {trigger}
+        </span>
       ) : (
         <button
           type="button"
