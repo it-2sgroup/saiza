@@ -19,7 +19,7 @@ import {
 import { parseShareRows, applyShareRows, type ShareResult } from "@/lib/lark/shareRows";
 import { resolveRootFolderToken } from "@/lib/lark/orgFolders";
 import { getOrCreateDepartmentFolder } from "@/lib/lark/folderRegistry";
-import { addFolderToCache } from "@/lib/lark/folders";
+import { addFolderToCache, addFoldersToCache } from "@/lib/lark/folders";
 import { DEPARTMENT_CODES, ORG_CODES } from "@/lib/admin/departments";
 import { buildFileName, buildFolderName, MAX_FILENAME_LENGTH } from "@/lib/admin/fileNaming";
 import { canDelete } from "@/lib/admin/permissions";
@@ -175,6 +175,11 @@ export async function createLarkDocument(_prev: LarkDocFormState, formData: Form
       org: org || null,
       ownerTransferred: wantsOwnershipTransfer && shared,
       appKey,
+      // Which Lark folder this landed in — lets the file lists show where a
+      // file actually lives, not just who created it. moveLarkDocument
+      // already records its own targetFolder on move; readers should prefer
+      // the latest lark_doc_moved entry over this one when both exist.
+      targetFolder: effectiveFolder ?? null,
     },
   });
 
@@ -361,6 +366,18 @@ export async function browseLarkFolder(folderToken: string | null, appKey: strin
   try {
     const resolvedToken = folderToken || (await getAppRootFolderToken(appKey));
     const items = await listFolderContents(resolvedToken, appKey);
+
+    // Write-through into lark_folder_cache — otherwise pre-existing folders
+    // (created outside this app, or missed by the last BFS crawl) only ever
+    // show up in the live Drive tab and never in the Move/Create-file
+    // pickers, which build their options purely from that cache.
+    const discoveredFolders = items
+      .filter((i) => i.type === "folder")
+      .map((i) => ({ token: i.token, name: i.name, parentToken: resolvedToken }));
+    if (discoveredFolders.length > 0) {
+      await addFoldersToCache("", discoveredFolders, appKey);
+    }
+
     return { error: null, folderToken: resolvedToken, items };
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Không đọc được thư mục." };

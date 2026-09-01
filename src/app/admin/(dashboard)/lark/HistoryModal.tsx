@@ -13,6 +13,7 @@ export type HistoryRow = {
   url: string | null;
   fileType: LarkFileType;
   createdAt: string;
+  folderName: string | null;
 };
 
 const TYPE_FILTERS: { value: LarkFileType | ""; label: string }[] = [
@@ -117,11 +118,12 @@ export function HistoryModal({
           <p className="text-sm text-ink-2">{q || typeFilter ? "Không tìm thấy file khớp bộ lọc." : "Bạn chưa tạo file nào."}</p>
         ) : (
           <div className="overflow-x-auto rounded-card border border-line">
-            <table className="w-full min-w-[560px] border-collapse text-sm">
+            <table className="w-full min-w-[680px] border-collapse text-sm">
               <thead>
                 <tr className="border-b border-line bg-paper text-left text-xs font-semibold tracking-[0.06em] text-ink-2 uppercase">
                   <th className="px-4 py-2.5">Tên file</th>
                   <th className="px-4 py-2.5">Loại</th>
+                  <th className="px-4 py-2.5">Thư mục</th>
                   <th className="px-4 py-2.5">Phòng ban</th>
                   <th className="px-4 py-2.5">Người tạo</th>
                   <th className="px-4 py-2.5">Cập nhật</th>
@@ -133,6 +135,7 @@ export function HistoryModal({
                   <tr key={row.targetId} className="transition-colors duration-300 ease-soft hover:bg-wash">
                     <td className="max-w-[280px] truncate px-4 py-2.5 font-medium">{row.title}</td>
                     <td className="px-4 py-2.5 text-ink-2">{LARK_FILE_TYPE_LABELS[row.fileType]}</td>
+                    <td className="max-w-[160px] truncate px-4 py-2.5 text-ink-2">{row.folderName ?? "—"}</td>
                     <td className="px-4 py-2.5 text-ink-2">{departmentLabel(creatorDepartment) ?? "(chưa gán)"}</td>
                     <td className="px-4 py-2.5 text-ink-2">{creatorName ?? "—"}</td>
                     <td className="px-4 py-2.5 whitespace-nowrap text-ink-2">{new Date(row.createdAt).toLocaleString("vi-VN")}</td>

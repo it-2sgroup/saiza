@@ -65,24 +65,40 @@ export async function listLarkFolderTree(rootToken: string, orgKey = "", appKey:
   return tree;
 }
 
-// Write-through: call right after the app itself creates a folder so it
-// shows up in the picker immediately instead of waiting up to CACHE_TTL_MS
-// for the next crawl. Best-effort — a failure here just means the new
-// folder appears a bit later, not that folder creation itself failed.
+// Write-through: call right after the app itself creates a folder, or after
+// live-browsing turns up folders the cache doesn't know about yet (see
+// browseLarkFolder in actions.ts) — so they show up in the Move/Create-file
+// pickers immediately instead of waiting up to CACHE_TTL_MS for the next
+// crawl, or never (a plain BFS crawl can silently miss folders it can't
+// reach, e.g. ones created outside this app). Best-effort — a failure here
+// just means the folder appears a bit later, not that the calling action failed.
+export async function addFoldersToCache(
+  orgKey: string,
+  entries: { token: string; name: string; parentToken: string }[],
+  appKey: string = getDefaultAppKey(),
+) {
+  if (entries.length === 0) return;
+  try {
+    const admin = createAdminClient();
+    const { data: cached } = await admin.from("lark_folder_cache").select("tree").eq("app_key", appKey).eq("org", orgKey).maybeSingle();
+    const known = new Map<string, FolderOption>(((cached?.tree as FolderOption[]) ?? []).map((f) => [f.token, f]));
+    for (const entry of entries) {
+      const parent = known.get(entry.parentToken);
+      const depth = parent ? parent.depth + 1 : 1;
+      known.set(entry.token, { token: entry.token, name: entry.name, depth, parentToken: entry.parentToken });
+    }
+    await admin
+      .from("lark_folder_cache")
+      .upsert({ app_key: appKey, org: orgKey, tree: [...known.values()], updated_at: new Date().toISOString() });
+  } catch {
+    // Non-fatal.
+  }
+}
+
 export async function addFolderToCache(
   orgKey: string,
   entry: { token: string; name: string; parentToken: string },
   appKey: string = getDefaultAppKey(),
 ) {
-  try {
-    const admin = createAdminClient();
-    const { data: cached } = await admin.from("lark_folder_cache").select("tree").eq("app_key", appKey).eq("org", orgKey).maybeSingle();
-    const tree = ((cached?.tree as FolderOption[]) ?? []).filter((f) => f.token !== entry.token);
-    const parent = tree.find((f) => f.token === entry.parentToken);
-    const depth = parent ? parent.depth + 1 : 1;
-    tree.push({ token: entry.token, name: entry.name, depth, parentToken: entry.parentToken });
-    await admin.from("lark_folder_cache").upsert({ app_key: appKey, org: orgKey, tree, updated_at: new Date().toISOString() });
-  } catch {
-    // Non-fatal.
-  }
+  return addFoldersToCache(orgKey, [entry], appKey);
 }

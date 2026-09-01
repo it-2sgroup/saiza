@@ -15,6 +15,7 @@ export type OverviewRow = {
   createdAt: string;
   creatorName: string;
   creatorDepartment: string | null;
+  folderName: string | null;
 };
 
 export function OverviewModal({
@@ -156,7 +157,8 @@ export function OverviewModal({
                   <span className="truncate text-[14.5px] font-medium">{row.title}</span>
                   <span className="text-xs text-ink-2">
                     {LARK_FILE_TYPE_LABELS[row.fileType]} · {row.creatorName} ·{" "}
-                    {departmentLabel(row.creatorDepartment) ?? "chưa gán phòng ban"} · {new Date(row.createdAt).toLocaleString("vi-VN")}
+                    {departmentLabel(row.creatorDepartment) ?? "chưa gán phòng ban"} · 📁 {row.folderName ?? "—"} ·{" "}
+                    {new Date(row.createdAt).toLocaleString("vi-VN")}
                   </span>
                 </div>
                 <ItemActionsMenu

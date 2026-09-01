@@ -27,7 +27,7 @@ import {
   type LarkFileType,
   type LarkDriveItem,
 } from "@/lib/lark/client";
-import { listLarkFolderTree, type FolderOption } from "@/lib/lark/folders";
+import { listLarkFolderTree, addFoldersToCache, type FolderOption } from "@/lib/lark/folders";
 import { resolveRootFolderToken, listConfiguredOrgs } from "@/lib/lark/orgFolders";
 import { DEFAULT_LARK_PREFS } from "@/lib/lark/prefs";
 import { buildNamingSegments, todayYYYYMMDD } from "@/lib/admin/fileNaming";
@@ -49,7 +49,14 @@ const QUICK_CREATE_TYPES: { type: LarkFileType; label: string; badgeClassName: s
 type AuditRow = {
   actor_id: string | null;
   target_id: string | null;
-  metadata: { title?: string; url?: string; shared?: boolean; fileType?: LarkFileType; appKey?: string } | null;
+  metadata: {
+    title?: string;
+    url?: string;
+    shared?: boolean;
+    fileType?: LarkFileType;
+    appKey?: string;
+    targetFolder?: string | null;
+  } | null;
   created_at: string;
 };
 
@@ -68,6 +75,7 @@ export default async function AdminLarkPage() {
     { data: ownRows },
     { data: allCreatedRows },
     { data: deletedRows },
+    { data: movedRows },
     { data: profilesData },
     { data: usersData },
     folderTrees,
@@ -88,12 +96,25 @@ export default async function AdminLarkPage() {
           .order("created_at", { ascending: false })
       : Promise.resolve({ data: [] }),
     admin.from("audit_log").select("target_id").eq("action", "lark_doc_deleted"),
+    // Newest-first so the folder a file currently lives in is whichever move
+    // (or creation, if never moved) has the most recent timestamp per target.
+    admin
+      .from("audit_log")
+      .select("target_id, metadata, created_at")
+      .eq("action", "lark_doc_moved")
+      .order("created_at", { ascending: false }),
     admin.from("profiles").select("id, full_name, department, avatar_url"),
     admin.auth.admin.listUsers(),
     Promise.all(
       orgKeys.map(async (org) => {
-        const root = resolveRootFolderToken(org || null, activeAppKey);
-        return [org, root ? await listLarkFolderTree(root, org, activeAppKey) : []] as [string, FolderOption[]];
+        // resolveRootFolderToken is sync and only knows about explicitly
+        // configured org roots — for the default ("") org, fall back to the
+        // app's real My Space root (same live-API lookup the Drive tab
+        // already uses via getAppRootFolderToken), or this org's folder tree
+        // silently stays empty forever for apps that never set docFolderToken.
+        const root =
+          resolveRootFolderToken(org || null, activeAppKey) || (org === "" ? await getAppRootFolderToken(activeAppKey) : undefined);
+        return [org, root, root ? await listLarkFolderTree(root, org, activeAppKey) : []] as [string, string | undefined, FolderOption[]];
       }),
     ),
     // Sharing needs to reach people across ALL connected orgs, not just the
@@ -106,18 +127,31 @@ export default async function AdminLarkPage() {
     (async (): Promise<LarkDriveItem[] | undefined> => {
       try {
         const rootToken = await getAppRootFolderToken(activeAppKey);
-        return await listFolderContents(rootToken, activeAppKey);
+        const items = await listFolderContents(rootToken, activeAppKey);
+        // Same write-through as browseLarkFolder (actions.ts) — keeps the
+        // Move/Create-file folder picker's cache warm on every page load,
+        // not just when someone actively browses the Drive tab.
+        const discoveredFolders = items
+          .filter((i) => i.type === "folder")
+          .map((i) => ({ token: i.token, name: i.name, parentToken: rootToken }));
+        if (discoveredFolders.length > 0) await addFoldersToCache("", discoveredFolders, activeAppKey);
+        return items;
       } catch {
         return undefined;
       }
     })(),
   ]);
 
-  const foldersByOrg: Record<string, FolderOption[]> = Object.fromEntries(folderTrees);
+  const foldersByOrg: Record<string, FolderOption[]> = {};
+  const orgRootTokens: Record<string, string | undefined> = {};
+  for (const [org, root, tree] of folderTrees) {
+    foldersByOrg[org] = tree;
+    orgRootTokens[org] = root;
+  }
   const flatFolderOptions = [
     { value: "", label: "— Chọn thư mục —" },
     ...orgKeys.flatMap((org) => {
-      const rootToken = resolveRootFolderToken(org || null, activeAppKey);
+      const rootToken = orgRootTokens[org];
       const orgLabel = org || "Dùng chung";
       const entries: { value: string; label: string }[] = [];
       if (rootToken) entries.push({ value: rootToken, label: `[${orgLabel}] — Thư mục gốc —` });
@@ -127,6 +161,26 @@ export default async function AdminLarkPage() {
       return entries;
     }),
   ];
+  // Where a file currently lives — the latest move's target folder, falling
+  // back to wherever it was created if it was never moved. Used to show a
+  // real "origin folder" per file instead of just who created it.
+  const latestFolderTokenByTarget = new Map<string, string>();
+  for (const r of movedRows ?? []) {
+    if (!r.target_id || latestFolderTokenByTarget.has(r.target_id)) continue;
+    const token = (r.metadata as { targetFolder?: string } | null)?.targetFolder;
+    if (token) latestFolderTokenByTarget.set(r.target_id, token);
+  }
+  const folderNameByToken = new Map<string, string>();
+  for (const org of orgKeys) {
+    const rootToken = orgRootTokens[org];
+    if (rootToken) folderNameByToken.set(rootToken, org ? `${org} — thư mục gốc` : "Thư mục gốc");
+    for (const f of foldersByOrg[org] ?? []) folderNameByToken.set(f.token, f.name);
+  }
+  const resolveFolderName = (targetId: string, createdFolderToken: string | null | undefined): string | null => {
+    const token = latestFolderTokenByTarget.get(targetId) ?? createdFolderToken ?? null;
+    return token ? (folderNameByToken.get(token) ?? null) : null;
+  };
+
   const deletedIds = new Set((deletedRows ?? []).map((r) => r.target_id));
   const emailById = new Map(usersData?.users.map((u) => [u.id, u.email]) ?? []);
   const profileById = new Map(
@@ -172,6 +226,7 @@ export default async function AdminLarkPage() {
       url: r.metadata?.url ?? null,
       fileType: r.metadata?.fileType ?? "docx",
       createdAt: r.created_at,
+      folderName: resolveFolderName(r.target_id as string, r.metadata?.targetFolder),
     }));
 
   const overviewRows: OverviewRow[] = isAdmin
@@ -187,6 +242,7 @@ export default async function AdminLarkPage() {
             createdAt: r.created_at,
             creatorName: creator?.fullName ?? "—",
             creatorDepartment: creator?.department ?? null,
+            folderName: resolveFolderName(r.target_id as string, r.metadata?.targetFolder),
           };
         })
     : [];
@@ -344,7 +400,7 @@ export default async function AdminLarkPage() {
                     <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                       <span className="truncate text-[14.5px] font-medium">{row.title}</span>
                       <span className="text-xs text-ink-2">
-                        {LARK_FILE_TYPE_LABELS[row.fileType]} · {profile.full_name} · {departmentLabel(profile.department) ?? "(chưa gán)"}
+                        {LARK_FILE_TYPE_LABELS[row.fileType]} · {profile.full_name} · 📁 {row.folderName ?? "—"}
                       </span>
                     </div>
                     <span className="flex-shrink-0 text-xs whitespace-nowrap text-ink-2">
