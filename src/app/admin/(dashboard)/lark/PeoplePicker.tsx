@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { createPortal } from "react-dom";
 import { Avatar } from "../Avatar";
+import { useAnchoredPopover } from "../useAnchoredPopover";
 import type { StaffOption } from "./StaffSharePicker";
-
-type PanelRect = { top: number; left: number; width: number };
 
 // Free-text email input with a rich, searchable suggestion dropdown (avatar +
 // name + email) instead of a native <datalist> — datalists can't render
@@ -28,43 +27,8 @@ export function PeoplePicker({
   inputClassName: string;
 }) {
   const [open, setOpen] = useState(false);
-  const [rect, setRect] = useState<PanelRect | null>(null);
-  const rootRef = useRef<HTMLDivElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
-
-  useLayoutEffect(() => {
-    if (!open || !rootRef.current) return;
-    const updateRect = () => {
-      const r = rootRef.current!.getBoundingClientRect();
-      setRect({ top: r.bottom + 6, left: r.left, width: r.width });
-    };
-    updateRect();
-    window.addEventListener("resize", updateRect);
-    window.addEventListener("scroll", updateRect, true);
-    return () => {
-      window.removeEventListener("resize", updateRect);
-      window.removeEventListener("scroll", updateRect, true);
-    };
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-    const onPointerDown = (e: MouseEvent) => {
-      const target = e.target as Node;
-      if (rootRef.current?.contains(target)) return;
-      if (panelRef.current?.contains(target)) return;
-      setOpen(false);
-    };
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("mousedown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("mousedown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [open]);
+  const { rootRef, panelRef, anchorRect } = useAnchoredPopover(open, () => setOpen(false));
+  const rect = anchorRect && { top: anchorRect.bottom + 6, left: anchorRect.left, width: anchorRect.width };
 
   const needle = value.trim().toLowerCase();
   const matches = (

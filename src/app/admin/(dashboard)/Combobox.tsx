@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { createPortal } from "react-dom";
+import { useAnchoredPopover } from "./useAnchoredPopover";
 
 type Option = { value: string; label: string };
 
@@ -14,52 +15,15 @@ type ComboboxProps = {
   panelClassName?: string;
 };
 
-type PanelRect = { top: number; left: number; width: number };
-
 export function Combobox({ value, options, onChange, name, buttonClassName, panelClassName }: ComboboxProps) {
   const [open, setOpen] = useState(false);
-  const [rect, setRect] = useState<PanelRect | null>(null);
-  const rootRef = useRef<HTMLDivElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
-  const selected = options.find((o) => o.value === value);
-
   // Position the portaled panel from the trigger's real screen coordinates
   // instead of relying on `position: absolute` inside whatever scroll
   // container happens to wrap this Combobox (e.g. a modal) — that let the
   // panel's overflow force the modal itself to grow a second scrollbar.
-  useLayoutEffect(() => {
-    if (!open || !rootRef.current) return;
-    const updateRect = () => {
-      const r = rootRef.current!.getBoundingClientRect();
-      setRect({ top: r.bottom + 6, left: r.left, width: r.width });
-    };
-    updateRect();
-    window.addEventListener("resize", updateRect);
-    window.addEventListener("scroll", updateRect, true);
-    return () => {
-      window.removeEventListener("resize", updateRect);
-      window.removeEventListener("scroll", updateRect, true);
-    };
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-    const onPointerDown = (e: MouseEvent) => {
-      const target = e.target as Node;
-      if (rootRef.current?.contains(target)) return;
-      if (panelRef.current?.contains(target)) return;
-      setOpen(false);
-    };
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("mousedown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("mousedown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [open]);
+  const { rootRef, panelRef, anchorRect } = useAnchoredPopover(open, () => setOpen(false));
+  const selected = options.find((o) => o.value === value);
+  const rect = anchorRect && { top: anchorRect.bottom + 6, left: anchorRect.left, width: anchorRect.width };
 
   return (
     <div ref={rootRef} className="relative">

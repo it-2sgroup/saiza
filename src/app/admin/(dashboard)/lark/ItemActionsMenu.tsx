@@ -1,16 +1,16 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { createPortal } from "react-dom";
 import { ShareExistingDoc } from "./ShareExistingDoc";
 import { MoveFileButton } from "./MoveFileButton";
 import { TransferOwnerButton } from "./TransferOwnerButton";
 import { DeleteLarkFileButton } from "./DeleteLarkFileButton";
+import { useAnchoredPopover } from "../useAnchoredPopover";
 import type { StaffOption } from "./StaffSharePicker";
 import type { LarkFileType } from "@/lib/lark/client";
 
 type Action = "share" | "move" | "transfer" | "delete";
-type PanelRect = { top: number; left: number };
 
 const MENU_WIDTH = 288;
 // Sub-action forms (share/move/transfer) need more room than the plain menu
@@ -40,9 +40,6 @@ export function ItemActionsMenu({
 }) {
   const [open, setOpen] = useState(false);
   const [action, setAction] = useState<Action | null>(null);
-  const [rect, setRect] = useState<PanelRect | null>(null);
-  const rootRef = useRef<HTMLDivElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
 
   const close = () => {
     setOpen(false);
@@ -53,41 +50,11 @@ export function ItemActionsMenu({
   // coordinates instead of `position: absolute` inside the card — the card
   // is narrower than the menu and clips/misplaces it otherwise.
   const panelWidth = action ? FORM_WIDTH : MENU_WIDTH;
-
-  useLayoutEffect(() => {
-    if (!open || !rootRef.current) return;
-    const updateRect = () => {
-      const r = rootRef.current!.getBoundingClientRect();
-      const left = Math.min(Math.max(8, r.right - panelWidth), window.innerWidth - panelWidth - 8);
-      setRect({ top: r.bottom + 6, left });
-    };
-    updateRect();
-    window.addEventListener("resize", updateRect);
-    window.addEventListener("scroll", updateRect, true);
-    return () => {
-      window.removeEventListener("resize", updateRect);
-      window.removeEventListener("scroll", updateRect, true);
-    };
-  }, [open, panelWidth]);
-
-  useEffect(() => {
-    if (!open) return;
-    const onPointerDown = (e: MouseEvent) => {
-      const target = e.target as Node;
-      if (rootRef.current?.contains(target)) return;
-      if (panelRef.current?.contains(target)) return;
-      close();
-    };
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") close();
-    };
-    document.addEventListener("mousedown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("mousedown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [open]);
+  const { rootRef, panelRef, anchorRect } = useAnchoredPopover(open, close);
+  const rect = anchorRect && {
+    top: anchorRect.bottom + 6,
+    left: Math.min(Math.max(8, anchorRect.right - panelWidth), window.innerWidth - panelWidth - 8),
+  };
 
   return (
     <div ref={rootRef} className="relative flex-shrink-0">

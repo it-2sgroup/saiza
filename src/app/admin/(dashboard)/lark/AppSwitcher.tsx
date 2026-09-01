@@ -1,51 +1,15 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { switchLarkApp } from "./actions";
-
-type PanelRect = { top: number; left: number; width: number };
+import { useAnchoredPopover } from "../useAnchoredPopover";
 
 export function AppSwitcher({ apps, activeKey }: { apps: { key: string; label: string }[]; activeKey: string }) {
   const [pending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
-  const [rect, setRect] = useState<PanelRect | null>(null);
-  const rootRef = useRef<HTMLDivElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
-
-  useLayoutEffect(() => {
-    if (!open || !rootRef.current) return;
-    const updateRect = () => {
-      const r = rootRef.current!.getBoundingClientRect();
-      setRect({ top: r.bottom + 6, left: r.left, width: Math.max(r.width, 260) });
-    };
-    updateRect();
-    window.addEventListener("resize", updateRect);
-    window.addEventListener("scroll", updateRect, true);
-    return () => {
-      window.removeEventListener("resize", updateRect);
-      window.removeEventListener("scroll", updateRect, true);
-    };
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-    const onPointerDown = (e: MouseEvent) => {
-      const target = e.target as Node;
-      if (rootRef.current?.contains(target)) return;
-      if (panelRef.current?.contains(target)) return;
-      setOpen(false);
-    };
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("mousedown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("mousedown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [open]);
+  const { rootRef, panelRef, anchorRect } = useAnchoredPopover(open, () => setOpen(false));
+  const rect = anchorRect && { top: anchorRect.bottom + 6, left: anchorRect.left, width: Math.max(anchorRect.width, 260) };
 
   if (apps.length <= 1) return null;
 
