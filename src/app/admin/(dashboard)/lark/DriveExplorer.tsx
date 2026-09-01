@@ -4,25 +4,24 @@ import { useEffect, useState, useTransition } from "react";
 import { Modal, ModalHeader } from "../Modal";
 import { browseLarkFolder } from "./actions";
 import type { LarkDriveItem } from "@/lib/lark/client";
+import type { FolderOption } from "@/lib/lark/folders";
 import { LARK_FILE_TYPE_LABELS, type LarkFileType } from "@/lib/lark/fileTypes";
 
 type Crumb = { token: string | null; name: string };
 
-function FolderRowIcon() {
+const TYPE_BADGE: Record<string, { label: string; className: string }> = {
+  folder: { label: "DIR", className: "bg-amber-100 text-amber-700" },
+  docx: { label: "DOC", className: "bg-blue-100 text-blue-700" },
+  sheet: { label: "XLS", className: "bg-green-100 text-green-700" },
+  bitable: { label: "BASE", className: "bg-purple-100 text-purple-700" },
+};
+
+function TypeBadge({ type }: { type: string }) {
+  const badge = TYPE_BADGE[type] ?? { label: type.slice(0, 3).toUpperCase(), className: "bg-wash text-ink-2" };
   return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="flex-shrink-0"
-    >
-      <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
-    </svg>
+    <span className={`flex h-7 w-9 flex-shrink-0 items-center justify-center rounded-md text-[10px] font-bold ${badge.className}`}>
+      {badge.label}
+    </span>
   );
 }
 
@@ -30,14 +29,30 @@ function fileTypeLabel(type: string) {
   return LARK_FILE_TYPE_LABELS[type as LarkFileType] ?? type;
 }
 
+// Reconstructs the ancestor chain (for the breadcrumb) for a folder clicked
+// directly in the tree sidebar, since FolderOption only carries a
+// `parentToken` pointer, not the full path.
+function buildPathTo(token: string, tree: FolderOption[], rootLabel: string): Crumb[] {
+  const byToken = new Map(tree.map((f) => [f.token, f]));
+  const chain: Crumb[] = [];
+  let current = byToken.get(token);
+  while (current) {
+    chain.unshift({ token: current.token, name: current.name });
+    current = current.parentToken ? byToken.get(current.parentToken) : undefined;
+  }
+  return [{ token: null, name: rootLabel }, ...chain];
+}
+
 export function DriveExplorer({
   appKey,
   appLabel,
+  folderTree = [],
   trigger,
   inline = false,
 }: {
   appKey: string;
   appLabel: string;
+  folderTree?: FolderOption[];
   trigger?: React.ReactNode;
   inline?: boolean;
 }) {
@@ -84,8 +99,17 @@ export function DriveExplorer({
     load(path[index].token);
   };
 
-  const folders = items.filter((i) => i.type === "folder");
-  const files = items.filter((i) => i.type !== "folder");
+  const goToTreeItem = (token: string | null) => {
+    if (token === null) {
+      setPath([{ token: null, name: appLabel }]);
+    } else {
+      setPath(buildPathTo(token, folderTree, appLabel));
+    }
+    load(token);
+  };
+
+  const currentToken = path[path.length - 1]?.token ?? null;
+  const orderedItems = [...items.filter((i) => i.type === "folder"), ...items.filter((i) => i.type !== "folder")];
 
   const driveIcon = (
     <svg
@@ -102,91 +126,109 @@ export function DriveExplorer({
     </svg>
   );
 
-  const content = (
-    <div className={inline ? "flex flex-col gap-3" : "flex min-h-0 flex-1 flex-col gap-3"}>
-      <div className="flex flex-shrink-0 flex-wrap items-center gap-1 text-sm">
-        {path.map((c, i) => (
-          <span key={i} className="flex items-center gap-1">
-            {i > 0 && <span className="text-ink-2">/</span>}
-            <button
-              type="button"
-              onClick={() => goToCrumb(i)}
-              disabled={i === path.length - 1}
-              className={i === path.length - 1 ? "font-semibold text-ink" : "cursor-pointer text-accent hover:text-ink"}
-            >
-              {c.name}
-            </button>
-          </span>
-        ))}
-      </div>
+  const treeItemClass = (active: boolean) =>
+    `flex w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[13px] font-medium transition-colors duration-300 ease-soft ${
+      active ? "bg-accent/10 text-accent" : "text-ink-2 hover:bg-wash hover:text-ink"
+    }`;
 
-      <div className={inline ? "" : "min-h-0 flex-1 overflow-y-auto"}>
-        {pending ? (
-          <p className="text-sm text-ink-2">Đang tải...</p>
-        ) : error ? (
-          <p className="text-sm font-medium text-red-600">{error}</p>
-        ) : items.length === 0 ? (
-          <p className="text-sm text-ink-2">Thư mục trống.</p>
-        ) : (
-          <div className="flex flex-col gap-5">
-            {folders.length > 0 && (
-              <div className="flex flex-col gap-2">
-                <h3 className="text-xs font-semibold tracking-[0.06em] text-ink-2 uppercase">Thư mục ({folders.length})</h3>
-                <div className="flex flex-col divide-y divide-line rounded-card border border-line">
-                  {folders.map((f) => (
-                    <button
-                      key={f.token}
-                      type="button"
-                      onClick={() => enterFolder(f)}
-                      className="flex cursor-pointer items-center gap-2.5 px-4 py-2.5 text-left transition-colors duration-300 ease-soft hover:bg-wash"
-                    >
-                      <FolderRowIcon />
-                      <span className="min-w-0 flex-1 truncate text-[14px] font-medium">{f.name}</span>
-                      <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="flex-shrink-0 text-ink-2"
-                      >
-                        <path d="m9 6 6 6-6 6" />
-                      </svg>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-            {files.length > 0 && (
-              <div className="flex flex-col gap-2">
-                <h3 className="text-xs font-semibold tracking-[0.06em] text-ink-2 uppercase">File ({files.length})</h3>
-                <div className="flex flex-col divide-y divide-line rounded-card border border-line">
-                  {files.map((f) => (
-                    <div key={f.token} className="flex items-center justify-between gap-2.5 px-4 py-2.5">
-                      <div className="flex min-w-0 flex-col gap-0.5">
-                        <span className="truncate text-[14px] font-medium">{f.name}</span>
-                        <span className="text-xs text-ink-2">{fileTypeLabel(f.type)}</span>
-                      </div>
-                      {f.url && (
-                        <a
-                          href={f.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="flex-shrink-0 text-xs font-medium text-accent hover:text-ink"
-                        >
-                          Mở →
-                        </a>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+  const content = (
+    <div className={inline ? "flex flex-col gap-3 sm:flex-row sm:gap-5" : "flex min-h-0 flex-1 flex-col gap-3"}>
+      {inline && (
+        <div className="flex w-full flex-shrink-0 flex-col gap-2 sm:w-[220px]">
+          <h3 className="text-[11px] font-semibold tracking-[0.06em] text-ink-2 uppercase">Cây thư mục</h3>
+          <div className="flex flex-col gap-0.5 rounded-card border border-line bg-card p-1.5">
+            <button type="button" onClick={() => goToTreeItem(null)} className={treeItemClass(currentToken === null)}>
+              <span className="truncate">{appLabel}</span>
+            </button>
+            {folderTree.map((f) => (
+              <button
+                key={f.token}
+                type="button"
+                onClick={() => goToTreeItem(f.token)}
+                style={{ paddingLeft: `${f.depth * 14 + 10}px` }}
+                className={treeItemClass(currentToken === f.token)}
+              >
+                <span className="truncate">{f.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className={inline ? "flex min-w-0 flex-1 flex-col gap-3" : "flex min-h-0 flex-1 flex-col gap-3"}>
+        {!inline && (
+          <div className="flex flex-shrink-0 flex-wrap items-center gap-1 text-sm">
+            {path.map((c, i) => (
+              <span key={i} className="flex items-center gap-1">
+                {i > 0 && <span className="text-ink-2">/</span>}
+                <button
+                  type="button"
+                  onClick={() => goToCrumb(i)}
+                  disabled={i === path.length - 1}
+                  className={i === path.length - 1 ? "font-semibold text-ink" : "cursor-pointer text-accent hover:text-ink"}
+                >
+                  {c.name}
+                </button>
+              </span>
+            ))}
           </div>
         )}
+
+        {inline && (
+          <div className="flex flex-shrink-0 flex-wrap items-baseline justify-between gap-2">
+            <h3 className="text-[14.5px] font-semibold text-ink">
+              {path.length <= 1 ? `${appLabel} / Toàn bộ nội dung` : path.map((c) => c.name).join(" / ")}
+            </h3>
+            <span className="text-xs text-ink-2">Gồm cả file có trước khi hệ thống tồn tại</span>
+          </div>
+        )}
+
+        <div className={inline ? "" : "min-h-0 flex-1 overflow-y-auto"}>
+          {pending ? (
+            <p className="text-sm text-ink-2">Đang tải...</p>
+          ) : error ? (
+            <p className="text-sm font-medium text-red-600">{error}</p>
+          ) : orderedItems.length === 0 ? (
+            <p className="text-sm text-ink-2">Thư mục trống.</p>
+          ) : (
+            <div className="flex flex-col divide-y divide-line rounded-card border border-line">
+              {orderedItems.map((f) =>
+                f.type === "folder" ? (
+                  <button
+                    key={f.token}
+                    type="button"
+                    onClick={() => enterFolder(f)}
+                    className="flex cursor-pointer items-center gap-3 px-4 py-2.5 text-left transition-colors duration-300 ease-soft hover:bg-wash"
+                  >
+                    <TypeBadge type={f.type} />
+                    <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <span className="truncate text-[14px] font-medium">{f.name}</span>
+                      <span className="text-xs text-ink-2">{fileTypeLabel(f.type)}</span>
+                    </div>
+                  </button>
+                ) : (
+                  <div key={f.token} className="flex items-center gap-3 px-4 py-2.5">
+                    <TypeBadge type={f.type} />
+                    <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <span className="truncate text-[14px] font-medium">{f.name}</span>
+                      <span className="text-xs text-ink-2">{fileTypeLabel(f.type)}</span>
+                    </div>
+                    {f.url && (
+                      <a
+                        href={f.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex-shrink-0 text-xs font-medium text-accent hover:text-ink"
+                      >
+                        Mở →
+                      </a>
+                    )}
+                  </div>
+                ),
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

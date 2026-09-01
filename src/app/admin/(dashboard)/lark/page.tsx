@@ -441,7 +441,12 @@ export default async function AdminLarkPage() {
   );
 
   const driveTab = (
-    <DriveExplorer inline appKey={activeAppKey} appLabel={larkApps.find((a) => a.key === activeAppKey)?.label ?? activeAppKey} />
+    <DriveExplorer
+      inline
+      appKey={activeAppKey}
+      appLabel={larkApps.find((a) => a.key === activeAppKey)?.label ?? activeAppKey}
+      folderTree={foldersByOrg[""] ?? []}
+    />
   );
 
   const statsTab = isAdmin ? (
