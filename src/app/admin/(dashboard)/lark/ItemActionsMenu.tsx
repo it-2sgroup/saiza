@@ -113,7 +113,7 @@ export function ItemActionsMenu({
             ref={panelRef}
             role="menu"
             style={{ position: "fixed", top: rect.top, left: rect.left, width: panelWidth }}
-            className="z-[100] rounded-xl border border-line bg-card p-2 font-[family-name:var(--font-ibm-plex-sans)] shadow-[0_20px_45px_rgba(22,33,62,0.18)]"
+            className="lark-theme z-[100] rounded-xl border border-line bg-card p-2 font-[family-name:var(--font-ibm-plex-sans)] shadow-[0_20px_45px_rgba(22,33,62,0.18)]"
           >
             {action === null ? (
               <div className="flex flex-col gap-0.5">

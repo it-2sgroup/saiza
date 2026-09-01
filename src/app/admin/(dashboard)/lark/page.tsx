@@ -455,7 +455,7 @@ export default async function AdminLarkPage() {
   ) : null;
 
   return (
-    <div className="flex w-full flex-col gap-6 font-[family-name:var(--font-ibm-plex-sans)]">
+    <div className="lark-theme flex w-full flex-col gap-6 font-[family-name:var(--font-ibm-plex-sans)]">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <Avatar fullName={profile.full_name} avatarUrl={profile.avatar_url} size={9} />
