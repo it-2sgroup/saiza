@@ -12,7 +12,11 @@ import type { LarkFileType } from "@/lib/lark/client";
 type Action = "share" | "move" | "transfer" | "delete";
 type PanelRect = { top: number; left: number };
 
-const PANEL_WIDTH = 288;
+const MENU_WIDTH = 288;
+// Sub-action forms (share/move/transfer) need more room than the plain menu
+// list — an email input + permission dropdown + remove button don't fit
+// comfortably in 288px.
+const FORM_WIDTH = 360;
 
 const MENU_ITEM_CLASS =
   "w-full cursor-pointer rounded-lg px-3 py-2 text-left text-[13.5px] font-medium text-ink transition-colors duration-300 ease-soft hover:bg-wash";
@@ -48,11 +52,13 @@ export function ItemActionsMenu({
   // Render the menu in a portal anchored to the trigger's real screen
   // coordinates instead of `position: absolute` inside the card — the card
   // is narrower than the menu and clips/misplaces it otherwise.
+  const panelWidth = action ? FORM_WIDTH : MENU_WIDTH;
+
   useLayoutEffect(() => {
     if (!open || !rootRef.current) return;
     const updateRect = () => {
       const r = rootRef.current!.getBoundingClientRect();
-      const left = Math.min(Math.max(8, r.right - PANEL_WIDTH), window.innerWidth - PANEL_WIDTH - 8);
+      const left = Math.min(Math.max(8, r.right - panelWidth), window.innerWidth - panelWidth - 8);
       setRect({ top: r.bottom + 6, left });
     };
     updateRect();
@@ -62,7 +68,7 @@ export function ItemActionsMenu({
       window.removeEventListener("resize", updateRect);
       window.removeEventListener("scroll", updateRect, true);
     };
-  }, [open]);
+  }, [open, panelWidth]);
 
   useEffect(() => {
     if (!open) return;
@@ -106,7 +112,7 @@ export function ItemActionsMenu({
           <div
             ref={panelRef}
             role="menu"
-            style={{ position: "fixed", top: rect.top, left: rect.left, width: PANEL_WIDTH }}
+            style={{ position: "fixed", top: rect.top, left: rect.left, width: panelWidth }}
             className="z-[100] rounded-xl border border-line bg-card p-2 shadow-[0_20px_45px_rgba(22,33,62,0.18)]"
           >
             {action === null ? (

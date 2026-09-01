@@ -64,13 +64,7 @@ export function Combobox({ value, options, onChange, name, buttonClassName, pane
   return (
     <div ref={rootRef} className="relative">
       {name && <input type="hidden" name={name} value={value} />}
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        className={buttonClassName}
-      >
+      <button type="button" onClick={() => setOpen((o) => !o)} aria-haspopup="listbox" aria-expanded={open} className={buttonClassName}>
         <span className="truncate">{selected?.label ?? ""}</span>
         <svg
           width="14"
@@ -97,7 +91,7 @@ export function Combobox({ value, options, onChange, name, buttonClassName, pane
             style={{ position: "fixed", top: rect.top, left: rect.left, width: rect.width }}
             className={
               panelClassName ??
-              "z-[100] max-h-72 min-w-[160px] overflow-y-auto rounded-2xl border border-line bg-card p-1.5 shadow-[0_16px_32px_rgba(22,33,62,0.18)]"
+              "z-[110] max-h-72 min-w-[160px] overflow-y-auto rounded-2xl border border-line bg-card p-1.5 shadow-[0_16px_32px_rgba(22,33,62,0.18)]"
             }
           >
             {options.map((o) => (
