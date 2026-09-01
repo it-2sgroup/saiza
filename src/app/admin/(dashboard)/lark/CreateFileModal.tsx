@@ -104,10 +104,10 @@ export function CreateFileModal({
         </ActionButton>
       )}
 
-      <Modal open={open} onClose={closeModal} panelClassName="max-h-[88vh] w-full max-w-[820px] overflow-y-auto p-6">
+      <Modal open={open} onClose={closeModal} panelClassName="flex max-h-[88vh] w-full max-w-[820px] flex-col overflow-hidden p-6">
         <ModalHeader title="Tạo file mới" subtitle="Chọn loại file, điền thông tin — tên file sẽ tự chuẩn hoá." onClose={closeModal} />
 
-        <div className="flex flex-col gap-5 sm:flex-row">
+        <div className="flex min-h-0 flex-1 flex-col gap-5 sm:flex-row">
           <div className="flex flex-shrink-0 flex-col gap-1.5 sm:w-[220px]">
             {TYPE_CARDS.map((card, i) => {
               const active = card.type === fileType;
@@ -150,7 +150,7 @@ export function CreateFileModal({
             })}
           </div>
 
-          <div className="min-w-0 flex-1">
+          <div className="min-h-0 min-w-0 flex-1 overflow-y-auto">
             <LarkDocForm
               fileType={fileType}
               defaultDepartment={defaultDepartment}
