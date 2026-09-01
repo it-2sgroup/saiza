@@ -17,7 +17,16 @@ import { LarkTabs, LarkTabPanel } from "./LarkTabs";
 import { TypeBadge } from "./TypeBadge";
 import type { StaffOption } from "./StaffSharePicker";
 import { StatTile } from "../StatTile";
-import { LARK_FILE_TYPE_LABELS, getLarkApps, getDefaultAppKey, listTenantContacts, type LarkFileType } from "@/lib/lark/client";
+import {
+  LARK_FILE_TYPE_LABELS,
+  getLarkApps,
+  getDefaultAppKey,
+  listTenantContacts,
+  getAppRootFolderToken,
+  listFolderContents,
+  type LarkFileType,
+  type LarkDriveItem,
+} from "@/lib/lark/client";
 import { listLarkFolderTree, type FolderOption } from "@/lib/lark/folders";
 import { resolveRootFolderToken, listConfiguredOrgs } from "@/lib/lark/orgFolders";
 
@@ -54,6 +63,7 @@ export default async function AdminLarkPage() {
     { data: usersData },
     folderTrees,
     tenantContactsByApp,
+    driveRootItems,
   ] = await Promise.all([
     admin
       .from("audit_log")
@@ -81,6 +91,17 @@ export default async function AdminLarkPage() {
     // one currently active for new creations — merge every app's directory
     // into one suggestion pool instead of scoping it to activeAppKey.
     Promise.all(larkApps.map((a) => listTenantContacts(a.key).catch(() => []))),
+    // Pre-fetch the Drive tab's root listing server-side so it renders with
+    // content immediately instead of showing "Đang tải..." on every visit —
+    // best-effort: a Drive API hiccup here shouldn't break the whole page.
+    (async (): Promise<LarkDriveItem[] | undefined> => {
+      try {
+        const rootToken = await getAppRootFolderToken(activeAppKey);
+        return await listFolderContents(rootToken, activeAppKey);
+      } catch {
+        return undefined;
+      }
+    })(),
   ]);
 
   const foldersByOrg: Record<string, FolderOption[]> = Object.fromEntries(folderTrees);
@@ -364,10 +385,12 @@ export default async function AdminLarkPage() {
 
   const driveTab = (
     <DriveExplorer
+      key={activeAppKey}
       inline
       appKey={activeAppKey}
       appLabel={larkApps.find((a) => a.key === activeAppKey)?.label ?? activeAppKey}
       folderTree={foldersByOrg[""] ?? []}
+      initialItems={driveRootItems}
     />
   );
 

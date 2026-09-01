@@ -35,22 +35,33 @@ export function DriveExplorer({
   folderTree = [],
   trigger,
   inline = false,
+  initialItems,
 }: {
   appKey: string;
   appLabel: string;
   folderTree?: FolderOption[];
   trigger?: React.ReactNode;
   inline?: boolean;
+  // Server-fetched root listing (page.tsx) so the inline Drive tab shows
+  // content immediately on first render instead of "Đang tải...". Only
+  // valid for the root of `appKey` — the parent remounts this component
+  // (via `key={appKey}`) whenever the active app changes, so a stale prop
+  // from a previous app can never leak into a fresh instance.
+  initialItems?: LarkDriveItem[];
 }) {
   const [open, setOpen] = useState(false);
   const [path, setPath] = useState<Crumb[]>([{ token: null, name: appLabel }]);
-  const [items, setItems] = useState<LarkDriveItem[]>([]);
+  const [items, setItems] = useState<LarkDriveItem[]>(initialItems ?? []);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   // The server-computed folderTree is cached and can lag behind reality —
   // every live browse also folds any folders it sees into this, so the
   // sidebar is always at least as complete as what you've actually visited.
-  const [liveFolders, setLiveFolders] = useState<FolderOption[]>([]);
+  const [liveFolders, setLiveFolders] = useState<FolderOption[]>(() =>
+    (initialItems ?? [])
+      .filter((i) => i.type === "folder")
+      .map((i) => ({ token: i.token, name: i.name, depth: 1, parentToken: ROOT_PARENT })),
+  );
 
   const tree = useMemo(() => {
     const byToken = new Map<string, FolderOption>();
@@ -89,12 +100,14 @@ export function DriveExplorer({
   };
 
   useEffect(() => {
-    if (!inline) return;
+    if (!inline || initialItems) return;
+    // Only reached when the server-side fetch in page.tsx failed/was skipped
+    // — normally `initialItems` already has the root listing, and this
+    // component remounts fresh (via `key={appKey}`) on every app switch, so
+    // there's no "whenever the active app changes" case left to handle here.
     load(null, 0);
-    // Loads the root once on mount / whenever the active app changes; the
-    // initial path (root breadcrumb) is already set by the useState default.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [inline, appKey]);
+  }, [inline]);
 
   const enterFolder = (item: LarkDriveItem) => {
     const depth = path.length;
