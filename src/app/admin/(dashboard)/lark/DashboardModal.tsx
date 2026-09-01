@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid } from "recharts";
+import { Tooltip, ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid } from "recharts";
 import { departmentLabel } from "@/lib/admin/departments";
 import { LARK_FILE_TYPE_LABELS, type LarkFileType } from "@/lib/lark/fileTypes";
 import { Modal, ModalHeader } from "../Modal";
 import { StatTile } from "../StatTile";
+import { ADOPTION_COLORS } from "./chartColors";
 
 const TYPE_COLORS: Record<LarkFileType, string> = {
   docx: "#0B84D8",
@@ -13,7 +14,6 @@ const TYPE_COLORS: Record<LarkFileType, string> = {
   bitable: "#8B5CF6",
   folder: "#D89B0B",
 };
-export const ADOPTION_COLORS = { active: "#0B84D8", inactive: "#B9C4D9" } as const;
 
 export type CreatorStat = {
   id: string;
@@ -38,6 +38,16 @@ export type DashboardData = {
 
 export function DonutCard({ title, data }: { title: string; data: { name: string; value: number; color: string }[] }) {
   const total = data.reduce((sum, d) => sum + d.value, 0);
+  // Recharts v3's Pie/Cell no longer reliably applies per-segment fill (the
+  // color prop is silently dropped, rendering every slice black) — a plain
+  // CSS conic-gradient ring sidesteps the library bug entirely.
+  const segments = data
+    .filter((d) => d.value > 0)
+    .reduce<{ start: number; end: number; color: string }[]>((acc, d) => {
+      const start = acc.length > 0 ? acc[acc.length - 1].end : 0;
+      return [...acc, { start, end: start + (d.value / total) * 100, color: d.color }];
+    }, []);
+  const stops = segments.map((s) => `${s.color} ${s.start}% ${s.end}%`).join(", ");
   return (
     <div className="flex flex-col gap-3 rounded-card border border-line bg-paper p-4">
       <h3 className="text-xs font-semibold tracking-[0.06em] text-ink-2 uppercase">{title}</h3>
@@ -45,17 +55,8 @@ export function DonutCard({ title, data }: { title: string; data: { name: string
         <p className="text-sm text-ink-2">Chưa có dữ liệu.</p>
       ) : (
         <div className="flex items-center gap-4">
-          <div className="h-[110px] w-[110px] flex-shrink-0">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={data} dataKey="value" nameKey="name" innerRadius={32} outerRadius={50} paddingAngle={2} strokeWidth={0}>
-                  {data.map((entry) => (
-                    <Cell key={entry.name} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+          <div className="relative h-[110px] w-[110px] flex-shrink-0 rounded-full" style={{ background: `conic-gradient(${stops})` }}>
+            <div className="absolute inset-5 rounded-full bg-paper" />
           </div>
           <div className="flex flex-col gap-1.5">
             {data.map((d) => (
