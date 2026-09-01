@@ -62,16 +62,16 @@ body {
 }
 
 /* "Tạo file Lark" page theme — scoped override on top of .admin-theme,
-   matching its reference design's neutral zinc palette with a near-black
-   accent (buttons, active tab, toggle-on, primary CTA) — not the indigo
-   admin theme. */
+   keeping its neutral zinc ink/paper for layout but matching the rest of
+   the admin dashboard's indigo accent (buttons, active tab, toggle-on,
+   primary CTA) instead of a standalone near-black accent. */
 .lark-theme {
   --color-ink: #18181b;
   --color-ink-2: #71717a;
-  --color-accent: #18181b;
-  --color-accent-2: #3f3f46;
-  --color-wash: #f4f4f5;
-  --color-line: #ececf1;
+  --color-accent: #6366f1;
+  --color-accent-2: #818cf8;
+  --color-wash: #eef2ff;
+  --color-line: #e0e7ff;
   --color-paper: #f7f7f9;
   --radius-card: 14px;
 }
