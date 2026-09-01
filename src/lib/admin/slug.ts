@@ -1,4 +1,4 @@
-export function slugify(input: string) {
+function slugify(input: string) {
   return input
     .normalize("NFD")
     .replace(/\p{Diacritic}/gu, "")

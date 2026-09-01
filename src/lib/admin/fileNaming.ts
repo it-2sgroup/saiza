@@ -3,7 +3,7 @@
 const UNSAFE_CHARS = /[\\/:*?"<>|]/g;
 
 // "chiến dịch q3" -> "Chiến Dịch Q3" — viết hoa đầu mỗi từ, giữ dấu tiếng Việt và khoảng trắng giữa các từ.
-export function toTitleCaseVN(input: string): string {
+function toTitleCaseVN(input: string): string {
   return input
     .trim()
     .replace(UNSAFE_CHARS, "")

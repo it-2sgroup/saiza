@@ -1,7 +1,7 @@
 import "server-only";
 import { shareLarkDocByEmail, type LarkFileType } from "./client";
 
-export type SharePerm = "view" | "edit" | "full_access";
+type SharePerm = "view" | "edit" | "full_access";
 export type ShareRow = { email: string; perm: SharePerm };
 export type ShareResult = { email: string; ok: boolean };
 

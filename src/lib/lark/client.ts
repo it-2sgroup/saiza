@@ -131,7 +131,7 @@ async function getMySpaceRootFolderToken(appKey?: string): Promise<string> {
   return rootToken;
 }
 
-export type LarkFile = { documentId: string; url: string; type: LarkFileType };
+type LarkFile = { documentId: string; url: string; type: LarkFileType };
 
 export async function createLarkFile(type: LarkFileType, title: string, targetFolderToken?: string, appKey?: string): Promise<LarkFile> {
   const app = getLarkAppConfig(appKey);
@@ -165,7 +165,7 @@ export async function createLarkFile(type: LarkFileType, title: string, targetFo
   }
 }
 
-export type LarkFolderEntry = { token: string; name: string };
+type LarkFolderEntry = { token: string; name: string };
 
 export async function listFolderChildren(folderToken: string, appKey?: string): Promise<LarkFolderEntry[]> {
   const token = await getTenantAccessToken(appKey);

@@ -2,9 +2,10 @@
 
 import { Combobox } from "../Combobox";
 import { PeoplePicker } from "./PeoplePicker";
+import type { ShareRow } from "@/lib/lark/shareRows";
 
 export type StaffOption = { id: string; full_name: string; email: string; avatar_url: string | null };
-export type ShareRow = { email: string; perm: "view" | "edit" | "full_access" };
+export type { ShareRow };
 
 const PERM_OPTIONS = [
   { value: "view", label: "Chỉ xem" },

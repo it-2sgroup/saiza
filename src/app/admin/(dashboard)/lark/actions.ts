@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getCurrentProfile } from "@/lib/supabase/profile";
+import { getCurrentProfile, type Profile } from "@/lib/supabase/profile";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { recordAuditLog } from "@/lib/admin/audit";
 import {
@@ -42,6 +42,27 @@ async function resolveDocAppKey(admin: ReturnType<typeof createAdminClient>, doc
     .maybeSingle();
   const appKey = (data?.metadata as { appKey?: string } | null)?.appKey;
   return appKey ?? getDefaultAppKey();
+}
+
+// Move/delete/transfer-ownership all gate on the same rule: the person who
+// created the file, or anyone with canDelete rights. Returns an error
+// message to return from the caller's action, or null when allowed.
+async function checkDocPermission(
+  admin: ReturnType<typeof createAdminClient>,
+  profile: Profile,
+  documentId: string,
+  deniedMessage: string,
+): Promise<string | null> {
+  const { data: creationRow } = await admin
+    .from("audit_log")
+    .select("actor_id")
+    .eq("action", "lark_doc_created")
+    .eq("target_id", documentId)
+    .maybeSingle();
+
+  const isOwner = creationRow?.actor_id === profile.id;
+  if (!isOwner && !canDelete(profile.role)) return deniedMessage;
+  return null;
 }
 
 export type LarkDocFormState = {
@@ -285,17 +306,8 @@ export async function moveLarkDocument(
   if (!targetFolder) return { error: "Chọn thư mục đích." };
 
   const admin = createAdminClient();
-  const { data: creationRow } = await admin
-    .from("audit_log")
-    .select("actor_id")
-    .eq("action", "lark_doc_created")
-    .eq("target_id", documentId)
-    .maybeSingle();
-
-  const isOwner = creationRow?.actor_id === profile.id;
-  if (!isOwner && !canDelete(profile.role)) {
-    return { error: "Bạn không có quyền di chuyển file này." };
-  }
+  const permissionError = await checkDocPermission(admin, profile, documentId, "Bạn không có quyền di chuyển file này.");
+  if (permissionError) return { error: permissionError };
 
   const appKey = await resolveDocAppKey(admin, documentId);
 
@@ -328,17 +340,8 @@ export async function deleteLarkDocument(
   if (!profile) return { error: "Bạn cần đăng nhập lại." };
 
   const admin = createAdminClient();
-  const { data: creationRow } = await admin
-    .from("audit_log")
-    .select("actor_id")
-    .eq("action", "lark_doc_created")
-    .eq("target_id", documentId)
-    .maybeSingle();
-
-  const isOwner = creationRow?.actor_id === profile.id;
-  if (!isOwner && !canDelete(profile.role)) {
-    return { error: "Bạn không có quyền xoá file này." };
-  }
+  const permissionError = await checkDocPermission(admin, profile, documentId, "Bạn không có quyền xoá file này.");
+  if (permissionError) return { error: permissionError };
 
   const appKey = await resolveDocAppKey(admin, documentId);
 
@@ -405,17 +408,8 @@ export async function transferLarkDocumentOwner(
   if (!email) return { error: "Nhập email người nhận." };
 
   const admin = createAdminClient();
-  const { data: creationRow } = await admin
-    .from("audit_log")
-    .select("actor_id")
-    .eq("action", "lark_doc_created")
-    .eq("target_id", documentId)
-    .maybeSingle();
-
-  const isOwner = creationRow?.actor_id === profile.id;
-  if (!isOwner && !canDelete(profile.role)) {
-    return { error: "Bạn không có quyền chuyển quyền sở hữu file này." };
-  }
+  const permissionError = await checkDocPermission(admin, profile, documentId, "Bạn không có quyền chuyển quyền sở hữu file này.");
+  if (permissionError) return { error: permissionError };
 
   const appKey = await resolveDocAppKey(admin, documentId);
 
