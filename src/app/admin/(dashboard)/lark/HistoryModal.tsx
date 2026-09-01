@@ -14,25 +14,36 @@ export type HistoryRow = {
   createdAt: string;
 };
 
+const TYPE_FILTERS: { value: LarkFileType | ""; label: string }[] = [
+  { value: "", label: "Tất cả" },
+  ...(Object.keys(LARK_FILE_TYPE_LABELS) as LarkFileType[]).map((t) => ({ value: t, label: LARK_FILE_TYPE_LABELS[t] })),
+];
+
 export function HistoryModal({
   rows,
   staff,
   folderOptions,
   trigger,
+  inline = false,
 }: {
   rows: HistoryRow[];
   staff: StaffOption[];
   folderOptions: { value: string; label: string }[];
   trigger?: React.ReactNode;
+  inline?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
+  const [typeFilter, setTypeFilter] = useState<LarkFileType | "">("");
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    if (!needle) return rows;
-    return rows.filter((r) => r.title.toLowerCase().includes(needle));
-  }, [rows, q]);
+    return rows.filter((r) => {
+      if (needle && !r.title.toLowerCase().includes(needle)) return false;
+      if (typeFilter && r.fileType !== typeFilter) return false;
+      return true;
+    });
+  }, [rows, q, typeFilter]);
 
   const historyIcon = (
     <svg
@@ -50,6 +61,62 @@ export function HistoryModal({
       <path d="M9 13h6M9 17h6" />
     </svg>
   );
+
+  const content = (
+    <div className={inline ? "flex flex-col gap-3" : "flex min-h-0 flex-1 flex-col gap-3"}>
+      <div className="flex flex-shrink-0 flex-wrap items-center gap-2.5">
+        <input
+          type="text"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Tìm theo tên file..."
+          className="min-w-[180px] flex-1 rounded-full border border-line bg-paper px-4 py-2.5 text-[14.5px] text-ink outline-none transition-all duration-300 ease-soft focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/30"
+        />
+        <div className="flex flex-wrap gap-1.5">
+          {TYPE_FILTERS.map((f) => (
+            <button
+              key={f.value || "all"}
+              type="button"
+              onClick={() => setTypeFilter(f.value)}
+              className={`cursor-pointer rounded-full border px-3 py-1.5 text-xs font-medium transition-colors duration-300 ease-soft ${
+                typeFilter === f.value ? "border-accent bg-accent text-white" : "border-line text-ink-2 hover:border-ink hover:text-ink"
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className={inline ? "" : "min-h-0 flex-1 overflow-y-auto"}>
+        {filtered.length === 0 ? (
+          <p className="text-sm text-ink-2">{q || typeFilter ? "Không tìm thấy file khớp bộ lọc." : "Bạn chưa tạo file nào."}</p>
+        ) : (
+          <div className="flex flex-col divide-y divide-line">
+            {filtered.map((row) => (
+              <div key={row.targetId} className="flex items-center justify-between gap-4 py-3">
+                <div className="flex min-w-0 flex-col gap-0.5">
+                  <span className="truncate text-[14.5px] font-medium">{row.title}</span>
+                  <span className="text-xs text-ink-2">
+                    {LARK_FILE_TYPE_LABELS[row.fileType]} · {new Date(row.createdAt).toLocaleString("vi-VN")}
+                  </span>
+                </div>
+                <ItemActionsMenu
+                  documentId={row.targetId}
+                  fileType={row.fileType}
+                  url={row.url}
+                  staff={staff}
+                  folderOptions={folderOptions}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  if (inline) return content;
 
   return (
     <>
@@ -75,40 +142,7 @@ export function HistoryModal({
         panelClassName="flex max-h-[88vh] w-full max-w-[720px] flex-col overflow-hidden p-6"
       >
         <ModalHeader title="Lịch sử tạo file của bạn" subtitle={`${rows.length} file (chưa xoá).`} onClose={() => setOpen(false)} />
-
-        <input
-          type="text"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Tìm theo tên file..."
-          className="mb-3 flex-shrink-0 rounded-full border border-line bg-paper px-4 py-2.5 text-[14.5px] text-ink outline-none transition-all duration-300 ease-soft focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/30"
-        />
-
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          {filtered.length === 0 ? (
-            <p className="text-sm text-ink-2">{q ? `Không tìm thấy file khớp với "${q}".` : "Bạn chưa tạo file nào."}</p>
-          ) : (
-            <div className="flex flex-col divide-y divide-line">
-              {filtered.map((row) => (
-                <div key={row.targetId} className="flex items-center justify-between gap-4 py-3">
-                  <div className="flex min-w-0 flex-col gap-0.5">
-                    <span className="truncate text-[14.5px] font-medium">{row.title}</span>
-                    <span className="text-xs text-ink-2">
-                      {LARK_FILE_TYPE_LABELS[row.fileType]} · {new Date(row.createdAt).toLocaleString("vi-VN")}
-                    </span>
-                  </div>
-                  <ItemActionsMenu
-                    documentId={row.targetId}
-                    fileType={row.fileType}
-                    url={row.url}
-                    staff={staff}
-                    folderOptions={folderOptions}
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        {content}
       </Modal>
     </>
   );

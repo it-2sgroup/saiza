@@ -70,19 +70,21 @@ export function CreateFileModal({
   foldersByOrg,
   prefs,
   trigger,
+  initialType,
 }: {
   defaultDepartment: string | null;
   staff: StaffOption[];
   foldersByOrg: Record<string, FolderOption[]>;
   prefs: LarkPrefs;
   trigger?: React.ReactNode;
+  initialType?: LarkFileType;
 }) {
   const [open, setOpen] = useState(false);
-  const [fileType, setFileType] = useState<LarkFileType | null>(null);
+  const [fileType, setFileType] = useState<LarkFileType | null>(initialType ?? null);
 
   const closeModal = () => {
     setOpen(false);
-    setFileType(null);
+    setFileType(initialType ?? null);
   };
 
   return (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { Modal, ModalHeader } from "../Modal";
 import { browseLarkFolder } from "./actions";
 import type { LarkDriveItem } from "@/lib/lark/client";
@@ -30,7 +30,17 @@ function fileTypeLabel(type: string) {
   return LARK_FILE_TYPE_LABELS[type as LarkFileType] ?? type;
 }
 
-export function DriveExplorer({ appKey, appLabel, trigger }: { appKey: string; appLabel: string; trigger?: React.ReactNode }) {
+export function DriveExplorer({
+  appKey,
+  appLabel,
+  trigger,
+  inline = false,
+}: {
+  appKey: string;
+  appLabel: string;
+  trigger?: React.ReactNode;
+  inline?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const [path, setPath] = useState<Crumb[]>([{ token: null, name: appLabel }]);
   const [items, setItems] = useState<LarkDriveItem[]>([]);
@@ -55,6 +65,14 @@ export function DriveExplorer({ appKey, appLabel, trigger }: { appKey: string; a
     setOpen(true);
     load(null);
   };
+
+  useEffect(() => {
+    if (!inline) return;
+    load(null);
+    // Loads the root once on mount / whenever the active app changes; the
+    // initial path (root breadcrumb) is already set by the useState default.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inline, appKey]);
 
   const enterFolder = (item: LarkDriveItem) => {
     setPath((p) => [...p, { token: item.token, name: item.name }]);
@@ -84,6 +102,97 @@ export function DriveExplorer({ appKey, appLabel, trigger }: { appKey: string; a
     </svg>
   );
 
+  const content = (
+    <div className={inline ? "flex flex-col gap-3" : "flex min-h-0 flex-1 flex-col gap-3"}>
+      <div className="flex flex-shrink-0 flex-wrap items-center gap-1 text-sm">
+        {path.map((c, i) => (
+          <span key={i} className="flex items-center gap-1">
+            {i > 0 && <span className="text-ink-2">/</span>}
+            <button
+              type="button"
+              onClick={() => goToCrumb(i)}
+              disabled={i === path.length - 1}
+              className={i === path.length - 1 ? "font-semibold text-ink" : "cursor-pointer text-accent hover:text-ink"}
+            >
+              {c.name}
+            </button>
+          </span>
+        ))}
+      </div>
+
+      <div className={inline ? "" : "min-h-0 flex-1 overflow-y-auto"}>
+        {pending ? (
+          <p className="text-sm text-ink-2">Đang tải...</p>
+        ) : error ? (
+          <p className="text-sm font-medium text-red-600">{error}</p>
+        ) : items.length === 0 ? (
+          <p className="text-sm text-ink-2">Thư mục trống.</p>
+        ) : (
+          <div className="flex flex-col gap-5">
+            {folders.length > 0 && (
+              <div className="flex flex-col gap-2">
+                <h3 className="text-xs font-semibold tracking-[0.06em] text-ink-2 uppercase">Thư mục ({folders.length})</h3>
+                <div className="flex flex-col divide-y divide-line rounded-card border border-line">
+                  {folders.map((f) => (
+                    <button
+                      key={f.token}
+                      type="button"
+                      onClick={() => enterFolder(f)}
+                      className="flex cursor-pointer items-center gap-2.5 px-4 py-2.5 text-left transition-colors duration-300 ease-soft hover:bg-wash"
+                    >
+                      <FolderRowIcon />
+                      <span className="min-w-0 flex-1 truncate text-[14px] font-medium">{f.name}</span>
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="flex-shrink-0 text-ink-2"
+                      >
+                        <path d="m9 6 6 6-6 6" />
+                      </svg>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {files.length > 0 && (
+              <div className="flex flex-col gap-2">
+                <h3 className="text-xs font-semibold tracking-[0.06em] text-ink-2 uppercase">File ({files.length})</h3>
+                <div className="flex flex-col divide-y divide-line rounded-card border border-line">
+                  {files.map((f) => (
+                    <div key={f.token} className="flex items-center justify-between gap-2.5 px-4 py-2.5">
+                      <div className="flex min-w-0 flex-col gap-0.5">
+                        <span className="truncate text-[14px] font-medium">{f.name}</span>
+                        <span className="text-xs text-ink-2">{fileTypeLabel(f.type)}</span>
+                      </div>
+                      {f.url && (
+                        <a
+                          href={f.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex-shrink-0 text-xs font-medium text-accent hover:text-ink"
+                        >
+                          Mở →
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  if (inline) return content;
+
   return (
     <>
       {trigger ? (
@@ -112,91 +221,7 @@ export function DriveExplorer({ appKey, appLabel, trigger }: { appKey: string; a
           subtitle="Xem toàn bộ thư mục và file thật trong Lark, kể cả file có từ trước khi hệ thống này tồn tại."
           onClose={() => setOpen(false)}
         />
-
-        <div className="mb-3 flex flex-shrink-0 flex-wrap items-center gap-1 text-sm">
-          {path.map((c, i) => (
-            <span key={i} className="flex items-center gap-1">
-              {i > 0 && <span className="text-ink-2">/</span>}
-              <button
-                type="button"
-                onClick={() => goToCrumb(i)}
-                disabled={i === path.length - 1}
-                className={i === path.length - 1 ? "font-semibold text-ink" : "cursor-pointer text-accent hover:text-ink"}
-              >
-                {c.name}
-              </button>
-            </span>
-          ))}
-        </div>
-
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          {pending ? (
-            <p className="text-sm text-ink-2">Đang tải...</p>
-          ) : error ? (
-            <p className="text-sm font-medium text-red-600">{error}</p>
-          ) : items.length === 0 ? (
-            <p className="text-sm text-ink-2">Thư mục trống.</p>
-          ) : (
-            <div className="flex flex-col gap-5">
-              {folders.length > 0 && (
-                <div className="flex flex-col gap-2">
-                  <h3 className="text-xs font-semibold tracking-[0.06em] text-ink-2 uppercase">Thư mục ({folders.length})</h3>
-                  <div className="flex flex-col divide-y divide-line rounded-card border border-line">
-                    {folders.map((f) => (
-                      <button
-                        key={f.token}
-                        type="button"
-                        onClick={() => enterFolder(f)}
-                        className="flex cursor-pointer items-center gap-2.5 px-4 py-2.5 text-left transition-colors duration-300 ease-soft hover:bg-wash"
-                      >
-                        <FolderRowIcon />
-                        <span className="min-w-0 flex-1 truncate text-[14px] font-medium">{f.name}</span>
-                        <svg
-                          width="14"
-                          height="14"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="flex-shrink-0 text-ink-2"
-                        >
-                          <path d="m9 6 6 6-6 6" />
-                        </svg>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {files.length > 0 && (
-                <div className="flex flex-col gap-2">
-                  <h3 className="text-xs font-semibold tracking-[0.06em] text-ink-2 uppercase">File ({files.length})</h3>
-                  <div className="flex flex-col divide-y divide-line rounded-card border border-line">
-                    {files.map((f) => (
-                      <div key={f.token} className="flex items-center justify-between gap-2.5 px-4 py-2.5">
-                        <div className="flex min-w-0 flex-col gap-0.5">
-                          <span className="truncate text-[14px] font-medium">{f.name}</span>
-                          <span className="text-xs text-ink-2">{fileTypeLabel(f.type)}</span>
-                        </div>
-                        {f.url && (
-                          <a
-                            href={f.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="flex-shrink-0 text-xs font-medium text-accent hover:text-ink"
-                          >
-                            Mở →
-                          </a>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+        {content}
       </Modal>
     </>
   );

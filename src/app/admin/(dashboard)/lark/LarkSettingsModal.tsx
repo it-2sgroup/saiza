@@ -56,11 +56,10 @@ export function LarkSettingsModal({ prefs, trigger }: { prefs: LarkPrefs; trigge
         <button
           type="button"
           onClick={() => setOpen(true)}
-          title="Cài đặt mặc định"
-          aria-label="Cài đặt mặc định"
-          className="flex h-10 w-10 flex-shrink-0 cursor-pointer items-center justify-center rounded-full border border-line bg-card text-ink-2 transition-colors duration-300 ease-soft hover:border-ink hover:text-ink"
+          className="flex h-10 flex-shrink-0 cursor-pointer items-center gap-2 rounded-full border border-line bg-card px-4 text-sm font-medium text-ink-2 transition-colors duration-300 ease-soft hover:border-ink hover:text-ink"
         >
           {settingsIcon}
+          Quy ước tên
         </button>
       )}
 

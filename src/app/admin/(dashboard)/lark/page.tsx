@@ -11,9 +11,9 @@ import { DashboardModal, type DashboardData, type CreatorStat } from "./Dashboar
 import { ItemActionsMenu } from "./ItemActionsMenu";
 import { AppSwitcher } from "./AppSwitcher";
 import { DriveExplorer } from "./DriveExplorer";
-import { HubCard } from "./HubCard";
-import { RecentFilesSection } from "./RecentFilesSection";
+import { LarkTabs, LarkTabPanel } from "./LarkTabs";
 import type { StaffOption } from "./StaffSharePicker";
+import { DEFAULT_LARK_PREFS } from "@/lib/lark/prefs";
 import { LARK_FILE_TYPE_LABELS, getLarkApps, getDefaultAppKey, listTenantContacts, type LarkFileType } from "@/lib/lark/client";
 import { listLarkFolderTree, type FolderOption } from "@/lib/lark/folders";
 import { resolveRootFolderToken, listConfiguredOrgs } from "@/lib/lark/orgFolders";
@@ -45,8 +45,8 @@ const FILE_TYPE_ICON_PATHS: Record<LarkFileType, React.ReactNode> = {
 function FileTypeIcon({ type }: { type: LarkFileType }) {
   return (
     <svg
-      width="24"
-      height="24"
+      width="18"
+      height="18"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -59,49 +59,12 @@ function FileTypeIcon({ type }: { type: LarkFileType }) {
   );
 }
 
-type FileCardRow = {
-  target_id: string | null;
-  metadata: { title?: string; url?: string; fileType?: LarkFileType } | null;
-  created_at: string;
-};
-
-function FileCard({
-  row,
-  staff,
-  flatFolderOptions,
-}: {
-  row: FileCardRow;
-  staff: StaffOption[];
-  flatFolderOptions: { value: string; label: string }[];
-}) {
-  const fileType = row.metadata?.fileType ?? "docx";
-  return (
-    <div className="flex flex-col rounded-card border border-line bg-card transition-shadow duration-300 ease-soft hover:shadow-[0_8px_24px_rgba(30,27,75,0.10)]">
-      <div className="flex h-20 flex-shrink-0 items-center justify-center rounded-t-card bg-wash text-accent-2">
-        <FileTypeIcon type={fileType} />
-      </div>
-      <div className="flex flex-1 flex-col gap-2.5 p-4">
-        <div className="flex flex-col gap-0.5">
-          <span className="line-clamp-2 text-[14.5px] font-semibold">{row.metadata?.title ?? "(không có tiêu đề)"}</span>
-          <span className="text-xs text-ink-2">
-            {LARK_FILE_TYPE_LABELS[fileType]} · {new Date(row.created_at).toLocaleString("vi-VN")}
-          </span>
-        </div>
-        {row.target_id && (
-          <div className="mt-auto flex items-center justify-end border-t border-line pt-2.5">
-            <ItemActionsMenu
-              documentId={row.target_id}
-              fileType={fileType}
-              url={row.metadata?.url ?? null}
-              staff={staff}
-              folderOptions={flatFolderOptions}
-            />
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+const QUICK_CREATE_TYPES: { type: LarkFileType; label: string; badgeClassName: string }[] = [
+  { type: "docx", label: "Docs", badgeClassName: "bg-blue-100 text-blue-600" },
+  { type: "sheet", label: "Sheets", badgeClassName: "bg-green-100 text-green-600" },
+  { type: "bitable", label: "Base", badgeClassName: "bg-purple-100 text-purple-600" },
+  { type: "folder", label: "Thư mục", badgeClassName: "bg-amber-100 text-amber-600" },
+];
 
 type AuditRow = {
   actor_id: string | null;
@@ -209,9 +172,6 @@ export default async function AdminLarkPage() {
   const belongsToActiveApp = (r: AuditRow) => (r.metadata?.appKey ?? getDefaultAppKey()) === activeAppKey;
 
   const ownAll = ((ownRows ?? []) as AuditRow[]).filter((r) => !deletedIds.has(r.target_id) && belongsToActiveApp(r));
-  const recentRows = ownAll.slice(0, 10);
-  const recentFolders = recentRows.filter((r) => r.metadata?.fileType === "folder");
-  const recentFiles = recentRows.filter((r) => r.metadata?.fileType !== "folder");
   const historyRows: HistoryRow[] = ownAll
     .filter((r) => r.target_id)
     .map((r) => ({
@@ -320,175 +280,168 @@ export default async function AdminLarkPage() {
       })()
     : null;
 
-  const createIcon = (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-      <path d="M12 5v14M5 12h14" />
-    </svg>
-  );
-  const driveIcon = (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2Z" />
-    </svg>
-  );
-  const historyIcon = (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-      <path d="M14 2v6h6" />
-      <path d="M9 13h6M9 17h6" />
-    </svg>
-  );
-  const settingsIcon = (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="12" cy="12" r="3" />
-      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1.08 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" />
-    </svg>
-  );
-  const dashboardIcon = (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M3 3v18h18" />
-      <rect x="7" y="12" width="3" height="6" rx="0.5" />
-      <rect x="13" y="8" width="3" height="10" rx="0.5" />
-      <rect x="18" y="5" width="3" height="13" rx="0.5" />
-    </svg>
-  );
-  const overviewIcon = (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <rect x="3" y="3" width="7" height="7" rx="1.5" />
-      <rect x="14" y="3" width="7" height="7" rx="1.5" />
-      <rect x="14" y="14" width="7" height="7" rx="1.5" />
-      <rect x="3" y="14" width="7" height="7" rx="1.5" />
-    </svg>
+  const namingPrefs = { ...DEFAULT_LARK_PREFS, ...profile.lark_prefs };
+  const namingParts = [
+    namingPrefs.includeDept && "Mã phòng ban",
+    namingPrefs.includeDocType && "Loại tài liệu",
+    namingPrefs.includeDate && "Ngày tạo",
+    namingPrefs.includeVersion && "Version",
+  ].filter(Boolean) as string[];
+
+  const overviewTab = (
+    <div className="flex flex-col gap-5 lg:flex-row">
+      <div className="flex flex-1 flex-col gap-5">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-semibold tracking-[0.06em] text-ink-2 uppercase">Tạo nhanh</span>
+          {QUICK_CREATE_TYPES.map((t) => (
+            <CreateFileModal
+              key={t.type}
+              defaultDepartment={profile.department}
+              staff={staff}
+              foldersByOrg={foldersByOrg}
+              prefs={profile.lark_prefs}
+              initialType={t.type}
+              trigger={
+                <button
+                  type="button"
+                  className="flex cursor-pointer items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-medium text-ink-2 transition-colors duration-300 ease-soft hover:border-accent hover:text-accent"
+                >
+                  <span className={`h-2 w-2 rounded-full ${t.badgeClassName}`} />
+                  {t.label}
+                </button>
+              }
+            />
+          ))}
+        </div>
+
+        <div className="flex flex-col gap-2.5 rounded-card border border-line bg-card p-4">
+          <h3 className="text-sm font-semibold text-ink">Tiếp tục làm việc</h3>
+          {historyRows.length === 0 ? (
+            <p className="text-sm text-ink-2">Chưa có tài liệu nào được tạo.</p>
+          ) : (
+            <div className="flex flex-col divide-y divide-line">
+              {historyRows.slice(0, 8).map((row) => (
+                <div key={row.targetId} className="flex items-center gap-3 py-2.5">
+                  <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-wash text-accent-2">
+                    <FileTypeIcon type={row.fileType} />
+                  </span>
+                  <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <span className="truncate text-[14.5px] font-medium">{row.title}</span>
+                    <span className="text-xs text-ink-2">
+                      {LARK_FILE_TYPE_LABELS[row.fileType]} · {new Date(row.createdAt).toLocaleString("vi-VN")}
+                    </span>
+                  </div>
+                  <ItemActionsMenu
+                    documentId={row.targetId}
+                    fileType={row.fileType}
+                    url={row.url}
+                    staff={staff}
+                    folderOptions={flatFolderOptions}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="flex w-full flex-col gap-4 lg:w-[280px] lg:flex-shrink-0">
+        <div className="flex flex-col gap-2.5 rounded-card border border-line bg-card p-4">
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="text-sm font-semibold text-ink">Quy ước đặt tên</h3>
+            <LarkSettingsModal
+              prefs={profile.lark_prefs}
+              trigger={
+                <button type="button" className="cursor-pointer text-xs font-medium text-accent hover:text-ink">
+                  Sửa
+                </button>
+              }
+            />
+          </div>
+          {namingParts.length === 0 ? (
+            <p className="text-sm text-ink-2">Chưa bật thành phần nào — tên file sẽ chỉ gồm tiêu đề bạn nhập.</p>
+          ) : (
+            <ul className="flex flex-col gap-1.5">
+              {namingParts.map((p) => (
+                <li key={p} className="flex items-center gap-2 text-sm text-ink-2">
+                  <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-accent" />
+                  {p}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {isAdmin && dashboardData && (
+          <div className="flex flex-col gap-1 rounded-card border border-line bg-paper p-4">
+            <span className="text-xs font-semibold tracking-[0.06em] text-ink-2 uppercase">Nhân viên dùng hệ thống</span>
+            <span className="text-2xl font-semibold text-ink">
+              {dashboardData.activeCreators}/{dashboardData.totalStaff}
+            </span>
+            <span className="text-xs text-ink-2">
+              {dashboardData.totalStaff > 0 ? Math.round((dashboardData.activeCreators / dashboardData.totalStaff) * 100) : 0}% đã tạo ít
+              nhất 1 file
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
   );
 
+  const mineTab = <HistoryModal inline rows={historyRows} staff={staff} folderOptions={flatFolderOptions} />;
+
+  const driveTab = (
+    <DriveExplorer inline appKey={activeAppKey} appLabel={larkApps.find((a) => a.key === activeAppKey)?.label ?? activeAppKey} />
+  );
+
+  const statsTab = isAdmin ? (
+    <div className="flex flex-col gap-6">
+      {dashboardData && <DashboardModal inline data={dashboardData} />}
+      <div className="flex flex-col gap-3 border-t border-line pt-6">
+        <h2 className="text-sm font-semibold tracking-[0.06em] text-ink-2 uppercase">Toàn bộ file công ty</h2>
+        <OverviewModal inline rows={overviewRows} folderOptions={flatFolderOptions} staff={staff} />
+      </div>
+    </div>
+  ) : null;
+
   return (
-    <div className="flex w-full flex-col gap-7">
+    <div className="flex w-full flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <Avatar fullName={profile.full_name} avatarUrl={profile.avatar_url} size={9} />
           <div className="flex flex-col gap-0.5">
-            <h1 className="text-xl font-medium">Tạo file Lark</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-medium">Tạo file Lark</h1>
+              <span className="rounded-full bg-wash px-2.5 py-0.5 text-xs font-semibold text-ink-2">{historyRows.length} file</span>
+            </div>
             <span className="text-xs text-ink-2">
               {profile.full_name} · {departmentLabel(profile.department) ?? "chưa gán phòng ban"}
             </span>
           </div>
         </div>
-        <AppSwitcher apps={larkApps.map((a) => ({ key: a.key, label: a.label }))} activeKey={activeAppKey} />
+        <div className="flex flex-wrap items-center gap-2">
+          <AppSwitcher apps={larkApps.map((a) => ({ key: a.key, label: a.label }))} activeKey={activeAppKey} />
+          <CreateFileModal defaultDepartment={profile.department} staff={staff} foldersByOrg={foldersByOrg} prefs={profile.lark_prefs} />
+          <LarkSettingsModal prefs={profile.lark_prefs} />
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-4">
-        <CreateFileModal
-          defaultDepartment={profile.department}
-          staff={staff}
-          foldersByOrg={foldersByOrg}
-          prefs={profile.lark_prefs}
-          trigger={<HubCard icon={createIcon} title="Tạo file mới" description="Docx, Sheet, Bitable, Thư mục" accent />}
-        />
-        <DriveExplorer
-          appKey={activeAppKey}
-          appLabel={larkApps.find((a) => a.key === activeAppKey)?.label ?? activeAppKey}
-          trigger={<HubCard icon={driveIcon} title="Duyệt Drive" description="Xem toàn bộ thư mục & file thật trên Lark" />}
-        />
-        <HistoryModal
-          rows={historyRows}
-          staff={staff}
-          folderOptions={flatFolderOptions}
-          trigger={<HubCard icon={historyIcon} title="Lịch sử của tôi" description={`${historyRows.length} file bạn đã tạo`} />}
-        />
-        <LarkSettingsModal
-          prefs={profile.lark_prefs}
-          trigger={<HubCard icon={settingsIcon} title="Cài đặt mặc định" description="Đặt sẵn phòng ban, loại tài liệu, version" />}
-        />
-        {isAdmin && dashboardData && (
-          <DashboardModal
-            data={dashboardData}
-            trigger={<HubCard icon={dashboardIcon} title="Thống kê sử dụng" description="Mức độ dùng hệ thống toàn công ty" />}
-          />
-        )}
+      <LarkTabs>
+        <LarkTabPanel key="overview" label="Tổng quan">
+          {overviewTab}
+        </LarkTabPanel>
+        <LarkTabPanel key="mine" label="File của tôi">
+          {mineTab}
+        </LarkTabPanel>
+        <LarkTabPanel key="drive" label="Drive">
+          {driveTab}
+        </LarkTabPanel>
         {isAdmin && (
-          <OverviewModal
-            rows={overviewRows}
-            folderOptions={flatFolderOptions}
-            staff={staff}
-            trigger={
-              <HubCard icon={overviewIcon} title="Tổng quan toàn công ty" description={`${overviewRows.length} file toàn công ty`} />
-            }
-          />
+          <LarkTabPanel key="stats" label="Thống kê">
+            {statsTab}
+          </LarkTabPanel>
         )}
-      </div>
-
-      <RecentFilesSection count={recentRows.length}>
-        {recentRows.length === 0 ? (
-          <p className="text-sm text-ink-2">Chưa có tài liệu nào được tạo.</p>
-        ) : (
-          <>
-            {recentFolders.length > 0 && (
-              <div className="flex flex-col gap-2.5">
-                <h2 className="text-sm font-semibold text-ink-2 uppercase tracking-[0.06em]">Thư mục của bạn — gần đây</h2>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {recentFolders.map((row) => (
-                    <FileCard key={row.target_id} row={row} staff={staff} flatFolderOptions={flatFolderOptions} />
-                  ))}
-                </div>
-              </div>
-            )}
-            {recentFiles.length > 0 && (
-              <div className="flex flex-col gap-2.5">
-                <h2 className="text-sm font-semibold text-ink-2 uppercase tracking-[0.06em]">Tài liệu của bạn — gần đây</h2>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {recentFiles.map((row) => (
-                    <FileCard key={row.target_id} row={row} staff={staff} flatFolderOptions={flatFolderOptions} />
-                  ))}
-                </div>
-              </div>
-            )}
-          </>
-        )}
-      </RecentFilesSection>
+      </LarkTabs>
     </div>
   );
 }
