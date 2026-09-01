@@ -39,19 +39,41 @@ export type FileNameParts = {
 };
 
 export function buildFileName(parts: FileNameParts): string {
-  const deptSegment = parts.department
-    ? parts.org
-      ? `${parts.org}-${parts.department}`
-      : parts.department
-    : parts.org;
-  const segments = [deptSegment, parts.docType, toTitleCaseVN(parts.content), parts.date, parts.version].filter(
-    (s): s is string => !!s,
-  );
+  const deptSegment = parts.department ? (parts.org ? `${parts.org}-${parts.department}` : parts.department) : parts.org;
+  const segments = [deptSegment, parts.docType, toTitleCaseVN(parts.content), parts.date, parts.version].filter((s): s is string => !!s);
   const base = segments.join("_");
   return parts.wip ? `WIP_${base}` : base;
 }
 
 export const MAX_FILENAME_LENGTH = 80;
+
+// Color-coded example segments for the "Quy ước đặt tên" live preview — one
+// color per naming component, matching across the settings drawer and the
+// Tổng quan overview card. `today` is passed in (not computed here) so this
+// stays a pure function callable from a Server Component without tripping
+// the no-Date-in-render rule.
+export type NamingSegment = { text: string; color: string };
+
+export function buildNamingSegments(
+  prefs: {
+    includeDept: boolean;
+    includeDocType: boolean;
+    includeDate: boolean;
+    includeVersion: boolean;
+    defaultOrg?: string | null;
+    defaultVersion?: string | null;
+  },
+  department: string | null,
+  today: string,
+): NamingSegment[] {
+  const segments: NamingSegment[] = [{ text: prefs.defaultOrg || "SAIZA", color: "#A5B4FC" }];
+  if (prefs.includeDept) segments.push({ text: `-${department || "IT"}`, color: "#5EEAD4" });
+  if (prefs.includeDocType) segments.push({ text: "_Báo Cáo", color: "#FCD34D" });
+  segments.push({ text: "_Báo Cáo Tuần 36", color: "#FAFAFA" });
+  if (prefs.includeDate) segments.push({ text: `_${today}`, color: "#93C5FD" });
+  if (prefs.includeVersion) segments.push({ text: `_${prefs.defaultVersion || "v1"}`, color: "#F0ABFC" });
+  return segments;
+}
 
 // Thư mục không phải tài liệu có phiên bản — chỉ cần định danh theo tổ chức/phòng
 // ban + tên, không có LoạiTàiLiệu/Ngày/Version như file.
@@ -62,11 +84,7 @@ export type FolderNameParts = {
 };
 
 export function buildFolderName(parts: FolderNameParts): string {
-  const deptSegment = parts.department
-    ? parts.org
-      ? `${parts.org}-${parts.department}`
-      : parts.department
-    : parts.org;
+  const deptSegment = parts.department ? (parts.org ? `${parts.org}-${parts.department}` : parts.department) : parts.org;
   const segments = [deptSegment, toTitleCaseVN(parts.name)].filter((s): s is string => !!s);
   return segments.join("_");
 }

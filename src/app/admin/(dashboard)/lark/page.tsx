@@ -14,7 +14,8 @@ import { DriveExplorer } from "./DriveExplorer";
 import { LarkTabs, LarkTabPanel } from "./LarkTabs";
 import type { StaffOption } from "./StaffSharePicker";
 import { DEFAULT_LARK_PREFS } from "@/lib/lark/prefs";
-import { buildFileName, todayYYYYMMDD } from "@/lib/admin/fileNaming";
+import { buildNamingSegments, todayYYYYMMDD } from "@/lib/admin/fileNaming";
+import { NamingPreviewBox } from "./NamingPreviewBox";
 import { StatTile } from "../StatTile";
 import { LARK_FILE_TYPE_LABELS, getLarkApps, getDefaultAppKey, listTenantContacts, type LarkFileType } from "@/lib/lark/client";
 import { listLarkFolderTree, type FolderOption } from "@/lib/lark/folders";
@@ -289,14 +290,7 @@ export default async function AdminLarkPage() {
     namingPrefs.includeDate && "Ngày tạo",
     namingPrefs.includeVersion && "Version",
   ].filter(Boolean) as string[];
-  const namingPreview = buildFileName({
-    org: namingPrefs.defaultOrg || "SAIZA",
-    department: namingPrefs.includeDept ? profile.department || "IT" : null,
-    docType: namingPrefs.includeDocType ? "Báo Cáo" : null,
-    content: "Báo Cáo Tuần 36",
-    date: namingPrefs.includeDate ? todayYYYYMMDD() : null,
-    version: namingPrefs.includeVersion ? namingPrefs.defaultVersion || "v1" : null,
-  });
+  const namingSegments = buildNamingSegments(namingPrefs, profile.department, todayYYYYMMDD());
 
   // Server component: renders once per request, so Date.now() here is not a purity violation.
   // eslint-disable-next-line react-hooks/purity
@@ -395,6 +389,7 @@ export default async function AdminLarkPage() {
               <h3 className="text-sm font-semibold text-ink">Quy ước đặt tên</h3>
               <LarkSettingsModal
                 prefs={profile.lark_prefs}
+                department={profile.department}
                 trigger={
                   <button type="button" className="cursor-pointer text-xs font-medium text-accent hover:text-ink">
                     Sửa
@@ -402,10 +397,7 @@ export default async function AdminLarkPage() {
                 }
               />
             </div>
-            <div className="rounded-xl border border-line bg-wash px-3.5 py-2.5">
-              <p className="mb-1 text-[10.5px] font-semibold tracking-[0.06em] text-ink-2 uppercase">Ví dụ tên file</p>
-              <p className="truncate font-mono text-[13px] text-ink">{namingPreview}</p>
-            </div>
+            <NamingPreviewBox segments={namingSegments} />
             {namingParts.length === 0 ? (
               <p className="text-sm text-ink-2">Chưa bật thành phần nào — tên file sẽ chỉ gồm tiêu đề bạn nhập.</p>
             ) : (
@@ -463,7 +455,7 @@ export default async function AdminLarkPage() {
   ) : null;
 
   return (
-    <div className="flex w-full flex-col gap-6">
+    <div className="flex w-full flex-col gap-6 font-[family-name:var(--font-ibm-plex-sans)]">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <Avatar fullName={profile.full_name} avatarUrl={profile.avatar_url} size={9} />
@@ -480,7 +472,7 @@ export default async function AdminLarkPage() {
         <div className="flex flex-wrap items-center gap-2">
           <AppSwitcher apps={larkApps.map((a) => ({ key: a.key, label: a.label }))} activeKey={activeAppKey} />
           <CreateFileModal defaultDepartment={profile.department} staff={staff} foldersByOrg={foldersByOrg} prefs={profile.lark_prefs} />
-          <LarkSettingsModal prefs={profile.lark_prefs} />
+          <LarkSettingsModal prefs={profile.lark_prefs} department={profile.department} />
         </div>
       </div>
 

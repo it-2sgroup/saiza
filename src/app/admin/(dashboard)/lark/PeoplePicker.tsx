@@ -100,7 +100,7 @@ export function PeoplePicker({
             ref={panelRef}
             role="listbox"
             style={{ position: "fixed", top: rect.top, left: rect.left, width: Math.max(rect.width, 260) }}
-            className="z-[110] max-h-72 overflow-y-auto rounded-xl border border-line bg-card py-1.5 shadow-[0_20px_45px_rgba(22,33,62,0.18)]"
+            className="z-[110] max-h-72 overflow-y-auto rounded-xl border border-line bg-card py-1.5 font-[family-name:var(--font-ibm-plex-sans)] shadow-[0_20px_45px_rgba(22,33,62,0.18)]"
           >
             {matches.map((s) => (
               <button
