@@ -109,7 +109,13 @@ export function DriveExplorer({
   };
 
   const currentToken = path[path.length - 1]?.token ?? null;
-  const orderedItems = [...items.filter((i) => i.type === "folder"), ...items.filter((i) => i.type !== "folder")];
+  // Inline mode has its own tree sidebar for folder navigation, so the
+  // content pane only needs to list folders the tree doesn't already know
+  // about (e.g. created outside this app) — anything cached in folderTree
+  // would otherwise show up twice.
+  const treeTokens = new Set(folderTree.map((f) => f.token));
+  const visibleFolders = items.filter((i) => i.type === "folder" && (!inline || !treeTokens.has(i.token)));
+  const orderedItems = [...visibleFolders, ...items.filter((i) => i.type !== "folder")];
 
   const driveIcon = (
     <svg
