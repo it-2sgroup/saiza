@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { Modal, ModalHeader } from "../Modal";
 import { browseLarkFolder } from "./actions";
 import type { LarkDriveItem } from "@/lib/lark/client";
@@ -8,6 +8,12 @@ import type { FolderOption } from "@/lib/lark/folders";
 import { LARK_FILE_TYPE_LABELS, type LarkFileType } from "@/lib/lark/fileTypes";
 
 type Crumb = { token: string | null; name: string };
+
+// Sentinel parentToken for folders discovered directly under the app's root
+// (browsed with token=null) — the server's own root folder token isn't
+// exposed to this component, so this just needs to be a value that never
+// collides with a real Lark token, not match anything specific.
+const ROOT_PARENT = "";
 
 const TYPE_BADGE: Record<string, { label: string; className: string }> = {
   folder: { label: "DIR", className: "bg-amber-100 text-amber-700" },
@@ -61,8 +67,19 @@ export function DriveExplorer({
   const [items, setItems] = useState<LarkDriveItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  // The server-computed folderTree is cached and can lag behind reality —
+  // every live browse also folds any folders it sees into this, so the
+  // sidebar is always at least as complete as what you've actually visited.
+  const [liveFolders, setLiveFolders] = useState<FolderOption[]>([]);
 
-  const load = (token: string | null) => {
+  const tree = useMemo(() => {
+    const byToken = new Map<string, FolderOption>();
+    for (const f of folderTree) byToken.set(f.token, f);
+    for (const f of liveFolders) byToken.set(f.token, f);
+    return [...byToken.values()].sort((a, b) => a.depth - b.depth || a.name.localeCompare(b.name, "vi"));
+  }, [folderTree, liveFolders]);
+
+  const load = (token: string | null, depth: number) => {
     startTransition(async () => {
       const res = await browseLarkFolder(token, appKey);
       if (res.error) {
@@ -71,6 +88,16 @@ export function DriveExplorer({
       } else {
         setError(null);
         setItems(res.items ?? []);
+        const discovered: FolderOption[] = (res.items ?? [])
+          .filter((i) => i.type === "folder")
+          .map((i) => ({ token: i.token, name: i.name, depth: depth + 1, parentToken: token ?? ROOT_PARENT }));
+        if (discovered.length > 0) {
+          setLiveFolders((prev) => {
+            const known = new Set(prev.map((f) => f.token));
+            const additions = discovered.filter((f) => !known.has(f.token));
+            return additions.length > 0 ? [...prev, ...additions] : prev;
+          });
+        }
       }
     });
   };
@@ -78,42 +105,43 @@ export function DriveExplorer({
   const openExplorer = () => {
     setPath([{ token: null, name: appLabel }]);
     setOpen(true);
-    load(null);
+    load(null, 0);
   };
 
   useEffect(() => {
     if (!inline) return;
-    load(null);
+    load(null, 0);
     // Loads the root once on mount / whenever the active app changes; the
     // initial path (root breadcrumb) is already set by the useState default.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inline, appKey]);
 
   const enterFolder = (item: LarkDriveItem) => {
+    const depth = path.length;
     setPath((p) => [...p, { token: item.token, name: item.name }]);
-    load(item.token);
+    load(item.token, depth);
   };
 
   const goToCrumb = (index: number) => {
     setPath((p) => p.slice(0, index + 1));
-    load(path[index].token);
+    load(path[index].token, index);
   };
 
-  const goToTreeItem = (token: string | null) => {
-    if (token === null) {
+  const goToTreeItem = (folder: FolderOption | null) => {
+    if (folder === null) {
       setPath([{ token: null, name: appLabel }]);
+      load(null, 0);
     } else {
-      setPath(buildPathTo(token, folderTree, appLabel));
+      setPath(buildPathTo(folder.token, tree, appLabel));
+      load(folder.token, folder.depth);
     }
-    load(token);
   };
 
   const currentToken = path[path.length - 1]?.token ?? null;
   // Inline mode has its own tree sidebar for folder navigation, so the
-  // content pane only needs to list folders the tree doesn't already know
-  // about (e.g. created outside this app) — anything cached in folderTree
-  // would otherwise show up twice.
-  const treeTokens = new Set(folderTree.map((f) => f.token));
+  // content pane only needs to list folders the tree doesn't already show
+  // — anything in `tree` would otherwise show up twice.
+  const treeTokens = new Set(tree.map((f) => f.token));
   const visibleFolders = items.filter((i) => i.type === "folder" && (!inline || !treeTokens.has(i.token)));
   const orderedItems = [...visibleFolders, ...items.filter((i) => i.type !== "folder")];
 
@@ -146,11 +174,11 @@ export function DriveExplorer({
             <button type="button" onClick={() => goToTreeItem(null)} className={treeItemClass(currentToken === null)}>
               <span className="truncate">{appLabel}</span>
             </button>
-            {folderTree.map((f) => (
+            {tree.map((f) => (
               <button
                 key={f.token}
                 type="button"
-                onClick={() => goToTreeItem(f.token)}
+                onClick={() => goToTreeItem(f)}
                 style={{ paddingLeft: `${f.depth * 14 + 10}px` }}
                 className={treeItemClass(currentToken === f.token)}
               >
