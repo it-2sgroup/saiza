@@ -14,6 +14,8 @@ import { DriveExplorer } from "./DriveExplorer";
 import { LarkTabs, LarkTabPanel } from "./LarkTabs";
 import type { StaffOption } from "./StaffSharePicker";
 import { DEFAULT_LARK_PREFS } from "@/lib/lark/prefs";
+import { buildFileName, todayYYYYMMDD } from "@/lib/admin/fileNaming";
+import { StatTile } from "../StatTile";
 import { LARK_FILE_TYPE_LABELS, getLarkApps, getDefaultAppKey, listTenantContacts, type LarkFileType } from "@/lib/lark/client";
 import { listLarkFolderTree, type FolderOption } from "@/lib/lark/folders";
 import { resolveRootFolderToken, listConfiguredOrgs } from "@/lib/lark/orgFolders";
@@ -287,108 +289,164 @@ export default async function AdminLarkPage() {
     namingPrefs.includeDate && "Ngày tạo",
     namingPrefs.includeVersion && "Version",
   ].filter(Boolean) as string[];
+  const namingPreview = buildFileName({
+    org: namingPrefs.defaultOrg || "SAIZA",
+    department: namingPrefs.includeDept ? profile.department || "IT" : null,
+    docType: namingPrefs.includeDocType ? "Báo Cáo" : null,
+    content: "Báo Cáo Tuần 36",
+    date: namingPrefs.includeDate ? todayYYYYMMDD() : null,
+    version: namingPrefs.includeVersion ? namingPrefs.defaultVersion || "v1" : null,
+  });
+
+  // Server component: renders once per request, so Date.now() here is not a purity violation.
+  // eslint-disable-next-line react-hooks/purity
+  const nowTs = Date.now();
+  const ownLast7Days = historyRows.filter((r) => nowTs - new Date(r.createdAt).getTime() <= 7 * 24 * 60 * 60 * 1000).length;
+  const adoptionPct =
+    dashboardData && dashboardData.totalStaff > 0 ? Math.round((dashboardData.activeCreators / dashboardData.totalStaff) * 100) : 0;
 
   const overviewTab = (
-    <div className="flex flex-col gap-5 lg:flex-row">
-      <div className="flex flex-1 flex-col gap-5">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-semibold tracking-[0.06em] text-ink-2 uppercase">Tạo nhanh</span>
-          {QUICK_CREATE_TYPES.map((t) => (
-            <CreateFileModal
-              key={t.type}
-              defaultDepartment={profile.department}
-              staff={staff}
-              foldersByOrg={foldersByOrg}
-              prefs={profile.lark_prefs}
-              initialType={t.type}
-              trigger={
-                <button
-                  type="button"
-                  className="flex cursor-pointer items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-medium text-ink-2 transition-colors duration-300 ease-soft hover:border-accent hover:text-accent"
-                >
-                  <span className={`h-2 w-2 rounded-full ${t.badgeClassName}`} />
-                  {t.label}
-                </button>
-              }
+    <div className="flex flex-col gap-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {isAdmin && (
+          <StatTile
+            label="File toàn công ty"
+            value={overviewRows.length}
+            sub={`trong ${larkApps.find((a) => a.key === activeAppKey)?.label ?? activeAppKey}`}
+          />
+        )}
+        <StatTile label="File của bạn" value={historyRows.length} />
+        {isAdmin && dashboardData ? (
+          <>
+            <StatTile
+              label="Nhân viên dùng"
+              value={`${dashboardData.activeCreators}/${dashboardData.totalStaff}`}
+              sub={`${adoptionPct}%`}
             />
-          ))}
+            <StatTile label="7 ngày qua" value={dashboardData.filesLast7Days} sub={`30 ngày: ${dashboardData.filesLast30Days}`} />
+          </>
+        ) : (
+          <StatTile label="7 ngày qua" value={ownLast7Days} />
+        )}
+      </div>
+
+      <div className="flex flex-col gap-5 lg:flex-row">
+        <div className="flex flex-1 flex-col gap-5">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-semibold tracking-[0.06em] text-ink-2 uppercase">Tạo nhanh</span>
+            {QUICK_CREATE_TYPES.map((t) => (
+              <CreateFileModal
+                key={t.type}
+                defaultDepartment={profile.department}
+                staff={staff}
+                foldersByOrg={foldersByOrg}
+                prefs={profile.lark_prefs}
+                initialType={t.type}
+                trigger={
+                  <button
+                    type="button"
+                    className="flex cursor-pointer items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-medium text-ink-2 transition-colors duration-300 ease-soft hover:border-accent hover:text-accent"
+                  >
+                    <span className={`h-2 w-2 rounded-full ${t.badgeClassName}`} />
+                    {t.label}
+                  </button>
+                }
+              />
+            ))}
+          </div>
+
+          <div className="flex flex-col gap-2.5 rounded-card border border-line bg-card p-4">
+            <h3 className="text-sm font-semibold text-ink">Tiếp tục làm việc</h3>
+            {historyRows.length === 0 ? (
+              <p className="text-sm text-ink-2">Chưa có tài liệu nào được tạo.</p>
+            ) : (
+              <div className="flex flex-col divide-y divide-line">
+                {historyRows.slice(0, 8).map((row) => (
+                  <div key={row.targetId} className="flex items-center gap-3 py-2.5">
+                    <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-wash text-accent-2">
+                      <FileTypeIcon type={row.fileType} />
+                    </span>
+                    <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <span className="truncate text-[14.5px] font-medium">{row.title}</span>
+                      <span className="text-xs text-ink-2">
+                        {LARK_FILE_TYPE_LABELS[row.fileType]} · {profile.full_name} · {departmentLabel(profile.department) ?? "(chưa gán)"}
+                      </span>
+                    </div>
+                    <span className="flex-shrink-0 text-xs whitespace-nowrap text-ink-2">
+                      {new Date(row.createdAt).toLocaleDateString("vi-VN")}
+                    </span>
+                    <ItemActionsMenu
+                      documentId={row.targetId}
+                      fileType={row.fileType}
+                      url={row.url}
+                      staff={staff}
+                      folderOptions={flatFolderOptions}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className="flex flex-col gap-2.5 rounded-card border border-line bg-card p-4">
-          <h3 className="text-sm font-semibold text-ink">Tiếp tục làm việc</h3>
-          {historyRows.length === 0 ? (
-            <p className="text-sm text-ink-2">Chưa có tài liệu nào được tạo.</p>
-          ) : (
-            <div className="flex flex-col divide-y divide-line">
-              {historyRows.slice(0, 8).map((row) => (
-                <div key={row.targetId} className="flex items-center gap-3 py-2.5">
-                  <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-wash text-accent-2">
-                    <FileTypeIcon type={row.fileType} />
-                  </span>
-                  <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                    <span className="truncate text-[14.5px] font-medium">{row.title}</span>
-                    <span className="text-xs text-ink-2">
-                      {LARK_FILE_TYPE_LABELS[row.fileType]} · {new Date(row.createdAt).toLocaleString("vi-VN")}
-                    </span>
-                  </div>
-                  <ItemActionsMenu
-                    documentId={row.targetId}
-                    fileType={row.fileType}
-                    url={row.url}
-                    staff={staff}
-                    folderOptions={flatFolderOptions}
-                  />
-                </div>
-              ))}
+        <div className="flex w-full flex-col gap-4 lg:w-[280px] lg:flex-shrink-0">
+          <div className="flex flex-col gap-2.5 rounded-card border border-line bg-card p-4">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-sm font-semibold text-ink">Quy ước đặt tên</h3>
+              <LarkSettingsModal
+                prefs={profile.lark_prefs}
+                trigger={
+                  <button type="button" className="cursor-pointer text-xs font-medium text-accent hover:text-ink">
+                    Sửa
+                  </button>
+                }
+              />
+            </div>
+            <div className="rounded-xl border border-line bg-wash px-3.5 py-2.5">
+              <p className="mb-1 text-[10.5px] font-semibold tracking-[0.06em] text-ink-2 uppercase">Ví dụ tên file</p>
+              <p className="truncate font-mono text-[13px] text-ink">{namingPreview}</p>
+            </div>
+            {namingParts.length === 0 ? (
+              <p className="text-sm text-ink-2">Chưa bật thành phần nào — tên file sẽ chỉ gồm tiêu đề bạn nhập.</p>
+            ) : (
+              <ul className="flex flex-wrap gap-x-4 gap-y-1.5">
+                {namingParts.map((p) => (
+                  <li key={p} className="flex items-center gap-2 text-xs text-ink-2">
+                    <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-accent" />
+                    {p}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {isAdmin && dashboardData && (
+            <div className="flex flex-col gap-1 rounded-card border border-line bg-paper p-4">
+              <span className="text-xs font-semibold tracking-[0.06em] text-ink-2 uppercase">Nhân viên dùng hệ thống</span>
+              <span className="text-2xl font-semibold text-ink">
+                {dashboardData.activeCreators}/{dashboardData.totalStaff}
+              </span>
+              <span className="text-xs text-ink-2">{adoptionPct}% đã tạo ít nhất 1 file</span>
+              {dashboardData.neverCreated.length > 0 && (
+                <span className="text-xs text-ink-2">{dashboardData.neverCreated.length} người chưa dùng</span>
+              )}
             </div>
           )}
         </div>
       </div>
-
-      <div className="flex w-full flex-col gap-4 lg:w-[280px] lg:flex-shrink-0">
-        <div className="flex flex-col gap-2.5 rounded-card border border-line bg-card p-4">
-          <div className="flex items-center justify-between gap-2">
-            <h3 className="text-sm font-semibold text-ink">Quy ước đặt tên</h3>
-            <LarkSettingsModal
-              prefs={profile.lark_prefs}
-              trigger={
-                <button type="button" className="cursor-pointer text-xs font-medium text-accent hover:text-ink">
-                  Sửa
-                </button>
-              }
-            />
-          </div>
-          {namingParts.length === 0 ? (
-            <p className="text-sm text-ink-2">Chưa bật thành phần nào — tên file sẽ chỉ gồm tiêu đề bạn nhập.</p>
-          ) : (
-            <ul className="flex flex-col gap-1.5">
-              {namingParts.map((p) => (
-                <li key={p} className="flex items-center gap-2 text-sm text-ink-2">
-                  <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-accent" />
-                  {p}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        {isAdmin && dashboardData && (
-          <div className="flex flex-col gap-1 rounded-card border border-line bg-paper p-4">
-            <span className="text-xs font-semibold tracking-[0.06em] text-ink-2 uppercase">Nhân viên dùng hệ thống</span>
-            <span className="text-2xl font-semibold text-ink">
-              {dashboardData.activeCreators}/{dashboardData.totalStaff}
-            </span>
-            <span className="text-xs text-ink-2">
-              {dashboardData.totalStaff > 0 ? Math.round((dashboardData.activeCreators / dashboardData.totalStaff) * 100) : 0}% đã tạo ít
-              nhất 1 file
-            </span>
-          </div>
-        )}
-      </div>
     </div>
   );
 
-  const mineTab = <HistoryModal inline rows={historyRows} staff={staff} folderOptions={flatFolderOptions} />;
+  const mineTab = (
+    <HistoryModal
+      inline
+      rows={historyRows}
+      staff={staff}
+      folderOptions={flatFolderOptions}
+      creatorName={profile.full_name}
+      creatorDepartment={profile.department}
+    />
+  );
 
   const driveTab = (
     <DriveExplorer inline appKey={activeAppKey} appLabel={larkApps.find((a) => a.key === activeAppKey)?.label ?? activeAppKey} />

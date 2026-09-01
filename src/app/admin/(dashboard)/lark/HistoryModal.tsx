@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Modal, ModalHeader } from "../Modal";
 import { ItemActionsMenu } from "./ItemActionsMenu";
+import { departmentLabel } from "@/lib/admin/departments";
 import type { StaffOption } from "./StaffSharePicker";
 import { LARK_FILE_TYPE_LABELS, type LarkFileType } from "@/lib/lark/fileTypes";
 
@@ -19,31 +20,43 @@ const TYPE_FILTERS: { value: LarkFileType | ""; label: string }[] = [
   ...(Object.keys(LARK_FILE_TYPE_LABELS) as LarkFileType[]).map((t) => ({ value: t, label: LARK_FILE_TYPE_LABELS[t] })),
 ];
 
+const SORT_OPTIONS = [
+  { value: "recent", label: "Mới nhất" },
+  { value: "name", label: "Tên A → Z" },
+] as const;
+
 export function HistoryModal({
   rows,
   staff,
   folderOptions,
   trigger,
   inline = false,
+  creatorName,
+  creatorDepartment = null,
 }: {
   rows: HistoryRow[];
   staff: StaffOption[];
   folderOptions: { value: string; label: string }[];
   trigger?: React.ReactNode;
   inline?: boolean;
+  creatorName?: string;
+  creatorDepartment?: string | null;
 }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const [typeFilter, setTypeFilter] = useState<LarkFileType | "">("");
+  const [sort, setSort] = useState<(typeof SORT_OPTIONS)[number]["value"]>("recent");
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    return rows.filter((r) => {
+    const result = rows.filter((r) => {
       if (needle && !r.title.toLowerCase().includes(needle)) return false;
       if (typeFilter && r.fileType !== typeFilter) return false;
       return true;
     });
-  }, [rows, q, typeFilter]);
+    if (sort === "name") return [...result].sort((a, b) => a.title.localeCompare(b.title, "vi"));
+    return result;
+  }, [rows, q, typeFilter, sort]);
 
   const historyIcon = (
     <svg
@@ -86,30 +99,56 @@ export function HistoryModal({
             </button>
           ))}
         </div>
+        <select
+          value={sort}
+          onChange={(e) => setSort(e.target.value as (typeof SORT_OPTIONS)[number]["value"])}
+          className="ml-auto rounded-full border border-line bg-paper px-3.5 py-2 text-xs font-medium text-ink outline-none"
+        >
+          {SORT_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className={inline ? "" : "min-h-0 flex-1 overflow-y-auto"}>
         {filtered.length === 0 ? (
           <p className="text-sm text-ink-2">{q || typeFilter ? "Không tìm thấy file khớp bộ lọc." : "Bạn chưa tạo file nào."}</p>
         ) : (
-          <div className="flex flex-col divide-y divide-line">
-            {filtered.map((row) => (
-              <div key={row.targetId} className="flex items-center justify-between gap-4 py-3">
-                <div className="flex min-w-0 flex-col gap-0.5">
-                  <span className="truncate text-[14.5px] font-medium">{row.title}</span>
-                  <span className="text-xs text-ink-2">
-                    {LARK_FILE_TYPE_LABELS[row.fileType]} · {new Date(row.createdAt).toLocaleString("vi-VN")}
-                  </span>
-                </div>
-                <ItemActionsMenu
-                  documentId={row.targetId}
-                  fileType={row.fileType}
-                  url={row.url}
-                  staff={staff}
-                  folderOptions={folderOptions}
-                />
-              </div>
-            ))}
+          <div className="overflow-x-auto rounded-card border border-line">
+            <table className="w-full min-w-[560px] border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-line bg-paper text-left text-xs font-semibold tracking-[0.06em] text-ink-2 uppercase">
+                  <th className="px-4 py-2.5">Tên file</th>
+                  <th className="px-4 py-2.5">Loại</th>
+                  <th className="px-4 py-2.5">Phòng ban</th>
+                  <th className="px-4 py-2.5">Người tạo</th>
+                  <th className="px-4 py-2.5">Cập nhật</th>
+                  <th className="px-2 py-2.5" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line">
+                {filtered.map((row) => (
+                  <tr key={row.targetId} className="transition-colors duration-300 ease-soft hover:bg-wash">
+                    <td className="max-w-[280px] truncate px-4 py-2.5 font-medium">{row.title}</td>
+                    <td className="px-4 py-2.5 text-ink-2">{LARK_FILE_TYPE_LABELS[row.fileType]}</td>
+                    <td className="px-4 py-2.5 text-ink-2">{departmentLabel(creatorDepartment) ?? "(chưa gán)"}</td>
+                    <td className="px-4 py-2.5 text-ink-2">{creatorName ?? "—"}</td>
+                    <td className="px-4 py-2.5 whitespace-nowrap text-ink-2">{new Date(row.createdAt).toLocaleString("vi-VN")}</td>
+                    <td className="px-2 py-2.5 text-right">
+                      <ItemActionsMenu
+                        documentId={row.targetId}
+                        fileType={row.fileType}
+                        url={row.url}
+                        staff={staff}
+                        folderOptions={folderOptions}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
