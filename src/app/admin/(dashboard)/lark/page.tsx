@@ -5,7 +5,7 @@ import { canManageStaff } from "@/lib/admin/permissions";
 import { Avatar } from "../Avatar";
 import { CreateFileModal } from "./CreateFileModal";
 import { LarkSettingsModal } from "./LarkSettingsModal";
-import { NamingSettingsPanel } from "./NamingSettingsPanel";
+import { NamingPreviewBox } from "./NamingPreviewBox";
 import { HistoryModal, type HistoryRow } from "./HistoryModal";
 import { OverviewModal, type OverviewRow } from "./OverviewModal";
 import { DashboardModal, DonutCard, type DashboardData, type CreatorStat } from "./DashboardModal";
@@ -29,6 +29,15 @@ import {
 } from "@/lib/lark/client";
 import { listLarkFolderTree, type FolderOption } from "@/lib/lark/folders";
 import { resolveRootFolderToken, listConfiguredOrgs } from "@/lib/lark/orgFolders";
+import { DEFAULT_LARK_PREFS } from "@/lib/lark/prefs";
+import { buildNamingSegments, todayYYYYMMDD } from "@/lib/admin/fileNaming";
+
+const NAMING_CHECKLIST: { key: "includeDept" | "includeDocType" | "includeDate" | "includeVersion"; label: string }[] = [
+  { key: "includeDept", label: "Mã phòng ban" },
+  { key: "includeDocType", label: "Loại tài liệu" },
+  { key: "includeDate", label: "Ngày tạo" },
+  { key: "includeVersion", label: "Version" },
+];
 
 const QUICK_CREATE_TYPES: { type: LarkFileType; label: string; badgeClassName: string }[] = [
   { type: "docx", label: "Docs", badgeClassName: "bg-blue-100 text-blue-600" },
@@ -270,6 +279,9 @@ export default async function AdminLarkPage() {
   const adoptionPct =
     dashboardData && dashboardData.totalStaff > 0 ? Math.round((dashboardData.activeCreators / dashboardData.totalStaff) * 100) : 0;
 
+  const namingPrefs = { ...DEFAULT_LARK_PREFS, ...profile.lark_prefs };
+  const namingSegments = buildNamingSegments(namingPrefs, profile.department, todayYYYYMMDD());
+
   const overviewTab = (
     <div className="flex flex-col gap-5">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -354,8 +366,50 @@ export default async function AdminLarkPage() {
 
         <div className="flex w-full flex-col gap-4 lg:w-[400px] lg:flex-shrink-0">
           <div className="flex flex-col gap-4 rounded-card border border-line bg-card p-4">
-            <h3 className="text-sm font-semibold text-ink">Quy ước đặt tên</h3>
-            <NamingSettingsPanel prefs={profile.lark_prefs} department={profile.department} />
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-sm font-semibold text-ink">Quy ước đặt tên</h3>
+              <LarkSettingsModal
+                prefs={profile.lark_prefs}
+                department={profile.department}
+                trigger={
+                  <button type="button" className="cursor-pointer text-xs font-medium text-accent hover:text-ink">
+                    Sửa
+                  </button>
+                }
+              />
+            </div>
+            <NamingPreviewBox segments={namingSegments} />
+            <ul className="flex flex-col gap-2.5">
+              {NAMING_CHECKLIST.map((item) => {
+                const on = namingPrefs[item.key];
+                return (
+                  <li key={item.key} className="flex items-center gap-2.5 text-[13.5px]">
+                    <span
+                      className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-[4px] ${
+                        on ? "bg-ink text-white" : "border border-line text-line"
+                      }`}
+                    >
+                      <svg
+                        width="10"
+                        height="10"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M20 6 9 17l-5-5" />
+                      </svg>
+                    </span>
+                    <span className={on ? "text-ink" : "text-ink-2/60"}>
+                      {item.label}
+                      {!on && " — đang tắt"}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
           </div>
 
           {isAdmin && dashboardData && (
