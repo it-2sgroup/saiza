@@ -62,13 +62,16 @@ export function buildNamingSegments(
     includeVersion: boolean;
     defaultOrg?: string | null;
     defaultVersion?: string | null;
+    defaultDepartment?: string | null;
+    defaultDocType?: string | null;
   },
   department: string | null,
   today: string,
 ): NamingSegment[] {
+  const effectiveDepartment = department || prefs.defaultDepartment;
   const segments: NamingSegment[] = [{ text: prefs.defaultOrg || "SAIZA", color: "#4F46E5" }];
-  if (prefs.includeDept) segments.push({ text: `-${department || "IT"}`, color: "#0D9488" });
-  if (prefs.includeDocType) segments.push({ text: "_Báo Cáo", color: "#B45309" });
+  if (prefs.includeDept) segments.push({ text: `-${effectiveDepartment || "IT"}`, color: "#0D9488" });
+  if (prefs.includeDocType) segments.push({ text: `_${prefs.defaultDocType || "Báo Cáo"}`, color: "#B45309" });
   segments.push({ text: "_Báo Cáo Tuần 36", color: "#18181B" });
   if (prefs.includeDate) segments.push({ text: `_${today}`, color: "#2563EB" });
   if (prefs.includeVersion) segments.push({ text: `_${prefs.defaultVersion || "v1"}`, color: "#A21CAF" });

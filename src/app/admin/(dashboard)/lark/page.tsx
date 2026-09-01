@@ -40,10 +40,10 @@ const NAMING_CHECKLIST: { key: "includeDept" | "includeDocType" | "includeDate" 
 ];
 
 const QUICK_CREATE_TYPES: { type: LarkFileType; label: string; badgeClassName: string }[] = [
-  { type: "docx", label: "Docs", badgeClassName: "bg-blue-100 text-blue-600" },
-  { type: "sheet", label: "Sheets", badgeClassName: "bg-green-100 text-green-600" },
-  { type: "bitable", label: "Base", badgeClassName: "bg-purple-100 text-purple-600" },
-  { type: "folder", label: "Thư mục", badgeClassName: "bg-amber-100 text-amber-600" },
+  { type: "docx", label: "Docs", badgeClassName: "bg-blue-500" },
+  { type: "sheet", label: "Sheets", badgeClassName: "bg-green-500" },
+  { type: "bitable", label: "Base", badgeClassName: "bg-purple-500" },
+  { type: "folder", label: "Thư mục", badgeClassName: "bg-amber-500" },
 ];
 
 type AuditRow = {
@@ -363,31 +363,31 @@ export default async function AdminLarkPage() {
         )}
       </div>
 
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs font-semibold tracking-[0.06em] text-ink-2 uppercase">Tạo nhanh</span>
+        {QUICK_CREATE_TYPES.map((t) => (
+          <CreateFileModal
+            key={t.type}
+            defaultDepartment={profile.department}
+            staff={staff}
+            foldersByOrg={foldersByOrg}
+            prefs={profile.lark_prefs}
+            initialType={t.type}
+            trigger={
+              <button
+                type="button"
+                className="flex cursor-pointer items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-medium text-ink-2 transition-colors duration-300 ease-soft hover:border-accent hover:text-accent"
+              >
+                <span className={`h-2 w-2 rounded-full ${t.badgeClassName}`} />
+                {t.label}
+              </button>
+            }
+          />
+        ))}
+      </div>
+
       <div className="flex flex-col gap-5 lg:flex-row">
         <div className="flex flex-1 flex-col gap-5">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-semibold tracking-[0.06em] text-ink-2 uppercase">Tạo nhanh</span>
-            {QUICK_CREATE_TYPES.map((t) => (
-              <CreateFileModal
-                key={t.type}
-                defaultDepartment={profile.department}
-                staff={staff}
-                foldersByOrg={foldersByOrg}
-                prefs={profile.lark_prefs}
-                initialType={t.type}
-                trigger={
-                  <button
-                    type="button"
-                    className="flex cursor-pointer items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-medium text-ink-2 transition-colors duration-300 ease-soft hover:border-accent hover:text-accent"
-                  >
-                    <span className={`h-2 w-2 rounded-full ${t.badgeClassName}`} />
-                    {t.label}
-                  </button>
-                }
-              />
-            ))}
-          </div>
-
           <div className="flex flex-col gap-2.5 rounded-card border border-line bg-card p-4">
             <h3 className="text-sm font-semibold text-ink">Tiếp tục làm việc</h3>
             {historyRows.length === 0 ? (

@@ -42,8 +42,8 @@ export function LarkDocForm({
   const [shares, setShares] = useState<ShareRow[]>([]);
   const [targetFolder, setTargetFolder] = useState("");
   const [org, setOrg] = useState(prefs.defaultOrg ?? "");
-  const [department, setDepartment] = useState(defaultDepartment ?? "");
-  const [docType, setDocType] = useState(DOC_TYPES[0].code);
+  const [department, setDepartment] = useState(defaultDepartment ?? prefs.defaultDepartment ?? "");
+  const [docType, setDocType] = useState(prefs.defaultDocType ?? DOC_TYPES[0].code);
   const [docTypeOther, setDocTypeOther] = useState("");
   const [content, setContent] = useState("");
   const [dateInput, setDateInput] = useState(() => {

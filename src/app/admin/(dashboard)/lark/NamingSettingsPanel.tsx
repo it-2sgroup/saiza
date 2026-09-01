@@ -5,8 +5,8 @@ import { updateLarkPrefs, type LarkPrefsState } from "./actions";
 import { Combobox } from "../Combobox";
 import { Toggle } from "./Toggle";
 import { NamingPreviewBox } from "./NamingPreviewBox";
-import { ORG_CODES } from "@/lib/admin/departments";
-import { VERSION_OPTIONS } from "@/lib/admin/docTypes";
+import { ORG_CODES, DEPARTMENTS } from "@/lib/admin/departments";
+import { VERSION_OPTIONS, DOC_TYPES } from "@/lib/admin/docTypes";
 import { DEFAULT_LARK_PREFS, type LarkPrefs } from "@/lib/lark/prefs";
 import { buildNamingSegments, todayYYYYMMDD } from "@/lib/admin/fileNaming";
 
@@ -16,6 +16,11 @@ const fieldClasses =
 
 const ORG_OPTIONS = [{ value: "", label: "Không đặt sẵn" }, ...ORG_CODES.map((o) => ({ value: o, label: o }))];
 const VERSION_SELECT_OPTIONS = [{ value: "", label: "Không đặt sẵn" }, ...VERSION_OPTIONS.map((v) => ({ value: v, label: v }))];
+const DEPARTMENT_OPTIONS = [
+  { value: "", label: "Theo hồ sơ nhân viên" },
+  ...DEPARTMENTS.map((d) => ({ value: d.code, label: `${d.code} — ${d.label}` })),
+];
+const DOC_TYPE_OPTIONS = [{ value: "", label: "Không đặt sẵn" }, ...DOC_TYPES.map((d) => ({ value: d.code, label: d.label }))];
 
 const TOGGLES: { key: keyof typeof DEFAULT_LARK_PREFS; label: string; hint: string; dot: string }[] = [
   { key: "includeDept", label: "Mã phòng ban", hint: "VD: SAIZA-IT_...", dot: "#14B8A6" },
@@ -39,9 +44,11 @@ export function NamingSettingsPanel({
   const [toggles, setToggles] = useState({ ...DEFAULT_LARK_PREFS, ...prefs });
   const [defaultOrg, setDefaultOrg] = useState(prefs.defaultOrg ?? "");
   const [defaultVersion, setDefaultVersion] = useState(prefs.defaultVersion ?? "");
+  const [defaultDepartment, setDefaultDepartment] = useState(prefs.defaultDepartment ?? "");
+  const [defaultDocType, setDefaultDocType] = useState(prefs.defaultDocType ?? "");
   const today = todayYYYYMMDD();
 
-  const segments = buildNamingSegments({ ...toggles, defaultOrg, defaultVersion }, department, today);
+  const segments = buildNamingSegments({ ...toggles, defaultOrg, defaultVersion, defaultDepartment, defaultDocType }, department, today);
 
   return (
     <form action={formAction} className="flex flex-col gap-5">
@@ -87,6 +94,26 @@ export function NamingSettingsPanel({
               value={defaultVersion}
               options={VERSION_SELECT_OPTIONS}
               onChange={setDefaultVersion}
+              buttonClassName={`${fieldClasses} flex w-full items-center justify-between gap-2 text-left`}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[11px] font-medium tracking-[0.06em] text-ink-2 uppercase">Phòng ban</label>
+            <Combobox
+              name="defaultDepartment"
+              value={defaultDepartment}
+              options={DEPARTMENT_OPTIONS}
+              onChange={setDefaultDepartment}
+              buttonClassName={`${fieldClasses} flex w-full items-center justify-between gap-2 text-left`}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[11px] font-medium tracking-[0.06em] text-ink-2 uppercase">Loại tài liệu</label>
+            <Combobox
+              name="defaultDocType"
+              value={defaultDocType}
+              options={DOC_TYPE_OPTIONS}
+              onChange={setDefaultDocType}
               buttonClassName={`${fieldClasses} flex w-full items-center justify-between gap-2 text-left`}
             />
           </div>

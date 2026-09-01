@@ -7,6 +7,11 @@ export type LarkPrefs = {
   includeVersion?: boolean;
   defaultOrg?: string;
   defaultVersion?: string;
+  // Preset values for the two components that previously had no way to
+  // customize beyond on/off — department defaults to the employee's own
+  // profile department if unset, doc type defaults to "Báo Cáo".
+  defaultDepartment?: string;
+  defaultDocType?: string;
   // Which connected Lark app (see LARK_APPS) this employee is currently
   // acting as — different apps have separate Drive spaces/folder trees.
   activeApp?: string;
@@ -29,6 +34,8 @@ export function normalizeLarkPrefs(raw: unknown): LarkPrefs {
   if (typeof p.includeVersion === "boolean") prefs.includeVersion = p.includeVersion;
   if (typeof p.defaultOrg === "string") prefs.defaultOrg = p.defaultOrg;
   if (typeof p.defaultVersion === "string") prefs.defaultVersion = p.defaultVersion;
+  if (typeof p.defaultDepartment === "string") prefs.defaultDepartment = p.defaultDepartment;
+  if (typeof p.defaultDocType === "string") prefs.defaultDocType = p.defaultDocType;
   if (typeof p.activeApp === "string") prefs.activeApp = p.activeApp;
   return prefs;
 }

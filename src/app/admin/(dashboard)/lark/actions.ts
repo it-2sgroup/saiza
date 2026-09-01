@@ -23,7 +23,7 @@ import { addFolderToCache, addFoldersToCache } from "@/lib/lark/folders";
 import { DEPARTMENT_CODES, ORG_CODES } from "@/lib/admin/departments";
 import { buildFileName, buildFolderName, MAX_FILENAME_LENGTH } from "@/lib/admin/fileNaming";
 import { canDelete } from "@/lib/admin/permissions";
-import { VERSION_OPTIONS } from "@/lib/admin/docTypes";
+import { VERSION_OPTIONS, DOC_TYPES } from "@/lib/admin/docTypes";
 import type { LarkPrefs } from "@/lib/lark/prefs";
 
 const VALID_FILE_TYPES: LarkFileType[] = ["docx", "sheet", "bitable", "folder"];
@@ -225,8 +225,12 @@ export async function updateLarkPrefs(_prev: LarkPrefsState, formData: FormData)
 
   const org = String(formData.get("defaultOrg") ?? "").trim();
   const version = String(formData.get("defaultVersion") ?? "").trim();
+  const department = String(formData.get("defaultDepartment") ?? "").trim();
+  const docType = String(formData.get("defaultDocType") ?? "").trim();
   if (org && !(ORG_CODES as readonly string[]).includes(org)) return { error: "Mã tổ chức không hợp lệ." };
   if (version && !(VERSION_OPTIONS as readonly string[]).includes(version)) return { error: "Version không hợp lệ." };
+  if (department && !DEPARTMENT_CODES.includes(department)) return { error: "Phòng ban không hợp lệ." };
+  if (docType && !DOC_TYPES.some((d) => d.code === docType)) return { error: "Loại tài liệu không hợp lệ." };
 
   const prefs: LarkPrefs = {
     includeDept: formData.get("includeDept") === "on",
@@ -235,6 +239,8 @@ export async function updateLarkPrefs(_prev: LarkPrefsState, formData: FormData)
     includeVersion: formData.get("includeVersion") === "on",
     ...(org ? { defaultOrg: org } : {}),
     ...(version ? { defaultVersion: version } : {}),
+    ...(department ? { defaultDepartment: department } : {}),
+    ...(docType ? { defaultDocType: docType } : {}),
     // Preserve the app switcher's selection — this form doesn't edit it.
     ...(profile.lark_prefs.activeApp ? { activeApp: profile.lark_prefs.activeApp } : {}),
   };
