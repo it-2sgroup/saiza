@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Modal, ModalHeader } from "../Modal";
+import { Pagination } from "../Pagination";
 import { ItemActionsMenu } from "./ItemActionsMenu";
 import { departmentLabel } from "@/lib/admin/departments";
 import type { StaffOption } from "./StaffSharePicker";
@@ -26,6 +27,8 @@ const SORT_OPTIONS = [
   { value: "name", label: "Tên A → Z" },
 ] as const;
 
+const PAGE_SIZE = 10;
+
 export function HistoryModal({
   rows,
   staff,
@@ -47,6 +50,7 @@ export function HistoryModal({
   const [q, setQ] = useState("");
   const [typeFilter, setTypeFilter] = useState<LarkFileType | "">("");
   const [sort, setSort] = useState<(typeof SORT_OPTIONS)[number]["value"]>("recent");
+  const [page, setPage] = useState(1);
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -58,6 +62,14 @@ export function HistoryModal({
     if (sort === "name") return [...result].sort((a, b) => a.title.localeCompare(b.title, "vi"));
     return result;
   }, [rows, q, typeFilter, sort]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  // Clamp instead of always resetting to 1 on filter change — only forces
+  // the page down when it's now out of range, so narrowing then widening a
+  // filter doesn't jump the user back to the first page unnecessarily.
+  const clampedPage = Math.min(page, totalPages);
+  if (clampedPage !== page) setPage(clampedPage);
+  const paged = filtered.slice((clampedPage - 1) * PAGE_SIZE, clampedPage * PAGE_SIZE);
 
   const historyIcon = (
     <svg
@@ -113,7 +125,7 @@ export function HistoryModal({
         </select>
       </div>
 
-      <div className={inline ? "" : "min-h-0 flex-1 overflow-y-auto"}>
+      <div className={inline ? "flex flex-col gap-3" : "flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto"}>
         {filtered.length === 0 ? (
           <p className="text-sm text-ink-2">{q || typeFilter ? "Không tìm thấy file khớp bộ lọc." : "Bạn chưa tạo file nào."}</p>
         ) : (
@@ -131,7 +143,7 @@ export function HistoryModal({
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
-                {filtered.map((row) => (
+                {paged.map((row) => (
                   <tr key={row.targetId} className="transition-colors duration-300 ease-soft hover:bg-wash">
                     <td className="max-w-[280px] truncate px-4 py-2.5 font-medium">{row.title}</td>
                     <td className="px-4 py-2.5 text-ink-2">{LARK_FILE_TYPE_LABELS[row.fileType]}</td>
@@ -154,6 +166,7 @@ export function HistoryModal({
             </table>
           </div>
         )}
+        <Pagination page={clampedPage} totalPages={totalPages} onChange={setPage} />
       </div>
     </div>
   );

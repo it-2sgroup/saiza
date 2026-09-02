@@ -8,13 +8,12 @@ import { HistoryModal } from "./HistoryModal";
 import { OverviewModal } from "./OverviewModal";
 import { DashboardModal, DonutCard } from "./DashboardModal";
 import { ADOPTION_COLORS } from "./chartColors";
-import { ItemActionsMenu } from "./ItemActionsMenu";
 import { AppSwitcher } from "./AppSwitcher";
 import { DriveExplorer } from "./DriveExplorer";
 import { LarkTabs, LarkTabPanel } from "./LarkTabs";
-import { TypeBadge } from "./TypeBadge";
+import { RecentFilesList } from "./RecentFilesList";
 import { StatTile } from "../StatTile";
-import { LARK_FILE_TYPE_LABELS, type LarkFileType } from "@/lib/lark/client";
+import type { LarkFileType } from "@/lib/lark/client";
 import { getLarkPageData } from "./data";
 
 const NAMING_CHECKLIST: { key: "includeDept" | "includeDocType" | "includeDate" | "includeVersion"; label: string }[] = [
@@ -106,33 +105,7 @@ export default async function AdminLarkPage() {
         <div className="flex flex-1 flex-col gap-5">
           <div className="flex flex-col gap-2.5 rounded-card border border-line bg-card p-4">
             <h3 className="text-sm font-semibold text-ink">Tiếp tục làm việc</h3>
-            {historyRows.length === 0 ? (
-              <p className="text-sm text-ink-2">Chưa có tài liệu nào được tạo.</p>
-            ) : (
-              <div className="flex flex-col divide-y divide-line">
-                {historyRows.slice(0, 8).map((row) => (
-                  <div key={row.targetId} className="flex items-center gap-3 py-2.5">
-                    <TypeBadge type={row.fileType} />
-                    <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                      <span className="truncate text-[14.5px] font-medium">{row.title}</span>
-                      <span className="text-xs text-ink-2">
-                        {LARK_FILE_TYPE_LABELS[row.fileType]} · {profile.full_name} · 📁 {row.folderName ?? "—"}
-                      </span>
-                    </div>
-                    <span className="flex-shrink-0 text-xs whitespace-nowrap text-ink-2">
-                      {new Date(row.createdAt).toLocaleDateString("vi-VN")}
-                    </span>
-                    <ItemActionsMenu
-                      documentId={row.targetId}
-                      fileType={row.fileType}
-                      url={row.url}
-                      staff={staff}
-                      folderOptions={flatFolderOptions}
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
+            <RecentFilesList rows={historyRows} staff={staff} folderOptions={flatFolderOptions} creatorName={profile.full_name} />
           </div>
         </div>
 
