@@ -4,6 +4,7 @@ import { useActionState, useMemo, useRef, useState } from "react";
 import { createLarkDocument, type LarkDocFormState } from "./actions";
 import { Combobox } from "../Combobox";
 import { LarkSettingsModal } from "./LarkSettingsModal";
+import { useToastOnActionState } from "../useToastOnActionState";
 import { StaffSharePicker, type StaffOption, type ShareRow } from "./StaffSharePicker";
 import { DEPARTMENTS, ORG_CODES, departmentLabel } from "@/lib/admin/departments";
 import { DOC_TYPES, VERSION_OPTIONS } from "@/lib/admin/docTypes";
@@ -37,6 +38,7 @@ export function LarkDocForm({
 }) {
   const [state, formAction, pending] = useActionState(createLarkDocument, initialState);
   const formRef = useRef<HTMLFormElement>(null);
+  useToastOnActionState(state, state.title ? `Đã tạo "${state.title}".` : null);
 
   const [shareOpen, setShareOpen] = useState(false);
   const [shares, setShares] = useState<ShareRow[]>([]);

@@ -9,6 +9,7 @@ import { ORG_CODES, DEPARTMENTS } from "@/lib/admin/departments";
 import { VERSION_OPTIONS, DOC_TYPES } from "@/lib/admin/docTypes";
 import { DEFAULT_LARK_PREFS, type LarkPrefs } from "@/lib/lark/prefs";
 import { buildNamingSegments, todayYYYYMMDD } from "@/lib/admin/fileNaming";
+import { useToastOnActionState } from "../useToastOnActionState";
 
 const initialState: LarkPrefsState = { error: null };
 const fieldClasses =
@@ -41,6 +42,7 @@ export function NamingSettingsPanel({
   footer?: (pending: boolean) => React.ReactNode;
 }) {
   const [state, formAction, pending] = useActionState(updateLarkPrefs, initialState);
+  useToastOnActionState(state, state.success ? "Đã lưu quy ước đặt tên." : null);
   const [toggles, setToggles] = useState({ ...DEFAULT_LARK_PREFS, ...prefs });
   const [defaultOrg, setDefaultOrg] = useState(prefs.defaultOrg ?? "");
   const [defaultVersion, setDefaultVersion] = useState(prefs.defaultVersion ?? "");

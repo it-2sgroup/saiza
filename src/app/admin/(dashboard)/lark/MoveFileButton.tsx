@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { moveLarkDocument, type MoveLarkDocState } from "./actions";
 import { Combobox } from "../Combobox";
 import type { LarkFileType } from "@/lib/lark/client";
+import { useToastOnActionState } from "../useToastOnActionState";
 
 const initialState: MoveLarkDocState = { error: null };
 
@@ -23,6 +24,7 @@ export function MoveFileButton({
   const [open, setOpen] = useState(false);
   const [targetFolder, setTargetFolder] = useState("");
   const [state, formAction, pending] = useActionState(moveLarkDocument.bind(null, documentId, fileType), initialState);
+  useToastOnActionState(state, state.done ? "Đã di chuyển file." : null);
 
   const triggerClassName =
     variant === "button"

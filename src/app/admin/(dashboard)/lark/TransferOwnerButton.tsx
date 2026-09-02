@@ -5,6 +5,7 @@ import { transferLarkDocumentOwner, type TransferOwnerState } from "./actions";
 import type { LarkFileType } from "@/lib/lark/client";
 import type { StaffOption } from "./StaffSharePicker";
 import { PeoplePicker } from "./PeoplePicker";
+import { useToastOnActionState } from "../useToastOnActionState";
 
 const initialState: TransferOwnerState = { error: null };
 
@@ -24,6 +25,7 @@ export function TransferOwnerButton({
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [state, formAction, pending] = useActionState(transferLarkDocumentOwner.bind(null, documentId, fileType), initialState);
+  useToastOnActionState(state, state.done ? "Đã chuyển quyền sở hữu." : null);
 
   const triggerClassName =
     variant === "button"

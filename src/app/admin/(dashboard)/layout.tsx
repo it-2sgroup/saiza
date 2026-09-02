@@ -1,6 +1,7 @@
 import { getCurrentProfile } from "@/lib/supabase/profile";
 import { canManageStaff, canPublish, canViewInbox } from "@/lib/admin/permissions";
 import { Sidebar } from "./Sidebar";
+import { ToastProvider } from "./ToastProvider";
 import type { NavItem } from "./NavLinks";
 
 const NAV_ITEMS: NavItem[] = [
@@ -41,9 +42,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
   ];
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      <Sidebar profile={profile} items={navItems} />
-      <main className="flex-1 overflow-y-auto p-8">{children}</main>
-    </div>
+    <ToastProvider>
+      <div className="flex h-screen overflow-hidden">
+        <Sidebar profile={profile} items={navItems} />
+        <main className="flex-1 overflow-y-auto p-8">{children}</main>
+      </div>
+    </ToastProvider>
   );
 }

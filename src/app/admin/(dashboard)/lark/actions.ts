@@ -12,7 +12,6 @@ import {
   transferLarkFileOwner,
   getDefaultAppKey,
   getAppRootFolderToken,
-  listFolderContents,
   type LarkDriveItem,
   type LarkFileType,
 } from "@/lib/lark/client";
@@ -20,6 +19,7 @@ import { parseShareRows, applyShareRows, type ShareResult } from "@/lib/lark/sha
 import { resolveRootFolderToken } from "@/lib/lark/orgFolders";
 import { getOrCreateDepartmentFolder } from "@/lib/lark/folderRegistry";
 import { addFolderToCache, addFoldersToCache } from "@/lib/lark/folders";
+import { listFolderContentsCached, addItemToDriveCache } from "@/lib/lark/driveCache";
 import { DEPARTMENT_CODES, ORG_CODES } from "@/lib/admin/departments";
 import { buildFileName, buildFolderName, MAX_FILENAME_LENGTH } from "@/lib/admin/fileNaming";
 import { canDelete } from "@/lib/admin/permissions";
@@ -151,6 +151,11 @@ export async function createLarkDocument(_prev: LarkDocFormState, formData: Form
   // right away instead of waiting for the next cache crawl.
   if (fileType === "folder" && effectiveFolder) {
     await addFolderToCache(org || "", { token: documentId, name: title, parentToken: effectiveFolder }, appKey);
+  }
+  // Same idea for the Drive tab's cached listing — otherwise a just-created
+  // file/folder only shows up there once the (short) drive-cache TTL expires.
+  if (effectiveFolder) {
+    await addItemToDriveCache(effectiveFolder, appKey, { token: documentId, name: title, type: fileType, url });
   }
 
   // Transferring ownership makes the creator the real Lark owner instead of a
@@ -374,7 +379,7 @@ export async function browseLarkFolder(folderToken: string | null, appKey: strin
 
   try {
     const resolvedToken = folderToken || (await getAppRootFolderToken(appKey));
-    const items = await listFolderContents(resolvedToken, appKey);
+    const items = await listFolderContentsCached(resolvedToken, appKey);
 
     // Write-through into lark_folder_cache — otherwise pre-existing folders
     // (created outside this app, or missed by the last BFS crawl) only ever

@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { deleteLarkDocument, type DeleteLarkDocState } from "./actions";
 import type { LarkFileType } from "@/lib/lark/fileTypes";
+import { useToastOnActionState } from "../useToastOnActionState";
 
 const initialState: DeleteLarkDocState = { error: null };
 
@@ -19,6 +20,7 @@ export function DeleteLarkFileButton({
 }) {
   const [confirming, setConfirming] = useState(embedded);
   const [state, formAction, pending] = useActionState(deleteLarkDocument.bind(null, documentId, fileType), initialState);
+  useToastOnActionState(state, state.done ? "Đã xoá file." : null);
 
   const triggerClassName =
     variant === "button"

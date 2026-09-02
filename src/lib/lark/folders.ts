@@ -72,6 +72,14 @@ export async function listLarkFolderTree(rootToken: string, orgKey = "", appKey:
 // crawl, or never (a plain BFS crawl can silently miss folders it can't
 // reach, e.g. ones created outside this app). Best-effort — a failure here
 // just means the folder appears a bit later, not that the calling action failed.
+//
+// Delegates the actual read-modify-write to a Postgres function
+// (merge_lark_folder_cache, see supabase/migrations/0015_lark_caching.sql)
+// instead of doing it here in application code — two concurrent calls for
+// the same (appKey, orgKey) used to be able to both read the same stale
+// tree and then overwrite each other, silently dropping whichever folder
+// the losing write had discovered. The function takes a row lock
+// (`FOR UPDATE`) so concurrent calls serialize instead of racing.
 export async function addFoldersToCache(
   orgKey: string,
   entries: { token: string; name: string; parentToken: string }[],
@@ -80,18 +88,12 @@ export async function addFoldersToCache(
   if (entries.length === 0) return;
   try {
     const admin = createAdminClient();
-    const { data: cached } = await admin.from("lark_folder_cache").select("tree").eq("app_key", appKey).eq("org", orgKey).maybeSingle();
-    const known = new Map<string, FolderOption>(((cached?.tree as FolderOption[]) ?? []).map((f) => [f.token, f]));
-    for (const entry of entries) {
-      const parent = known.get(entry.parentToken);
-      const depth = parent ? parent.depth + 1 : 1;
-      known.set(entry.token, { token: entry.token, name: entry.name, depth, parentToken: entry.parentToken });
-    }
-    await admin
-      .from("lark_folder_cache")
-      .upsert({ app_key: appKey, org: orgKey, tree: [...known.values()], updated_at: new Date().toISOString() });
+    const { error } = await admin.rpc("merge_lark_folder_cache", { p_app_key: appKey, p_org: orgKey, p_entries: entries });
+    if (error) throw error;
   } catch {
-    // Non-fatal.
+    // Non-fatal — e.g. the migration hasn't been applied yet, or a transient
+    // DB error. The folder just won't appear in the picker until the next
+    // successful crawl.
   }
 }
 

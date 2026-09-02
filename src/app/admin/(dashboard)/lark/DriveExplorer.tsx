@@ -109,6 +109,28 @@ export function DriveExplorer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inline]);
 
+  // Creating/moving/deleting a file calls revalidatePath, which makes
+  // page.tsx re-run its data fetch and pass a fresh `initialItems` array —
+  // but this component's own `items` state was only ever seeded from that
+  // prop once, at mount, so it used to keep showing the old listing until a
+  // full page reload. "Adjust state on prop change" during render (not in an
+  // effect, per https://react.dev/learn/you-might-not-need-an-effect) — only
+  // while sitting at the root, so a background root refresh never clobbers
+  // someone who's navigated into a subfolder.
+  const [syncedInitialItems, setSyncedInitialItems] = useState(initialItems);
+  if (inline && initialItems && initialItems !== syncedInitialItems && path.length === 1) {
+    setSyncedInitialItems(initialItems);
+    setItems(initialItems);
+    const discovered: FolderOption[] = initialItems
+      .filter((i) => i.type === "folder")
+      .map((i) => ({ token: i.token, name: i.name, depth: 1, parentToken: ROOT_PARENT }));
+    if (discovered.length > 0) {
+      const known = new Map(liveFolders.map((f) => [f.token, f]));
+      for (const f of discovered) known.set(f.token, f);
+      setLiveFolders([...known.values()]);
+    }
+  }
+
   const enterFolder = (item: LarkDriveItem) => {
     const depth = path.length;
     setPath((p) => [...p, { token: item.token, name: item.name }]);

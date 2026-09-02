@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { shareExistingDocument, type ShareExistingState } from "./actions";
 import { StaffSharePicker, type StaffOption, type ShareRow } from "./StaffSharePicker";
 import type { LarkFileType } from "@/lib/lark/client";
+import { useToastOnActionState } from "../useToastOnActionState";
 
 const initialState: ShareExistingState = { error: null };
 
@@ -23,6 +24,14 @@ export function ShareExistingDoc({
   const [open, setOpen] = useState(false);
   const [shares, setShares] = useState<ShareRow[]>([]);
   const [state, formAction, pending] = useActionState(shareExistingDocument.bind(null, documentId, fileType), initialState);
+  useToastOnActionState(
+    state,
+    state.shareResults
+      ? state.shareResults.every((r) => r.ok)
+        ? "Đã chia sẻ thành công."
+        : "Đã chia sẻ, nhưng một số người không nhận được — kiểm tra lại email."
+      : null,
+  );
 
   const triggerClassName =
     variant === "button"

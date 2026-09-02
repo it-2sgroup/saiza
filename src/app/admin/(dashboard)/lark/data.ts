@@ -6,16 +6,10 @@ import type { HistoryRow } from "./HistoryModal";
 import type { OverviewRow } from "./OverviewModal";
 import type { DashboardData, CreatorStat } from "./DashboardModal";
 import type { StaffOption } from "./StaffSharePicker";
-import {
-  getLarkApps,
-  getDefaultAppKey,
-  listTenantContacts,
-  getAppRootFolderToken,
-  listFolderContents,
-  type LarkFileType,
-  type LarkDriveItem,
-} from "@/lib/lark/client";
+import { getLarkApps, getDefaultAppKey, getAppRootFolderToken, type LarkFileType, type LarkDriveItem } from "@/lib/lark/client";
 import { listLarkFolderTree, addFoldersToCache, type FolderOption } from "@/lib/lark/folders";
+import { listTenantContactsCached } from "@/lib/lark/contactsCache";
+import { listFolderContentsCached } from "@/lib/lark/driveCache";
 import { resolveRootFolderToken, listConfiguredOrgs } from "@/lib/lark/orgFolders";
 import { DEFAULT_LARK_PREFS } from "@/lib/lark/prefs";
 import { buildNamingSegments, todayYYYYMMDD, type NamingSegment } from "@/lib/admin/fileNaming";
@@ -111,14 +105,14 @@ export async function getLarkPageData(profile: Profile): Promise<LarkPageData> {
     // Sharing needs to reach people across ALL connected orgs, not just the
     // one currently active for new creations — merge every app's directory
     // into one suggestion pool instead of scoping it to activeAppKey.
-    Promise.all(larkApps.map((a) => listTenantContacts(a.key).catch(() => []))),
+    Promise.all(larkApps.map((a) => listTenantContactsCached(a.key).catch(() => []))),
     // Pre-fetch the Drive tab's root listing server-side so it renders with
     // content immediately instead of showing "Đang tải..." on every visit —
     // best-effort: a Drive API hiccup here shouldn't break the whole page.
     (async (): Promise<LarkDriveItem[] | undefined> => {
       try {
         const rootToken = await getAppRootFolderToken(activeAppKey);
-        const items = await listFolderContents(rootToken, activeAppKey);
+        const items = await listFolderContentsCached(rootToken, activeAppKey);
         // Same write-through as browseLarkFolder (actions.ts) — keeps the
         // Move/Create-file folder picker's cache warm on every page load,
         // not just when someone actively browses the Drive tab.
