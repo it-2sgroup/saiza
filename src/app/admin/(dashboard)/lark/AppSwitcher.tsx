@@ -50,6 +50,7 @@ export function AppSwitcher({ apps, activeKey }: { apps: { key: string; label: s
         createPortal(
           <div
             ref={panelRef}
+            data-popover-panel
             role="listbox"
             style={{ position: "fixed", top: rect.top, left: rect.left, width: rect.width }}
             className="lark-theme z-[110] overflow-hidden rounded-xl border border-line bg-card py-1.5 font-[family-name:var(--font-ibm-plex-sans)] shadow-[0_20px_45px_rgba(22,33,62,0.18)]"

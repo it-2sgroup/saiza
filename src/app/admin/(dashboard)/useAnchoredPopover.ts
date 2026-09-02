@@ -33,6 +33,13 @@ export function useAnchoredPopover(open: boolean, onClose: () => void) {
       const target = e.target as Node;
       if (rootRef.current?.contains(target)) return;
       if (panelRef.current?.contains(target)) return;
+      // A nested popover (e.g. the folder Combobox inside ItemActionsMenu's
+      // Move form) portals its own panel to `document.body` too, so its
+      // DOM node is a *sibling* of this panel, not a descendant — the checks
+      // above don't see it. Without this, clicking an option in the nested
+      // popover reads as "outside" the outer one and closes it before the
+      // click can register, e.g. Move silently doing nothing.
+      if (target instanceof Element && target.closest("[data-popover-panel]")) return;
       onClose();
     };
     const onKeyDown = (e: KeyboardEvent) => {

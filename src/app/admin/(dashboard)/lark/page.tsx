@@ -217,6 +217,8 @@ export default async function AdminLarkPage() {
       appLabel={larkApps.find((a) => a.key === activeAppKey)?.label ?? activeAppKey}
       folderTree={foldersByOrg[""] ?? []}
       initialItems={driveRootItems}
+      staff={staff}
+      folderOptions={flatFolderOptions}
     />
   );
 

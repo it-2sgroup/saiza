@@ -3,9 +3,11 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { Modal, ModalHeader } from "../Modal";
 import { browseLarkFolder } from "./actions";
-import type { LarkDriveItem } from "@/lib/lark/client";
+import type { LarkDriveItem, LarkFileType } from "@/lib/lark/client";
 import type { FolderOption } from "@/lib/lark/folders";
 import { TypeBadge, fileTypeLabel } from "./TypeBadge";
+import { ItemActionsMenu } from "./ItemActionsMenu";
+import type { StaffOption } from "./StaffSharePicker";
 
 type Crumb = { token: string | null; name: string };
 
@@ -36,6 +38,8 @@ export function DriveExplorer({
   trigger,
   inline = false,
   initialItems,
+  staff,
+  folderOptions,
 }: {
   appKey: string;
   appLabel: string;
@@ -48,6 +52,12 @@ export function DriveExplorer({
   // (via `key={appKey}`) whenever the active app changes, so a stale prop
   // from a previous app can never leak into a fresh instance.
   initialItems?: LarkDriveItem[];
+  // Lets Drive-tab rows carry the same "..." menu (share/move/transfer/
+  // delete) as every other file list — previously the Drive tab only had
+  // "Mở →", so a file that only ever showed up here (browsed to, not
+  // created via this app's own history) had no way to be moved at all.
+  staff: StaffOption[];
+  folderOptions: { value: string; label: string }[];
 }) {
   const [open, setOpen] = useState(false);
   const [path, setPath] = useState<Crumb[]>([{ token: null, name: appLabel }]);
@@ -243,18 +253,26 @@ export function DriveExplorer({
             <div className="flex flex-col divide-y divide-line rounded-card border border-line">
               {orderedItems.map((f) =>
                 f.type === "folder" ? (
-                  <button
-                    key={f.token}
-                    type="button"
-                    onClick={() => enterFolder(f)}
-                    className="flex cursor-pointer items-center gap-3 px-4 py-2.5 text-left transition-colors duration-300 ease-soft hover:bg-wash"
-                  >
-                    <TypeBadge type={f.type} size="sm" />
-                    <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                      <span className="truncate text-[14px] font-medium">{f.name}</span>
-                      <span className="text-xs text-ink-2">{fileTypeLabel(f.type)}</span>
-                    </div>
-                  </button>
+                  <div key={f.token} className="flex items-center gap-3 px-4 py-2.5 transition-colors duration-300 ease-soft hover:bg-wash">
+                    <button
+                      type="button"
+                      onClick={() => enterFolder(f)}
+                      className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 text-left"
+                    >
+                      <TypeBadge type={f.type} size="sm" />
+                      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                        <span className="truncate text-[14px] font-medium">{f.name}</span>
+                        <span className="text-xs text-ink-2">{fileTypeLabel(f.type)}</span>
+                      </div>
+                    </button>
+                    <ItemActionsMenu
+                      documentId={f.token}
+                      fileType={f.type as LarkFileType}
+                      url={f.url}
+                      staff={staff}
+                      folderOptions={folderOptions}
+                    />
+                  </div>
                 ) : (
                   <div key={f.token} className="flex items-center gap-3 px-4 py-2.5">
                     <TypeBadge type={f.type} size="sm" />
@@ -272,6 +290,13 @@ export function DriveExplorer({
                         Mở →
                       </a>
                     )}
+                    <ItemActionsMenu
+                      documentId={f.token}
+                      fileType={f.type as LarkFileType}
+                      url={f.url}
+                      staff={staff}
+                      folderOptions={folderOptions}
+                    />
                   </div>
                 ),
               )}

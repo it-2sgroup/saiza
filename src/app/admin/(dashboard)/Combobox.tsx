@@ -51,6 +51,7 @@ export function Combobox({ value, options, onChange, name, buttonClassName, pane
         createPortal(
           <div
             ref={panelRef}
+            data-popover-panel
             role="listbox"
             style={{ position: "fixed", top: rect.top, left: rect.left, width: rect.width }}
             className={
