@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Modal, ModalHeader } from "../Modal";
-import { browseLarkFolder } from "./actions";
 import type { LarkDriveItem, LarkFileType } from "@/lib/lark/client";
 import type { FolderOption } from "@/lib/lark/folders";
 import { TypeBadge, fileTypeLabel } from "./TypeBadge";
 import { ItemActionsMenu } from "./ItemActionsMenu";
 import type { StaffOption } from "./StaffSharePicker";
+import { useDriveFolders, ROOT_KEY } from "./useDriveFolders";
 
 type Crumb = { token: string | null; name: string };
 
@@ -31,9 +31,43 @@ function buildPathTo(token: string, tree: FolderOption[], rootLabel: string): Cr
   return [{ token: null, name: rootLabel }, ...chain];
 }
 
+// Placeholder rows for a folder we have genuinely never fetched. A skeleton
+// that matches the real row height keeps the layout from jumping, which reads
+// as faster than a centred "Đang tải…" even at identical latency.
+//
+// The fade-in is delayed rather than gated on a timer in state: a warm folder
+// resolves fast enough that a skeleton flashing for ~80ms reads as a glitch,
+// but expressing "invisible for the first 150ms" as an animation delay keeps
+// it out of React's render path entirely.
+function SkeletonRows() {
+  return (
+    <div
+      className="flex flex-col divide-y divide-line rounded-card border border-line"
+      style={{ animation: `softIn 0.2s ease ${SKELETON_DELAY_MS}ms both` }}
+      aria-hidden
+    >
+      {[0, 1, 2, 3].map((i) => (
+        <div key={i} className="flex items-center gap-3 px-4 py-2.5">
+          <div className="h-7 w-7 flex-shrink-0 animate-pulse rounded-md bg-wash" />
+          <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+            <div className="h-3 animate-pulse rounded bg-wash" style={{ width: `${52 - i * 8}%` }} />
+            <div className="h-2.5 w-20 animate-pulse rounded bg-wash" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// A cold folder resolves fast enough (warm Postgres row) that flashing a
+// skeleton for ~80ms reads as a glitch rather than as progress. Only commit
+// to showing one if the fetch is still outstanding after this.
+const SKELETON_DELAY_MS = 150;
+
 export function DriveExplorer({
   appKey,
   appLabel,
+  cacheScope,
   folderTree = [],
   trigger,
   inline = false,
@@ -43,35 +77,75 @@ export function DriveExplorer({
 }: {
   appKey: string;
   appLabel: string;
+  // Identifies whose cache this is (the signed-in user). Folder/file names
+  // get persisted to sessionStorage, which outlives a logout in the same tab,
+  // so the key has to change when the user does.
+  cacheScope: string;
   folderTree?: FolderOption[];
   trigger?: React.ReactNode;
   inline?: boolean;
   // Server-fetched root listing (page.tsx) so the inline Drive tab shows
-  // content immediately on first render instead of "Đang tải...". Only
-  // valid for the root of `appKey` — the parent remounts this component
-  // (via `key={appKey}`) whenever the active app changes, so a stale prop
-  // from a previous app can never leak into a fresh instance.
+  // content immediately on first render instead of a skeleton. Its identity
+  // changing is also how useDriveFolders learns a mutation happened.
   initialItems?: LarkDriveItem[];
   // Lets Drive-tab rows carry the same "..." menu (share/move/transfer/
-  // delete) as every other file list — previously the Drive tab only had
-  // "Mở →", so a file that only ever showed up here (browsed to, not
-  // created via this app's own history) had no way to be moved at all.
+  // delete) as every other file list.
   staff: StaffOption[];
   folderOptions: { value: string; label: string }[];
 }) {
   const [open, setOpen] = useState(false);
   const [path, setPath] = useState<Crumb[]>([{ token: null, name: appLabel }]);
-  const [items, setItems] = useState<LarkDriveItem[]>(initialItems ?? []);
-  const [error, setError] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
-  // The server-computed folderTree is cached and can lag behind reality —
-  // every live browse also folds any folders it sees into this, so the
-  // sidebar is always at least as complete as what you've actually visited.
-  const [liveFolders, setLiveFolders] = useState<FolderOption[]>(() =>
-    (initialItems ?? [])
-      .filter((i) => i.type === "folder")
-      .map((i) => ({ token: i.token, name: i.name, depth: 1, parentToken: ROOT_PARENT })),
-  );
+  const { cache, getItems, isLoading, isRefreshing, error, open: openFolder, prefetch } = useDriveFolders(appKey, cacheScope, initialItems);
+
+  const currentToken = path[path.length - 1]?.token ?? null;
+  const items = getItems(currentToken);
+  const loading = isLoading(currentToken);
+  const refreshing = isRefreshing(currentToken);
+
+  // The server-computed folderTree is cached and can lag behind reality, so
+  // the sidebar also shows every folder we've actually seen in a listing.
+  // Derived straight from the fetch cache rather than accumulated in its own
+  // state: the cache is already keyed by parent token, so a breadth-first
+  // walk of it *is* the tree. That also means prefetched-but-never-opened
+  // subfolders show up in the sidebar for free.
+  const liveFolders = useMemo(() => {
+    const out: FolderOption[] = [];
+    const seen = new Set<string>();
+    const queue: { key: string; depth: number }[] = [{ key: ROOT_KEY, depth: 0 }];
+    while (queue.length > 0) {
+      const { key, depth } = queue.shift()!;
+      for (const item of cache[key]?.items ?? []) {
+        if (item.type !== "folder" || seen.has(item.token)) continue;
+        seen.add(item.token);
+        out.push({
+          token: item.token,
+          name: item.name,
+          depth: depth + 1,
+          parentToken: key === ROOT_KEY ? ROOT_PARENT : key,
+        });
+        queue.push({ key: item.token, depth: depth + 1 });
+      }
+    }
+    return out;
+  }, [cache]);
+
+  // Warm the subfolders of whatever is on screen. Deferred so it never
+  // competes with rendering the listing the user is actually looking at, and
+  // the hook itself skips anything already cached or in flight.
+  useEffect(() => {
+    if (!items) return;
+    const subfolders = items.filter((i) => i.type === "folder").slice(0, 6);
+    if (subfolders.length === 0) return;
+    const id = window.setTimeout(() => subfolders.forEach((f) => prefetch(f.token)), 400);
+    return () => window.clearTimeout(id);
+  }, [items, prefetch]);
+
+  // Root listing on first mount. `openFolder` no-ops when the SSR-provided
+  // `initialItems` is still fresh, so this costs nothing in the normal case
+  // and only actually fetches when the server-side fetch was skipped/failed.
+  useEffect(() => {
+    if (inline) openFolder(null);
+  }, [inline, openFolder]);
 
   const tree = useMemo(() => {
     const byToken = new Map<string, FolderOption>();
@@ -80,95 +154,38 @@ export function DriveExplorer({
     return [...byToken.values()].sort((a, b) => a.depth - b.depth || a.name.localeCompare(b.name, "vi"));
   }, [folderTree, liveFolders]);
 
-  const load = (token: string | null, depth: number) => {
-    startTransition(async () => {
-      const res = await browseLarkFolder(token, appKey);
-      if (res.error) {
-        setError(res.error);
-        setItems([]);
-      } else {
-        setError(null);
-        setItems(res.items ?? []);
-        const discovered: FolderOption[] = (res.items ?? [])
-          .filter((i) => i.type === "folder")
-          .map((i) => ({ token: i.token, name: i.name, depth: depth + 1, parentToken: token ?? ROOT_PARENT }));
-        if (discovered.length > 0) {
-          setLiveFolders((prev) => {
-            const known = new Set(prev.map((f) => f.token));
-            const additions = discovered.filter((f) => !known.has(f.token));
-            return additions.length > 0 ? [...prev, ...additions] : prev;
-          });
-        }
-      }
-    });
-  };
-
   const openExplorer = () => {
     setPath([{ token: null, name: appLabel }]);
     setOpen(true);
-    load(null, 0);
+    openFolder(null);
   };
 
-  useEffect(() => {
-    if (!inline || initialItems) return;
-    // Only reached when the server-side fetch in page.tsx failed/was skipped
-    // — normally `initialItems` already has the root listing, and this
-    // component remounts fresh (via `key={appKey}`) on every app switch, so
-    // there's no "whenever the active app changes" case left to handle here.
-    load(null, 0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [inline]);
-
-  // Creating/moving/deleting a file calls revalidatePath, which makes
-  // page.tsx re-run its data fetch and pass a fresh `initialItems` array —
-  // but this component's own `items` state was only ever seeded from that
-  // prop once, at mount, so it used to keep showing the old listing until a
-  // full page reload. "Adjust state on prop change" during render (not in an
-  // effect, per https://react.dev/learn/you-might-not-need-an-effect) — only
-  // while sitting at the root, so a background root refresh never clobbers
-  // someone who's navigated into a subfolder.
-  const [syncedInitialItems, setSyncedInitialItems] = useState(initialItems);
-  if (inline && initialItems && initialItems !== syncedInitialItems && path.length === 1) {
-    setSyncedInitialItems(initialItems);
-    setItems(initialItems);
-    const discovered: FolderOption[] = initialItems
-      .filter((i) => i.type === "folder")
-      .map((i) => ({ token: i.token, name: i.name, depth: 1, parentToken: ROOT_PARENT }));
-    if (discovered.length > 0) {
-      const known = new Map(liveFolders.map((f) => [f.token, f]));
-      for (const f of discovered) known.set(f.token, f);
-      setLiveFolders([...known.values()]);
-    }
-  }
-
   const enterFolder = (item: LarkDriveItem) => {
-    const depth = path.length;
     setPath((p) => [...p, { token: item.token, name: item.name }]);
-    load(item.token, depth);
+    openFolder(item.token);
   };
 
   const goToCrumb = (index: number) => {
     setPath((p) => p.slice(0, index + 1));
-    load(path[index].token, index);
+    openFolder(path[index].token);
   };
 
   const goToTreeItem = (folder: FolderOption | null) => {
     if (folder === null) {
       setPath([{ token: null, name: appLabel }]);
-      load(null, 0);
+      openFolder(null);
     } else {
       setPath(buildPathTo(folder.token, tree, appLabel));
-      load(folder.token, folder.depth);
+      openFolder(folder.token);
     }
   };
 
-  const currentToken = path[path.length - 1]?.token ?? null;
   // Inline mode has its own tree sidebar for folder navigation, so the
   // content pane only needs to list folders the tree doesn't already show
   // — anything in `tree` would otherwise show up twice.
   const treeTokens = new Set(tree.map((f) => f.token));
-  const visibleFolders = items.filter((i) => i.type === "folder" && (!inline || !treeTokens.has(i.token)));
-  const orderedItems = [...visibleFolders, ...items.filter((i) => i.type !== "folder")];
+  const visibleFolders = (items ?? []).filter((i) => i.type === "folder" && (!inline || !treeTokens.has(i.token)));
+  const orderedItems = [...visibleFolders, ...(items ?? []).filter((i) => i.type !== "folder")];
 
   const driveIcon = (
     <svg
@@ -204,6 +221,8 @@ export function DriveExplorer({
                 key={f.token}
                 type="button"
                 onClick={() => goToTreeItem(f)}
+                onMouseEnter={() => prefetch(f.token)}
+                onFocus={() => prefetch(f.token)}
                 style={{ paddingLeft: `${f.depth * 14 + 10}px` }}
                 className={treeItemClass(currentToken === f.token)}
               >
@@ -238,25 +257,38 @@ export function DriveExplorer({
             <h3 className="text-[14.5px] font-semibold text-ink">
               {path.length <= 1 ? `${appLabel} / Toàn bộ nội dung` : path.map((c) => c.name).join(" / ")}
             </h3>
-            <span className="text-xs text-ink-2">Gồm cả file có trước khi hệ thống tồn tại</span>
+            <span className="flex items-center gap-2 text-xs text-ink-2">
+              {refreshing && (
+                <span className="flex items-center gap-1.5 text-accent">
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
+                  Đang làm mới
+                </span>
+              )}
+              Gồm cả file có trước khi hệ thống tồn tại
+            </span>
           </div>
         )}
 
         <div className={inline ? "" : "min-h-0 flex-1 overflow-y-auto"}>
-          {pending ? (
-            <p className="text-sm text-ink-2">Đang tải...</p>
-          ) : error ? (
+          {error && !items ? (
             <p className="text-sm font-medium text-red-600">{error}</p>
+          ) : loading ? (
+            <SkeletonRows />
           ) : orderedItems.length === 0 ? (
             <p className="text-sm text-ink-2">Thư mục trống.</p>
           ) : (
             <div className="flex flex-col divide-y divide-line rounded-card border border-line">
               {orderedItems.map((f) =>
                 f.type === "folder" ? (
-                  <div key={f.token} className="flex items-center gap-3 px-4 py-2.5 transition-colors duration-300 ease-soft hover:bg-wash">
+                  <div
+                    key={f.token}
+                    className="flex items-center gap-3 px-4 py-2.5 transition-colors duration-300 ease-soft hover:bg-wash"
+                    onMouseEnter={() => prefetch(f.token)}
+                  >
                     <button
                       type="button"
                       onClick={() => enterFolder(f)}
+                      onFocus={() => prefetch(f.token)}
                       className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 text-left"
                     >
                       <TypeBadge type={f.type} size="sm" />

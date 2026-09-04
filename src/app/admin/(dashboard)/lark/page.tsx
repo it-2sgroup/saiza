@@ -188,6 +188,7 @@ export default async function AdminLarkPage() {
       inline
       appKey={activeAppKey}
       appLabel={larkApps.find((a) => a.key === activeAppKey)?.label ?? activeAppKey}
+      cacheScope={profile.id}
       folderTree={foldersByOrg[""] ?? []}
       initialItems={driveRootItems}
       staff={staff}

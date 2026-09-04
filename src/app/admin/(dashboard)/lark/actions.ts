@@ -11,15 +11,13 @@ import {
   shareLarkDocByEmail,
   transferLarkFileOwner,
   getDefaultAppKey,
-  getAppRootFolderToken,
-  type LarkDriveItem,
   type LarkFileType,
 } from "@/lib/lark/client";
 import { parseShareRows, applyShareRows, type ShareResult } from "@/lib/lark/shareRows";
 import { resolveRootFolderToken } from "@/lib/lark/orgFolders";
 import { getOrCreateDepartmentFolder } from "@/lib/lark/folderRegistry";
-import { addFolderToCache, addFoldersToCache } from "@/lib/lark/folders";
-import { listFolderContentsCached, addItemToDriveCache } from "@/lib/lark/driveCache";
+import { addFolderToCache } from "@/lib/lark/folders";
+import { addItemToDriveCache, invalidateDriveCache } from "@/lib/lark/driveCache";
 import { DEPARTMENT_CODES, ORG_CODES } from "@/lib/admin/departments";
 import { buildFileName, buildFolderName, MAX_FILENAME_LENGTH } from "@/lib/admin/fileNaming";
 import { canDelete } from "@/lib/admin/permissions";
@@ -42,6 +40,23 @@ async function resolveDocAppKey(admin: ReturnType<typeof createAdminClient>, doc
     .maybeSingle();
   const appKey = (data?.metadata as { appKey?: string } | null)?.appKey;
   return appKey ?? getDefaultAppKey();
+}
+
+// Which folder a doc currently sits in, reconstructed from the audit trail:
+// the newest `lark_doc_moved` wins, falling back to where it was created.
+// Needed so a move/delete can drop the *source* folder's cached listing —
+// otherwise that folder keeps serving a listing containing a file that isn't
+// in it anymore, which no amount of TTL tuning makes correct.
+async function resolveDocFolder(admin: ReturnType<typeof createAdminClient>, documentId: string): Promise<string | null> {
+  const { data } = await admin
+    .from("audit_log")
+    .select("metadata")
+    .in("action", ["lark_doc_created", "lark_doc_moved"])
+    .eq("target_id", documentId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return (data?.metadata as { targetFolder?: string | null } | null)?.targetFolder ?? null;
 }
 
 // Move/delete/transfer-ownership all gate on the same rule: the person who
@@ -315,12 +330,17 @@ export async function moveLarkDocument(
   if (permissionError) return { error: permissionError };
 
   const appKey = await resolveDocAppKey(admin, documentId);
+  const sourceFolder = await resolveDocFolder(admin, documentId);
 
   try {
     await moveLarkFile(documentId, targetFolder, fileType, appKey);
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Không di chuyển được file." };
   }
+
+  // Both ends of the move are now wrong in cache: the file left one folder
+  // and joined another.
+  await invalidateDriveCache(appKey, [sourceFolder, targetFolder]);
 
   await recordAuditLog({
     actorId: profile.id,
@@ -349,12 +369,17 @@ export async function deleteLarkDocument(
   if (permissionError) return { error: permissionError };
 
   const appKey = await resolveDocAppKey(admin, documentId);
+  const sourceFolder = await resolveDocFolder(admin, documentId);
 
   try {
     await deleteLarkFile(documentId, fileType, appKey);
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Không xoá được file." };
   }
+
+  // Deleting a folder also invalidates its own cached listing, not just its
+  // parent's — otherwise a later browse could still serve its old contents.
+  await invalidateDriveCache(appKey, fileType === "folder" ? [sourceFolder, documentId] : [sourceFolder]);
 
   await recordAuditLog({
     actorId: profile.id,
@@ -366,36 +391,6 @@ export async function deleteLarkDocument(
 
   revalidatePath("/admin/lark");
   return { error: null, done: true };
-}
-
-export type DriveBrowseState = { error: string | null; folderToken?: string; items?: LarkDriveItem[] };
-
-// Reads the LIVE folder contents of the given app, regardless of whether
-// anything in it was ever created through this website — unlike the
-// audit_log-based lists above, this is what surfaces pre-existing content.
-export async function browseLarkFolder(folderToken: string | null, appKey: string): Promise<DriveBrowseState> {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "Bạn cần đăng nhập lại." };
-
-  try {
-    const resolvedToken = folderToken || (await getAppRootFolderToken(appKey));
-    const items = await listFolderContentsCached(resolvedToken, appKey);
-
-    // Write-through into lark_folder_cache — otherwise pre-existing folders
-    // (created outside this app, or missed by the last BFS crawl) only ever
-    // show up in the live Drive tab and never in the Move/Create-file
-    // pickers, which build their options purely from that cache.
-    const discoveredFolders = items
-      .filter((i) => i.type === "folder")
-      .map((i) => ({ token: i.token, name: i.name, parentToken: resolvedToken }));
-    if (discoveredFolders.length > 0) {
-      await addFoldersToCache("", discoveredFolders, appKey);
-    }
-
-    return { error: null, folderToken: resolvedToken, items };
-  } catch (err) {
-    return { error: err instanceof Error ? err.message : "Không đọc được thư mục." };
-  }
 }
 
 export type TransferOwnerState = { error: string | null; done?: boolean };
