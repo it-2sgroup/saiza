@@ -12,6 +12,12 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 // relocate the per-caller logic somewhere less visible.
 export function useAnchoredPopover(open: boolean, onClose: () => void) {
   const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
+  // "bottom" (default) anchors the panel below the trigger; "top" flips it
+  // above when there isn't enough room below — without this, a trigger near
+  // the bottom of the viewport (e.g. the last row of a long list) portals a
+  // panel that's clipped by the viewport edge with no way to reach its
+  // lower items.
+  const [placement, setPlacement] = useState<"top" | "bottom">("bottom");
   const rootRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -26,6 +32,25 @@ export function useAnchoredPopover(open: boolean, onClose: () => void) {
       window.removeEventListener("scroll", updateRect, true);
     };
   }, [open]);
+
+  // Re-measures whenever the anchor moves AND whenever the panel's own size
+  // changes (e.g. ItemActionsMenu swapping its plain list for a taller
+  // sub-action form) — a ResizeObserver catches the latter, which a
+  // dependency array alone can't since panelRef is a ref, not state.
+  useLayoutEffect(() => {
+    if (!open || !anchorRect || !panelRef.current) return;
+    const recalc = () => {
+      if (!panelRef.current) return;
+      const panelHeight = panelRef.current.getBoundingClientRect().height;
+      const spaceBelow = window.innerHeight - anchorRect.bottom;
+      const spaceAbove = anchorRect.top;
+      setPlacement(spaceBelow < panelHeight + 8 && spaceAbove > spaceBelow ? "top" : "bottom");
+    };
+    recalc();
+    const ro = new ResizeObserver(recalc);
+    ro.observe(panelRef.current);
+    return () => ro.disconnect();
+  }, [open, anchorRect]);
 
   useEffect(() => {
     if (!open) return;
@@ -57,5 +82,5 @@ export function useAnchoredPopover(open: boolean, onClose: () => void) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  return { rootRef, panelRef, anchorRect };
+  return { rootRef, panelRef, anchorRect, placement };
 }

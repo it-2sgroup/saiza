@@ -27,8 +27,13 @@ export function PeoplePicker({
   inputClassName: string;
 }) {
   const [open, setOpen] = useState(false);
-  const { rootRef, panelRef, anchorRect } = useAnchoredPopover(open, () => setOpen(false));
-  const rect = anchorRect && { top: anchorRect.bottom + 6, left: anchorRect.left, width: anchorRect.width };
+  const { rootRef, panelRef, anchorRect, placement } = useAnchoredPopover(open, () => setOpen(false));
+  const rect = anchorRect && {
+    left: anchorRect.left,
+    width: anchorRect.width,
+    top: placement === "top" ? undefined : anchorRect.bottom + 6,
+    bottom: placement === "top" ? window.innerHeight - anchorRect.top + 6 : undefined,
+  };
 
   const needle = value.trim().toLowerCase();
   const matches = (
@@ -64,7 +69,7 @@ export function PeoplePicker({
             ref={panelRef}
             data-popover-panel
             role="listbox"
-            style={{ position: "fixed", top: rect.top, left: rect.left, width: Math.max(rect.width, 260) }}
+            style={{ position: "fixed", top: rect.top, bottom: rect.bottom, left: rect.left, width: Math.max(rect.width, 260) }}
             className="lark-theme z-[110] max-h-72 overflow-y-auto rounded-xl border border-line bg-card py-1.5 font-[family-name:var(--font-ibm-plex-sans)] shadow-[0_20px_45px_rgba(22,33,62,0.18)]"
           >
             {matches.map((s) => (

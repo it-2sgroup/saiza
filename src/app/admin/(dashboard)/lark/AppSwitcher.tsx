@@ -8,8 +8,13 @@ import { useAnchoredPopover } from "../useAnchoredPopover";
 export function AppSwitcher({ apps, activeKey }: { apps: { key: string; label: string }[]; activeKey: string }) {
   const [pending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
-  const { rootRef, panelRef, anchorRect } = useAnchoredPopover(open, () => setOpen(false));
-  const rect = anchorRect && { top: anchorRect.bottom + 6, left: anchorRect.left, width: Math.max(anchorRect.width, 260) };
+  const { rootRef, panelRef, anchorRect, placement } = useAnchoredPopover(open, () => setOpen(false));
+  const rect = anchorRect && {
+    left: anchorRect.left,
+    width: Math.max(anchorRect.width, 260),
+    top: placement === "top" ? undefined : anchorRect.bottom + 6,
+    bottom: placement === "top" ? window.innerHeight - anchorRect.top + 6 : undefined,
+  };
 
   if (apps.length <= 1) return null;
 
@@ -52,7 +57,7 @@ export function AppSwitcher({ apps, activeKey }: { apps: { key: string; label: s
             ref={panelRef}
             data-popover-panel
             role="listbox"
-            style={{ position: "fixed", top: rect.top, left: rect.left, width: rect.width }}
+            style={{ position: "fixed", top: rect.top, bottom: rect.bottom, left: rect.left, width: rect.width }}
             className="lark-theme z-[110] overflow-hidden rounded-xl border border-line bg-card py-1.5 font-[family-name:var(--font-ibm-plex-sans)] shadow-[0_20px_45px_rgba(22,33,62,0.18)]"
           >
             <p className="px-3.5 pt-1 pb-2 text-[10.5px] font-semibold tracking-[0.08em] text-ink-2 uppercase">Chuyển tổ chức</p>

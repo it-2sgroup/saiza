@@ -47,7 +47,11 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Admin dashboard theme — scoped override, does not touch the public SAIZA palette above. */
+/* Admin dashboard theme — scoped override, does not touch the public SAIZA palette above.
+   Font is set here (not just on the Lark page) so the whole admin area shares
+   the same Claude-style typeface — font-family is inherited, so this also
+   reaches portaled modals/dropdowns since they mount as children of <body
+   class="admin-theme">, not just elements nested directly in the DOM tree. */
 .admin-theme {
   --color-ink: #1e1b4b;
   --color-accent: #6366f1;
@@ -56,6 +60,7 @@ body {
   --color-line: #e0e7ff;
   --color-paper: #f7f7fb;
   --gradient-admin-hero: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
+  font-family: var(--font-ibm-plex-sans), var(--font-sans), system-ui, sans-serif;
 }
 .admin-hero-gradient {
   background: var(--gradient-admin-hero);

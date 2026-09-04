@@ -50,10 +50,11 @@ export function ItemActionsMenu({
   // coordinates instead of `position: absolute` inside the card — the card
   // is narrower than the menu and clips/misplaces it otherwise.
   const panelWidth = action ? FORM_WIDTH : MENU_WIDTH;
-  const { rootRef, panelRef, anchorRect } = useAnchoredPopover(open, close);
+  const { rootRef, panelRef, anchorRect, placement } = useAnchoredPopover(open, close);
   const rect = anchorRect && {
-    top: anchorRect.bottom + 6,
     left: Math.min(Math.max(8, anchorRect.right - panelWidth), window.innerWidth - panelWidth - 8),
+    top: placement === "top" ? undefined : anchorRect.bottom + 6,
+    bottom: placement === "top" ? window.innerHeight - anchorRect.top + 6 : undefined,
   };
 
   return (
@@ -80,8 +81,8 @@ export function ItemActionsMenu({
             ref={panelRef}
             data-popover-panel
             role="menu"
-            style={{ position: "fixed", top: rect.top, left: rect.left, width: panelWidth }}
-            className="lark-theme z-[100] rounded-xl border border-line bg-card p-2 font-[family-name:var(--font-ibm-plex-sans)] shadow-[0_20px_45px_rgba(22,33,62,0.18)]"
+            style={{ position: "fixed", top: rect.top, bottom: rect.bottom, left: rect.left, width: panelWidth }}
+            className="lark-theme z-[100] max-h-[80vh] overflow-y-auto rounded-xl border border-line bg-card p-2 font-[family-name:var(--font-ibm-plex-sans)] shadow-[0_20px_45px_rgba(22,33,62,0.18)]"
           >
             {action === null ? (
               <div className="flex flex-col gap-0.5">
@@ -105,7 +106,7 @@ export function ItemActionsMenu({
                   onClick={() => setAction("delete")}
                   className="w-full cursor-pointer rounded-lg px-3 py-2 text-left text-[13.5px] font-medium text-red-600 transition-colors duration-300 ease-soft hover:bg-red-50"
                 >
-                  Xoá file
+                  {fileType === "folder" ? "Xoá thư mục" : "Xoá file"}
                 </button>
               </div>
             ) : (

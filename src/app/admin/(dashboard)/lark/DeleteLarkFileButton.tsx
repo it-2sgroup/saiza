@@ -37,17 +37,19 @@ export function DeleteLarkFileButton({
 
   if (state.done) return <span className="text-xs text-ink-2">Đã xoá.</span>;
 
+  const isFolder = fileType === "folder";
+
   if (!confirming) {
     return (
       <button type="button" onClick={() => setConfirming(true)} className={triggerClassName}>
-        Xoá file
+        {isFolder ? "Xoá thư mục" : "Xoá file"}
       </button>
     );
   }
 
   return (
     <form action={formAction} className="flex flex-wrap items-center gap-2.5">
-      <span className="text-xs text-ink-2">Xoá vĩnh viễn khỏi Lark?</span>
+      <span className="text-xs text-ink-2">{isFolder ? "Xoá thư mục này vĩnh viễn khỏi Lark?" : "Xoá vĩnh viễn khỏi Lark?"}</span>
       <button type="submit" disabled={pending} className={confirmClassName}>
         {pending ? "Đang xoá..." : "Xác nhận xoá"}
       </button>

@@ -21,9 +21,14 @@ export function Combobox({ value, options, onChange, name, buttonClassName, pane
   // instead of relying on `position: absolute` inside whatever scroll
   // container happens to wrap this Combobox (e.g. a modal) — that let the
   // panel's overflow force the modal itself to grow a second scrollbar.
-  const { rootRef, panelRef, anchorRect } = useAnchoredPopover(open, () => setOpen(false));
+  const { rootRef, panelRef, anchorRect, placement } = useAnchoredPopover(open, () => setOpen(false));
   const selected = options.find((o) => o.value === value);
-  const rect = anchorRect && { top: anchorRect.bottom + 6, left: anchorRect.left, width: anchorRect.width };
+  const rect = anchorRect && {
+    left: anchorRect.left,
+    width: anchorRect.width,
+    top: placement === "top" ? undefined : anchorRect.bottom + 6,
+    bottom: placement === "top" ? window.innerHeight - anchorRect.top + 6 : undefined,
+  };
 
   return (
     <div ref={rootRef} className="relative">
@@ -53,7 +58,7 @@ export function Combobox({ value, options, onChange, name, buttonClassName, pane
             ref={panelRef}
             data-popover-panel
             role="listbox"
-            style={{ position: "fixed", top: rect.top, left: rect.left, width: rect.width }}
+            style={{ position: "fixed", top: rect.top, bottom: rect.bottom, left: rect.left, width: rect.width }}
             className={
               panelClassName ??
               "z-[110] max-h-72 min-w-[160px] overflow-y-auto rounded-2xl border border-line bg-card p-1.5 shadow-[0_16px_32px_rgba(22,33,62,0.18)]"
