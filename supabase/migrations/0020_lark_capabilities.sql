@@ -13,15 +13,20 @@
 --   administer staff accounts" with "can see company Lark stats". Split out
 --   and backfilled to match its old behavior (only the super-admin tier had
 --   can_manage_staff before this).
-alter table public.roles add column can_access_lark boolean not null default true;
-alter table public.roles add column can_view_lark_stats boolean not null default false;
+alter table public.roles add column if not exists can_access_lark boolean not null default true;
+alter table public.roles add column if not exists can_view_lark_stats boolean not null default false;
 
 update public.roles set can_view_lark_stats = true where is_super_admin;
 
 -- Keep get_my_role_caps()'s shape mirroring the table, even though no RLS
 -- policy reads these two yet — Lark's own authorization lives in app-code
 -- checks (see permissions.ts), not Postgres RLS.
-create or replace function public.get_my_role_caps()
+--
+-- Postgres refuses "create or replace" when the OUT-parameter row type
+-- changes (adding columns counts as a change) — has to be dropped first.
+drop function if exists public.get_my_role_caps();
+
+create function public.get_my_role_caps()
 returns table (
   role_code text,
   is_super_admin boolean,
