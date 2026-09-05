@@ -71,7 +71,7 @@ export type LarkPageData = {
 // cache building, per-file folder-name resolution, dashboard analytics) can
 // be read and changed independently of the page's JSX composition.
 export async function getLarkPageData(profile: Profile): Promise<LarkPageData> {
-  const isAdmin = canManageStaff(profile.role);
+  const isAdmin = await canManageStaff(profile.role);
   const admin = createAdminClient();
   const larkApps = getLarkApps();
   const activeAppKey = profile.lark_prefs.activeApp || getDefaultAppKey();

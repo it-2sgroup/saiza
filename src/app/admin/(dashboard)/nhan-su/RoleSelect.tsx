@@ -2,21 +2,19 @@
 
 import { useState, useTransition } from "react";
 import { updateStaffRole } from "./actions";
-import { ROLE_LABELS } from "@/lib/admin/permissions";
 import type { StaffRole } from "@/lib/supabase/profile";
+import type { RoleOption } from "@/lib/admin/roleCapabilities";
 import { Combobox } from "../Combobox";
 
-const ROLES: StaffRole[] = ["admin", "editor", "contributor"];
-const OPTIONS = ROLES.map((r) => ({ value: r, label: ROLE_LABELS[r] }));
-
-export function RoleSelect({ id, role }: { id: string; role: StaffRole }) {
+export function RoleSelect({ id, role, roles }: { id: string; role: StaffRole; roles: RoleOption[] }) {
   const [value, setValue] = useState<StaffRole>(role);
   const [, startTransition] = useTransition();
+  const options = roles.map((r) => ({ value: r.code, label: r.label }));
 
   return (
     <Combobox
       value={value}
-      options={OPTIONS}
+      options={options}
       onChange={(next) => {
         setValue(next as StaffRole);
         const formData = new FormData();

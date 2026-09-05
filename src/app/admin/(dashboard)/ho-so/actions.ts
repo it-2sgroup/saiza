@@ -7,6 +7,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentProfile } from "@/lib/supabase/profile";
 import { validatePassword } from "@/lib/admin/password";
 import { recordAuditLog } from "@/lib/admin/audit";
+import { getRoles } from "@/lib/admin/roles";
 
 export type ProfileFormState = { error: string | null; success: boolean };
 
@@ -87,8 +88,11 @@ export async function deleteOwnAccount(_prev: DeleteAccountState, formData: Form
 
   const admin = createAdminClient();
 
-  if (profile.role === "admin") {
-    const { count } = await admin.from("profiles").select("id", { count: "exact", head: true }).eq("role", "admin");
+  const roles = await getRoles();
+  const myRole = roles.find((r) => r.code === profile.role);
+  if (myRole?.isSuperAdmin) {
+    const superAdminCodes = roles.filter((r) => r.isSuperAdmin).map((r) => r.code);
+    const { count } = await admin.from("profiles").select("id", { count: "exact", head: true }).in("role", superAdminCodes);
     if ((count ?? 0) <= 1) {
       return { error: "Bạn là quản trị viên duy nhất — hãy chỉ định quản trị viên khác trước khi xoá tài khoản này." };
     }

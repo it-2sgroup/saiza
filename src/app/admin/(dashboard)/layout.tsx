@@ -1,5 +1,6 @@
 import { getCurrentProfile } from "@/lib/supabase/profile";
 import { canManageStaff, canPublish, canViewInbox } from "@/lib/admin/permissions";
+import { getRoles } from "@/lib/admin/roles";
 import { Sidebar } from "./Sidebar";
 import { ToastProvider } from "./ToastProvider";
 import type { NavItem } from "./NavLinks";
@@ -28,24 +29,35 @@ export default async function DashboardLayout({ children }: { children: React.Re
     );
   }
 
+  const [allowPublish, allowInbox, allowManageStaff, roles] = await Promise.all([
+    canPublish(profile.role),
+    canViewInbox(profile.role),
+    canManageStaff(profile.role),
+    getRoles(),
+  ]);
+
   const navItems: NavItem[] = [
     ...NAV_ITEMS,
-    ...(canPublish(profile.role)
+    ...(allowPublish
       ? ([
           { href: "/admin/hinh-anh", label: "Hình ảnh", icon: "images" },
           { href: "/admin/noi-dung", label: "Nội dung", icon: "text" },
           { href: "/admin/lien-ket", label: "Liên hệ & Liên kết", icon: "link" },
         ] satisfies NavItem[])
       : []),
-    ...(canViewInbox(profile.role) ? ([{ href: "/admin/lien-he", label: "Hộp thư liên hệ", icon: "inbox" }] satisfies NavItem[]) : []),
-    ...(canManageStaff(profile.role) ? ([{ href: "/admin/nhan-su", label: "Nhân sự", icon: "staff" }] satisfies NavItem[]) : []),
-    ...(canManageStaff(profile.role) ? ([{ href: "/admin/danh-muc", label: "Danh mục", icon: "tags" }] satisfies NavItem[]) : []),
+    ...(allowInbox ? ([{ href: "/admin/lien-he", label: "Hộp thư liên hệ", icon: "inbox" }] satisfies NavItem[]) : []),
+    ...(allowManageStaff
+      ? ([
+          { href: "/admin/nhan-su", label: "Nhân sự", icon: "staff" },
+          { href: "/admin/danh-muc", label: "Danh mục", icon: "tags" },
+        ] satisfies NavItem[])
+      : []),
   ];
 
   return (
     <ToastProvider>
       <div className="flex h-screen overflow-hidden">
-        <Sidebar profile={profile} items={navItems} />
+        <Sidebar profile={profile} items={navItems} roles={roles} />
         <main className="flex-1 overflow-y-auto p-8">{children}</main>
       </div>
     </ToastProvider>

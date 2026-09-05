@@ -2,12 +2,12 @@
 
 import { useActionState } from "react";
 import type { NewsPost } from "@/lib/admin/types";
-import type { StaffRole } from "@/lib/supabase/profile";
-import { canPublish } from "@/lib/admin/permissions";
 import type { NewsFormState } from "./actions";
 
 type NewsFormProps = {
-  role: StaffRole;
+  // Computed server-side (canPublish reads a DB-backed role capability now,
+  // which a client component can't do) and passed down as a plain boolean.
+  allowPublish: boolean;
   post?: NewsPost;
   action: (prevState: NewsFormState, formData: FormData) => Promise<NewsFormState>;
 };
@@ -16,9 +16,8 @@ const initialState: NewsFormState = { error: null };
 const fieldClasses =
   "rounded-[14px] border border-line bg-paper px-4 py-3 text-[15px] text-ink outline-none transition-all duration-300 ease-soft focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/30";
 
-export function NewsForm({ role, post, action }: NewsFormProps) {
+export function NewsForm({ allowPublish, post, action }: NewsFormProps) {
   const [state, formAction, pending] = useActionState(action, initialState);
-  const allowPublish = canPublish(role);
 
   return (
     <form action={formAction} className="flex max-w-[720px] flex-col gap-4">
@@ -32,13 +31,7 @@ export function NewsForm({ role, post, action }: NewsFormProps) {
         <label htmlFor="tag" className="text-xs tracking-[0.1em] text-ink-2 uppercase">
           Danh mục
         </label>
-        <input
-          id="tag"
-          name="tag"
-          defaultValue={post?.tag ?? ""}
-          placeholder="Ví dụ: Sản phẩm, Doanh nghiệp..."
-          className={fieldClasses}
-        />
+        <input id="tag" name="tag" defaultValue={post?.tag ?? ""} placeholder="Ví dụ: Sản phẩm, Doanh nghiệp..." className={fieldClasses} />
       </div>
       <div className="flex flex-col gap-1.5">
         <label htmlFor="cover_image" className="text-xs tracking-[0.1em] text-ink-2 uppercase">
@@ -50,26 +43,13 @@ export function NewsForm({ role, post, action }: NewsFormProps) {
         <label htmlFor="excerpt" className="text-xs tracking-[0.1em] text-ink-2 uppercase">
           Mô tả ngắn
         </label>
-        <textarea
-          id="excerpt"
-          name="excerpt"
-          rows={2}
-          defaultValue={post?.excerpt}
-          className={`resize-y ${fieldClasses}`}
-        />
+        <textarea id="excerpt" name="excerpt" rows={2} defaultValue={post?.excerpt} className={`resize-y ${fieldClasses}`} />
       </div>
       <div className="flex flex-col gap-1.5">
         <label htmlFor="body" className="text-xs tracking-[0.1em] text-ink-2 uppercase">
           Nội dung
         </label>
-        <textarea
-          id="body"
-          name="body"
-          rows={12}
-          defaultValue={post?.body}
-          required
-          className={`resize-y leading-[1.7] ${fieldClasses}`}
-        />
+        <textarea id="body" name="body" rows={12} defaultValue={post?.body} required className={`resize-y leading-[1.7] ${fieldClasses}`} />
       </div>
       {allowPublish ? (
         <label className="flex items-center gap-2.5 text-sm font-medium">
@@ -77,9 +57,7 @@ export function NewsForm({ role, post, action }: NewsFormProps) {
           Xuất bản công khai ngay
         </label>
       ) : (
-        <p className="text-sm text-ink-2">
-          Bài viết sẽ được lưu ở trạng thái nháp, chờ Biên tập viên hoặc Admin duyệt xuất bản.
-        </p>
+        <p className="text-sm text-ink-2">Bài viết sẽ được lưu ở trạng thái nháp, chờ Biên tập viên hoặc Admin duyệt xuất bản.</p>
       )}
       {state.error && <p className="text-sm font-medium text-red-600">{state.error}</p>}
       <button

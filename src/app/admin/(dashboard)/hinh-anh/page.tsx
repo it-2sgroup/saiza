@@ -7,17 +7,14 @@ import { SiteImageListEditor } from "./SiteImageListEditor";
 
 export default async function SiteImagesPage() {
   const profile = await getCurrentProfile();
-  if (!profile || !canPublish(profile.role)) {
+  if (!profile || !(await canPublish(profile.role))) {
     return <p className="text-ink-2">Bạn không có quyền truy cập trang này.</p>;
   }
 
   const admin = createAdminClient();
   const [{ data: fixedRows }, { data: itemRows }] = await Promise.all([
     admin.from("site_images").select("key, url"),
-    admin
-      .from("site_image_items")
-      .select("id, list_key, url, label")
-      .order("sort_order", { ascending: true }),
+    admin.from("site_image_items").select("id, list_key, url, label").order("sort_order", { ascending: true }),
   ]);
 
   const overrides = new Map((fixedRows ?? []).map((row) => [row.key, row.url]));
@@ -39,9 +36,7 @@ export default async function SiteImagesPage() {
     <div className="flex flex-col gap-9">
       <div className="flex flex-col gap-2">
         <h1 className="text-2xl font-medium">Hình ảnh trang web</h1>
-        <p className="text-ink-2">
-          Thay ảnh hiển thị trên website. Thay đổi có hiệu lực ngay trên trang công khai sau khi tải lên.
-        </p>
+        <p className="text-ink-2">Thay ảnh hiển thị trên website. Thay đổi có hiệu lực ngay trên trang công khai sau khi tải lên.</p>
       </div>
 
       <div className="flex flex-col gap-4">

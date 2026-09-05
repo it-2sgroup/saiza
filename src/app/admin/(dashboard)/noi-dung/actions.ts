@@ -8,13 +8,9 @@ import { recordAuditLog } from "@/lib/admin/audit";
 
 export type TextGroupFormState = { error: string | null; success: boolean };
 
-export async function saveTextGroup(
-  keys: string[],
-  _prev: TextGroupFormState,
-  formData: FormData,
-): Promise<TextGroupFormState> {
+export async function saveTextGroup(keys: string[], _prev: TextGroupFormState, formData: FormData): Promise<TextGroupFormState> {
   const profile = await getCurrentProfile();
-  if (!profile || !canPublish(profile.role)) return { error: "Bạn không có quyền thực hiện.", success: false };
+  if (!profile || !(await canPublish(profile.role))) return { error: "Bạn không có quyền thực hiện.", success: false };
 
   const admin = createAdminClient();
   const now = new Date().toISOString();
@@ -44,7 +40,7 @@ export async function saveTextGroup(
 
 export async function resetTextGroup(prefix: string): Promise<{ error: string | null }> {
   const profile = await getCurrentProfile();
-  if (!profile || !canPublish(profile.role)) return { error: "Bạn không có quyền thực hiện." };
+  if (!profile || !(await canPublish(profile.role))) return { error: "Bạn không có quyền thực hiện." };
 
   const admin = createAdminClient();
   const { error } = await admin.from("site_text").delete().like("key", `${prefix}.%`);

@@ -96,7 +96,7 @@ async function checkDocPermission(
     .maybeSingle();
 
   const isOwner = creationRow?.actor_id === profile.id;
-  if (!isOwner && !canManageAnyLarkDoc(profile.role)) return deniedMessage;
+  if (!isOwner && !(await canManageAnyLarkDoc(profile.role))) return deniedMessage;
   return null;
 }
 
@@ -445,7 +445,7 @@ export async function restoreLarkDocument(documentId: string, _prev: RestoreTras
   if (!row) return { error: "File này không còn trong thùng rác." };
 
   const isDeleter = row.deletedBy === profile.id;
-  if (!isDeleter && !canManageAnyLarkDoc(profile.role)) return { error: "Bạn không có quyền khôi phục file này." };
+  if (!isDeleter && !(await canManageAnyLarkDoc(profile.role))) return { error: "Bạn không có quyền khôi phục file này." };
 
   let restoredTo: "original" | "root";
   try {
@@ -480,7 +480,7 @@ export async function permanentlyDeleteLarkDocument(documentId: string, _prev: P
   if (!row) return { error: "File này không còn trong thùng rác." };
 
   const isDeleter = row.deletedBy === profile.id;
-  if (!isDeleter && !canManageAnyLarkDoc(profile.role)) return { error: "Bạn không có quyền xoá vĩnh viễn file này." };
+  if (!isDeleter && !(await canManageAnyLarkDoc(profile.role))) return { error: "Bạn không có quyền xoá vĩnh viễn file này." };
 
   try {
     await permanentlyDelete(documentId, row.fileType, row.appKey);

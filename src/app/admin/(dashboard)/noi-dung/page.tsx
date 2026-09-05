@@ -31,7 +31,7 @@ const GROUP_LABELS: Record<string, string> = {
 
 export default async function SiteTextPage() {
   const profile = await getCurrentProfile();
-  if (!profile || !canPublish(profile.role)) {
+  if (!profile || !(await canPublish(profile.role))) {
     return <p className="text-ink-2">Bạn không có quyền truy cập trang này.</p>;
   }
 
@@ -62,8 +62,7 @@ export default async function SiteTextPage() {
       <div className="flex flex-col gap-2">
         <h1 className="text-2xl font-medium">Nội dung trang web</h1>
         <p className="text-ink-2">
-          Chỉnh mọi đoạn chữ hiển thị trên website (cả tiếng Việt và tiếng Anh). Thay đổi có hiệu lực ngay trên trang
-          công khai sau khi lưu.
+          Chỉnh mọi đoạn chữ hiển thị trên website (cả tiếng Việt và tiếng Anh). Thay đổi có hiệu lực ngay trên trang công khai sau khi lưu.
         </p>
       </div>
       <TextGroupsList groups={[...byGroup.values()]} />

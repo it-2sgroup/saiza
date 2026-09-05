@@ -5,7 +5,7 @@ import { createProduct } from "../actions";
 
 export default async function NewProductPage() {
   const profile = await getCurrentProfile();
-  if (!profile || !canPublish(profile.role)) {
+  if (!profile || !(await canPublish(profile.role))) {
     return <p className="text-ink-2">Bạn không có quyền truy cập trang này.</p>;
   }
 

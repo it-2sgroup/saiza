@@ -8,13 +8,9 @@ import { recordAuditLog } from "@/lib/admin/audit";
 
 export type ConfigGroupFormState = { error: string | null; success: boolean };
 
-export async function saveConfigGroup(
-  keys: string[],
-  _prev: ConfigGroupFormState,
-  formData: FormData,
-): Promise<ConfigGroupFormState> {
+export async function saveConfigGroup(keys: string[], _prev: ConfigGroupFormState, formData: FormData): Promise<ConfigGroupFormState> {
   const profile = await getCurrentProfile();
-  if (!profile || !canPublish(profile.role)) return { error: "Bạn không có quyền thực hiện.", success: false };
+  if (!profile || !(await canPublish(profile.role))) return { error: "Bạn không có quyền thực hiện.", success: false };
 
   const admin = createAdminClient();
   const now = new Date().toISOString();
@@ -43,7 +39,7 @@ export async function saveConfigGroup(
 
 export async function resetConfigGroup(prefix: string): Promise<{ error: string | null }> {
   const profile = await getCurrentProfile();
-  if (!profile || !canPublish(profile.role)) return { error: "Bạn không có quyền thực hiện." };
+  if (!profile || !(await canPublish(profile.role))) return { error: "Bạn không có quyền thực hiện." };
 
   const admin = createAdminClient();
   const { error } = await admin.from("site_config").delete().like("key", `${prefix}.%`);

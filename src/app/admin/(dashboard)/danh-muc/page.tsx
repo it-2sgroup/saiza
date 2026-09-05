@@ -1,7 +1,9 @@
 import { getCurrentProfile } from "@/lib/supabase/profile";
-import { canManageStaff } from "@/lib/admin/permissions";
+import { canManageStaff, isSuperAdmin } from "@/lib/admin/permissions";
 import { getConfigLists } from "@/lib/admin/configLists";
+import { getRoles } from "@/lib/admin/roles";
 import { ConfigListEditor } from "./ConfigListEditor";
+import { RoleEditor } from "./RoleEditor";
 
 const SECTIONS: { key: "department" | "org_code" | "doc_type"; title: string; hint: string }[] = [
   {
@@ -23,11 +25,15 @@ const SECTIONS: { key: "department" | "org_code" | "doc_type"; title: string; hi
 
 export default async function DanhMucPage() {
   const profile = await getCurrentProfile();
-  if (!profile || !canManageStaff(profile.role)) {
+  if (!profile || !(await canManageStaff(profile.role))) {
     return <p className="text-ink-2">Bạn không có quyền truy cập trang này.</p>;
   }
 
-  const { departments, orgCodes, docTypes } = await getConfigLists();
+  const [{ departments, orgCodes, docTypes }, roles, allowManageRoles] = await Promise.all([
+    getConfigLists(),
+    getRoles(),
+    isSuperAdmin(profile.role),
+  ]);
   const optionsByKey = { department: departments, org_code: orgCodes, doc_type: docTypes };
 
   return (
@@ -47,6 +53,18 @@ export default async function DanhMucPage() {
             <ConfigListEditor listKey={section.key} options={optionsByKey[section.key]} />
           </div>
         ))}
+
+        {allowManageRoles && (
+          <div className="flex flex-col gap-3 border-t border-line pt-8">
+            <div className="flex flex-col gap-0.5">
+              <h2 className="text-[15px] font-semibold text-ink">Vai trò</h2>
+              <p className="text-xs text-ink-2">
+                Chỉ Quản trị tối cao mới sửa được mục này — mỗi vai trò là một tập quyền, gán sai có thể cấp nhầm quyền quản trị.
+              </p>
+            </div>
+            <RoleEditor roles={roles} />
+          </div>
+        )}
       </div>
     </div>
   );

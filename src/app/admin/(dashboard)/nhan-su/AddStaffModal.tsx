@@ -5,8 +5,9 @@ import { ActionButton } from "@/components/ui/Button";
 import { Modal, ModalHeader } from "../Modal";
 import { StaffForm } from "./StaffForm";
 import type { ConfigOption } from "@/lib/admin/configLists";
+import type { RoleOption } from "@/lib/admin/roleCapabilities";
 
-export function AddStaffModal({ departments }: { departments: ConfigOption[] }) {
+export function AddStaffModal({ departments, roles }: { departments: ConfigOption[]; roles: RoleOption[] }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -20,7 +21,7 @@ export function AddStaffModal({ departments }: { departments: ConfigOption[] }) 
 
       <Modal open={open} onClose={() => setOpen(false)} panelClassName="max-h-[88vh] w-full max-w-[480px] overflow-y-auto p-6">
         <ModalHeader title="Thêm nhân viên mới" subtitle="Gửi lời mời qua email để họ tự tạo mật khẩu." onClose={() => setOpen(false)} />
-        <StaffForm departments={departments} />
+        <StaffForm departments={departments} roles={roles} />
       </Modal>
     </>
   );

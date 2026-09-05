@@ -5,10 +5,11 @@ import type { Profile } from "@/lib/supabase/profile";
 import { NavLinks, type NavItem } from "./NavLinks";
 import { SettingsModal } from "./SettingsModal";
 import { LogoutButton } from "./LogoutButton";
+import type { RoleOption } from "@/lib/admin/roleCapabilities";
 
 const STORAGE_KEY = "admin-sidebar-collapsed";
 
-export function Sidebar({ profile, items }: { profile: Profile; items: NavItem[] }) {
+export function Sidebar({ profile, items, roles }: { profile: Profile; items: NavItem[]; roles: RoleOption[] }) {
   const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
@@ -70,7 +71,7 @@ export function Sidebar({ profile, items }: { profile: Profile; items: NavItem[]
       <NavLinks items={items} collapsed={collapsed} />
 
       <div className="mt-auto flex flex-col gap-1 border-t border-line pt-4">
-        <SettingsModal profile={profile} compact={collapsed} />
+        <SettingsModal profile={profile} compact={collapsed} roles={roles} />
         <LogoutButton compact={collapsed} />
       </div>
     </aside>

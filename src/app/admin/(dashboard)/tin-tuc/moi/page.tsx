@@ -1,4 +1,5 @@
 import { getCurrentProfile } from "@/lib/supabase/profile";
+import { canPublish } from "@/lib/admin/permissions";
 import { NewsForm } from "../NewsForm";
 import { createNewsPost } from "../actions";
 
@@ -9,7 +10,7 @@ export default async function NewNewsPostPage() {
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-2xl font-medium">Viết bài mới</h1>
-      <NewsForm role={profile.role} action={createNewsPost} />
+      <NewsForm allowPublish={await canPublish(profile.role)} action={createNewsPost} />
     </div>
   );
 }

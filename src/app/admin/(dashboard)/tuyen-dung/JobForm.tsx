@@ -2,12 +2,12 @@
 
 import { useActionState } from "react";
 import type { JobPost } from "@/lib/admin/types";
-import type { StaffRole } from "@/lib/supabase/profile";
-import { canPublish } from "@/lib/admin/permissions";
 import type { JobFormState } from "./actions";
 
 type JobFormProps = {
-  role: StaffRole;
+  // Computed server-side (canPublish reads a DB-backed role capability now,
+  // which a client component can't do) and passed down as a plain boolean.
+  allowPublish: boolean;
   job?: JobPost;
   action: (prevState: JobFormState, formData: FormData) => Promise<JobFormState>;
 };
@@ -16,9 +16,8 @@ const initialState: JobFormState = { error: null };
 const fieldClasses =
   "rounded-[14px] border border-line bg-paper px-4 py-3 text-[15px] text-ink outline-none transition-all duration-300 ease-soft focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/30";
 
-export function JobForm({ role, job, action }: JobFormProps) {
+export function JobForm({ allowPublish, job, action }: JobFormProps) {
   const [state, formAction, pending] = useActionState(action, initialState);
-  const allowPublish = canPublish(role);
 
   return (
     <form action={formAction} className="flex max-w-[720px] flex-col gap-4">
@@ -115,9 +114,7 @@ export function JobForm({ role, job, action }: JobFormProps) {
           Mở tuyển ngay (hiện công khai)
         </label>
       ) : (
-        <p className="text-sm text-ink-2">
-          Tin tuyển dụng sẽ được lưu ở trạng thái nháp, chờ Biên tập viên hoặc Admin duyệt mở tuyển.
-        </p>
+        <p className="text-sm text-ink-2">Tin tuyển dụng sẽ được lưu ở trạng thái nháp, chờ Biên tập viên hoặc Admin duyệt mở tuyển.</p>
       )}
       {state.error && <p className="text-sm font-medium text-red-600">{state.error}</p>}
       <button

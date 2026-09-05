@@ -10,16 +10,17 @@ const COLORS = {
   new: "#F88AAF",
   contacted: "#6366F1",
   archived: "#C7D2FE",
-  admin: "#1E1B4B",
-  editor: "#6366F1",
-  contributor: "#818CF8",
 } as const;
+
+// Roles are now admin-editable (no fixed 3-code set to key fixed colors
+// off), so this cycles through a small palette by index instead.
+const STAFF_ROLE_COLORS = ["#1E1B4B", "#6366F1", "#818CF8", "#A5B4FC", "#C7D2FE"];
 
 type DashboardChartsProps = {
   news: { draft: number; published: number };
   jobs: { draft: number; open: number; closed: number };
   contacts?: { new: number; contacted: number; archived: number; trend: { date: string; count: number }[] };
-  staff?: { admin: number; editor: number; contributor: number };
+  staff?: { label: string; count: number }[];
 };
 
 function DonutCard({ title, data }: { title: string; data: { name: string; value: number; color: string }[] }) {
@@ -118,11 +119,7 @@ export function DashboardCharts({ news, jobs, contacts, staff }: DashboardCharts
         {staff && (
           <DonutCard
             title="Nhân sự theo vai trò"
-            data={[
-              { name: "Quản trị", value: staff.admin, color: COLORS.admin },
-              { name: "Biên tập viên", value: staff.editor, color: COLORS.editor },
-              { name: "Cộng tác viên", value: staff.contributor, color: COLORS.contributor },
-            ]}
+            data={staff.map((s, i) => ({ name: s.label, value: s.count, color: STAFF_ROLE_COLORS[i % STAFF_ROLE_COLORS.length] }))}
           />
         )}
         {contacts && (

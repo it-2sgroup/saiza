@@ -6,7 +6,7 @@ import type { ContactSubmission } from "@/lib/admin/types";
 
 export default async function AdminContactInboxPage() {
   const profile = await getCurrentProfile();
-  if (!profile || !canViewInbox(profile.role)) {
+  if (!profile || !(await canViewInbox(profile.role))) {
     return <p className="text-ink-2">Bạn không có quyền xem hộp thư liên hệ.</p>;
   }
 
@@ -24,9 +24,7 @@ export default async function AdminContactInboxPage() {
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="flex flex-col gap-0.5">
                 <span className="text-[15px] font-semibold">{item.name}</span>
-                <span className="text-xs text-ink-2">
-                  {[item.phone, item.email, item.region].filter(Boolean).join(" · ")}
-                </span>
+                <span className="text-xs text-ink-2">{[item.phone, item.email, item.region].filter(Boolean).join(" · ")}</span>
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-xs text-ink-2">{new Date(item.created_at).toLocaleString("vi-VN")}</span>

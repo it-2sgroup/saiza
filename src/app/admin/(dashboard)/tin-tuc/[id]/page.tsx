@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/supabase/profile";
+import { canPublish } from "@/lib/admin/permissions";
 import { NewsForm } from "../NewsForm";
 import { updateNewsPost } from "../actions";
 import type { NewsPost } from "@/lib/admin/types";
@@ -20,7 +21,7 @@ export default async function EditNewsPostPage({ params }: { params: Promise<{ i
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-2xl font-medium">Sửa bài viết</h1>
-      <NewsForm role={profile.role} post={post} action={action} />
+      <NewsForm allowPublish={await canPublish(profile.role)} post={post} action={action} />
     </div>
   );
 }

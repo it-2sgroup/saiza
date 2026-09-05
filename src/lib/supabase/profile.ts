@@ -1,7 +1,10 @@
 import { createClient } from "./server";
 import { normalizeLarkPrefs, type LarkPrefs } from "@/lib/lark/prefs";
 
-export type StaffRole = "admin" | "editor" | "contributor";
+// Was a fixed 3-value union — now an arbitrary code referencing the
+// admin-editable `roles` table (see supabase/migrations/0019_custom_roles.sql
+// and src/lib/admin/roles.ts), so it's just a string here.
+export type StaffRole = string;
 
 export type Profile = {
   id: string;
@@ -43,10 +46,6 @@ export async function getCurrentProfile(): Promise<Profile | null> {
     return withoutPrefs ? ({ ...withoutPrefs, lark_prefs: {} } as Profile) : null;
   }
 
-  const { data: base } = await supabase
-    .from("profiles")
-    .select("id, full_name, role, avatar_url")
-    .eq("id", user.id)
-    .single();
+  const { data: base } = await supabase.from("profiles").select("id, full_name, role, avatar_url").eq("id", user.id).single();
   return base ? ({ ...base, department: null, lark_prefs: {} } as Profile) : null;
 }

@@ -1,36 +1,71 @@
 import { describe, it, expect } from "vitest";
-import { canPublish, canDelete, canViewInbox, canManageStaff, canManageAnyLarkDoc, ROLE_LABELS } from "./permissions";
-import type { StaffRole } from "@/lib/supabase/profile";
+import { resolveRole, resolveRoleLabel, type RoleOption } from "./roleCapabilities";
 
-const ROLES: StaffRole[] = ["admin", "editor", "contributor"];
+// permissions.ts itself calls getRoles() (server-only, hits Supabase) — the
+// actual capability logic worth unit-testing is resolveRole/resolveRoleLabel,
+// same split as configLists.ts/configListHelpers.ts.
+const ROLES: RoleOption[] = [
+  {
+    code: "admin",
+    label: "Quản trị",
+    isSuperAdmin: true,
+    canManageContent: true,
+    canDraftContent: true,
+    canManageLarkOrgWide: true,
+    canViewInbox: true,
+    canManageStaff: true,
+  },
+  {
+    code: "editor",
+    label: "Biên tập viên",
+    isSuperAdmin: false,
+    canManageContent: true,
+    canDraftContent: true,
+    canManageLarkOrgWide: false,
+    canViewInbox: true,
+    canManageStaff: false,
+  },
+  {
+    code: "contributor",
+    label: "Cộng tác viên",
+    isSuperAdmin: false,
+    canManageContent: false,
+    canDraftContent: true,
+    canManageLarkOrgWide: false,
+    canViewInbox: false,
+    canManageStaff: false,
+  },
+];
 
-describe("permission matrix", () => {
-  it("canPublish: admin and editor only", () => {
-    expect(ROLES.filter(canPublish)).toEqual(["admin", "editor"]);
-  });
-
-  it("canDelete: admin and editor only (site content, not Lark docs)", () => {
-    expect(ROLES.filter(canDelete)).toEqual(["admin", "editor"]);
+describe("resolveRole", () => {
+  it("canManageContent: admin and editor only", () => {
+    expect(ROLES.filter((r) => resolveRole(r.code, ROLES).canManageContent).map((r) => r.code)).toEqual(["admin", "editor"]);
   });
 
   it("canViewInbox: admin and editor only", () => {
-    expect(ROLES.filter(canViewInbox)).toEqual(["admin", "editor"]);
+    expect(ROLES.filter((r) => resolveRole(r.code, ROLES).canViewInbox).map((r) => r.code)).toEqual(["admin", "editor"]);
   });
 
   it("canManageStaff: admin only", () => {
-    expect(ROLES.filter(canManageStaff)).toEqual(["admin"]);
+    expect(ROLES.filter((r) => resolveRole(r.code, ROLES).canManageStaff).map((r) => r.code)).toEqual(["admin"]);
   });
 
-  it("canManageAnyLarkDoc: admin only — deliberately stricter than canDelete", () => {
-    expect(ROLES.filter(canManageAnyLarkDoc)).toEqual(["admin"]);
-    // The whole point of this permission existing separately: an editor must
+  it("canManageLarkOrgWide: admin only — deliberately stricter than canManageContent", () => {
+    // The whole point of this capability existing separately: an editor must
     // NOT be able to move/delete/transfer a Lark doc they don't own, even
-    // though editor passes canDelete for the site's own content types.
-    expect(canManageAnyLarkDoc("editor")).toBe(false);
-    expect(canDelete("editor")).toBe(true);
+    // though editor has canManageContent for the site's own content types.
+    expect(resolveRole("editor", ROLES).canManageLarkOrgWide).toBe(false);
+    expect(resolveRole("editor", ROLES).canManageContent).toBe(true);
   });
 
-  it("every role has a label", () => {
-    for (const role of ROLES) expect(ROLE_LABELS[role]).toBeTruthy();
+  it("falls back to all-false capabilities for a renamed/removed role instead of throwing", () => {
+    const caps = resolveRole("DELETED_ROLE", ROLES);
+    expect(caps.isSuperAdmin).toBe(false);
+    expect(caps.canManageContent).toBe(false);
+    expect(caps.canManageStaff).toBe(false);
+  });
+
+  it("every seeded role has a label", () => {
+    for (const role of ROLES) expect(resolveRoleLabel(role.code, ROLES)).toBeTruthy();
   });
 });

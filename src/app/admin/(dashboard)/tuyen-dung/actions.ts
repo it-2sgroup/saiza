@@ -31,7 +31,7 @@ export async function createJobPost(_prev: JobFormState, formData: FormData): Pr
   const fields = readFields(formData);
   if (!fields.title) return { error: "Cần có tên vị trí tuyển dụng." };
 
-  const status = fields.wantsOpen && canPublish(profile.role) ? "open" : "draft";
+  const status = fields.wantsOpen && (await canPublish(profile.role)) ? "open" : "draft";
 
   const supabase = await createClient();
   const { error } = await supabase.from("job_posts").insert({
@@ -63,7 +63,7 @@ export async function updateJobPost(id: string, _prev: JobFormState, formData: F
   const fields = readFields(formData);
   if (!fields.title) return { error: "Cần có tên vị trí tuyển dụng." };
 
-  const status = fields.wantsOpen && canPublish(profile.role) ? "open" : "draft";
+  const status = fields.wantsOpen && (await canPublish(profile.role)) ? "open" : "draft";
 
   const supabase = await createClient();
   const { error } = await supabase
@@ -91,7 +91,7 @@ export async function updateJobPost(id: string, _prev: JobFormState, formData: F
 
 export async function closeJobPost(id: string) {
   const profile = await getCurrentProfile();
-  if (!profile || !canPublish(profile.role)) return;
+  if (!profile || !(await canPublish(profile.role))) return;
 
   const supabase = await createClient();
   await supabase.from("job_posts").update({ status: "closed" }).eq("id", id);
@@ -102,7 +102,7 @@ export async function closeJobPost(id: string) {
 
 export async function deleteJobPost(id: string) {
   const profile = await getCurrentProfile();
-  if (!profile || !canDelete(profile.role)) return;
+  if (!profile || !(await canDelete(profile.role))) return;
 
   const supabase = await createClient();
   await supabase.from("job_posts").delete().eq("id", id);

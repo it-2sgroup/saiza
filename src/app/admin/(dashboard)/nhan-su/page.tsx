@@ -1,21 +1,13 @@
 import Link from "next/link";
 import { getCurrentProfile } from "@/lib/supabase/profile";
-import { canManageStaff, ROLE_LABELS } from "@/lib/admin/permissions";
+import { canManageStaff } from "@/lib/admin/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getConfigLists } from "@/lib/admin/configLists";
+import { getRoles, resolveRoleLabel } from "@/lib/admin/roles";
 import { AddStaffModal } from "./AddStaffModal";
 import { StaffRow } from "./StaffRow";
 import type { StaffPerson } from "./StaffDetailModal";
 import type { StaffRole } from "@/lib/supabase/profile";
-
-const ROLE_TABS: { value: StaffRole | ""; label: string }[] = [
-  { value: "", label: "Tất cả" },
-  { value: "admin", label: "Quản trị" },
-  { value: "editor", label: "Biên tập viên" },
-  { value: "contributor", label: "Cộng tác viên" },
-];
-
-const GROUP_ORDER: StaffRole[] = ["admin", "editor", "contributor"];
 
 export default async function AdminStaffPage({
   searchParams,
@@ -23,7 +15,7 @@ export default async function AdminStaffPage({
   searchParams: Promise<{ vaiTro?: string; q?: string; phongBan?: string }>;
 }) {
   const profile = await getCurrentProfile();
-  if (!profile || !canManageStaff(profile.role)) {
+  if (!profile || !(await canManageStaff(profile.role))) {
     return <p className="text-ink-2">Bạn không có quyền truy cập trang này.</p>;
   }
 
@@ -34,17 +26,22 @@ export default async function AdminStaffPage({
   const phongBan = sp.phongBan ?? "";
 
   const admin = createAdminClient();
-  const [{ data: profilesData }, { data: usersData }, { departments }] = await Promise.all([
+  const [{ data: profilesData }, { data: usersData }, { departments }, roles] = await Promise.all([
     admin.from("profiles").select("id, full_name, role, department, avatar_url, created_at").order("created_at", { ascending: false }),
     admin.auth.admin.listUsers(),
     getConfigLists(),
+    getRoles(),
   ]);
+  // "Tất cả" first, then every role in the order it's configured — replaces
+  // the old hardcoded 3-tab list so a newly added role gets a tab/group for
+  // free instead of never appearing anywhere in this filter/grouping.
+  const roleTabs = [{ value: "" as StaffRole | "", label: "Tất cả" }, ...roles.map((r) => ({ value: r.code, label: r.label }))];
 
   const userById = new Map(usersData?.users.map((u) => [u.id, u]) ?? []);
   const allStaff = (profilesData ?? []) as StaffPerson[];
 
   const tabCounts = Object.fromEntries(
-    ROLE_TABS.map((t) => [t.value, t.value ? allStaff.filter((s) => s.role === t.value).length : allStaff.length]),
+    roleTabs.map((t) => [t.value, t.value ? allStaff.filter((s) => s.role === t.value).length : allStaff.length]),
   ) as Record<StaffRole | "", number>;
 
   const filtered = allStaff.filter((person) => {
@@ -75,6 +72,7 @@ export default async function AdminStaffPage({
         isSelf={person.id === currentUserId}
         pendingInvite={!user?.email_confirmed_at}
         departments={departments}
+        roles={roles}
       />
     );
   }
@@ -86,11 +84,11 @@ export default async function AdminStaffPage({
           <h1 className="text-2xl font-medium">Nhân sự</h1>
           <p className="text-ink-2">Tạo tài khoản và phân quyền cho nhân viên truy cập khu quản trị.</p>
         </div>
-        <AddStaffModal departments={departments} />
+        <AddStaffModal departments={departments} roles={roles} />
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        {ROLE_TABS.map((tab) => (
+        {roleTabs.map((tab) => (
           <Link
             key={tab.value || "all"}
             href={`/admin/nhan-su${qs({ vaiTro: tab.value })}`}
@@ -141,13 +139,13 @@ export default async function AdminStaffPage({
         <p className="text-sm text-ink-2">Không có nhân viên nào khớp bộ lọc.</p>
       ) : showGrouped ? (
         <div className="flex flex-col gap-6">
-          {GROUP_ORDER.map((role) => {
-            const rows = filtered.filter((p) => p.role === role);
+          {roles.map((role) => {
+            const rows = filtered.filter((p) => p.role === role.code);
             if (rows.length === 0) return null;
             return (
-              <div key={role} className="flex flex-col gap-2.5">
+              <div key={role.code} className="flex flex-col gap-2.5">
                 <h2 className="text-sm font-semibold text-ink-2 uppercase tracking-[0.06em]">
-                  {ROLE_LABELS[role]} · {rows.length} người
+                  {resolveRoleLabel(role.code, roles) ?? role.code} · {rows.length} người
                 </h2>
                 <div className="flex flex-col gap-2">{rows.map(renderRow)}</div>
               </div>

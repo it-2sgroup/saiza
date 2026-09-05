@@ -2,15 +2,18 @@
 
 import { useState } from "react";
 import { Avatar } from "../Avatar";
-import { ROLE_LABELS } from "@/lib/admin/permissions";
 import { resolveConfigLabel, type ConfigOption } from "@/lib/admin/configListHelpers";
+import { resolveRole, resolveRoleLabel, type RoleOption } from "@/lib/admin/roleCapabilities";
 import { StaffDetailModal, type StaffPerson } from "./StaffDetailModal";
 
-const ROLE_BADGE_CLASSES: Record<StaffPerson["role"], string> = {
-  admin: "bg-accent/10 text-accent",
-  editor: "bg-blue-100 text-blue-700",
-  contributor: "bg-wash text-ink-2",
-};
+// Custom roles have no fixed set of keys to map colors from, so this picks
+// by capability tier instead of by exact role code: super-admin stands out,
+// staff-management roles get a distinct color, everything else is neutral.
+function roleBadgeClass(role: RoleOption): string {
+  if (role.isSuperAdmin) return "bg-accent/10 text-accent";
+  if (role.canManageStaff) return "bg-blue-100 text-blue-700";
+  return "bg-wash text-ink-2";
+}
 
 export function StaffRow({
   person,
@@ -18,13 +21,16 @@ export function StaffRow({
   isSelf,
   pendingInvite,
   departments,
+  roles,
 }: {
   person: StaffPerson;
   email: string;
   isSelf: boolean;
   pendingInvite: boolean;
   departments: ConfigOption[];
+  roles: RoleOption[];
 }) {
+  const role = resolveRole(person.role, roles);
   const [open, setOpen] = useState(false);
 
   return (
@@ -56,8 +62,8 @@ export function StaffRow({
           <span className="hidden text-xs text-ink-2 sm:inline-block">
             {resolveConfigLabel(person.department, departments) ?? "Chưa gán phòng ban"}
           </span>
-          <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${ROLE_BADGE_CLASSES[person.role]}`}>
-            {ROLE_LABELS[person.role]}
+          <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${roleBadgeClass(role)}`}>
+            {resolveRoleLabel(person.role, roles) ?? person.role}
           </span>
           {!isSelf && (
             <svg
@@ -84,6 +90,7 @@ export function StaffRow({
           pendingInvite={pendingInvite}
           onClose={() => setOpen(false)}
           departments={departments}
+          roles={roles}
         />
       )}
     </>

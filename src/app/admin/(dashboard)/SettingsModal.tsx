@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { Profile } from "@/lib/supabase/profile";
-import { ROLE_LABELS } from "@/lib/admin/permissions";
+import { resolveRoleLabel, type RoleOption } from "@/lib/admin/roleCapabilities";
 import { Avatar } from "./Avatar";
 import { Modal } from "./Modal";
 import { AvatarUpload } from "./AvatarUpload";
@@ -61,7 +61,7 @@ function SectionIcon({ id }: { id: SectionId }) {
   );
 }
 
-export function SettingsModal({ profile, compact = false }: { profile: Profile; compact?: boolean }) {
+export function SettingsModal({ profile, compact = false, roles }: { profile: Profile; compact?: boolean; roles: RoleOption[] }) {
   const [open, setOpen] = useState(false);
   const [section, setSection] = useState<SectionId>("profile");
 
@@ -81,7 +81,7 @@ export function SettingsModal({ profile, compact = false }: { profile: Profile; 
           <>
             <div className="flex flex-1 flex-col gap-0.5 overflow-hidden">
               <span className="truncate text-sm font-semibold">{profile.full_name}</span>
-              <span className="text-xs text-ink-2">{ROLE_LABELS[profile.role]}</span>
+              <span className="text-xs text-ink-2">{resolveRoleLabel(profile.role, roles) ?? profile.role}</span>
             </div>
             <svg
               width="15"

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/supabase/profile";
+import { canPublish } from "@/lib/admin/permissions";
 import { JobForm } from "../JobForm";
 import { updateJobPost } from "../actions";
 import type { JobPost } from "@/lib/admin/types";
@@ -20,7 +21,7 @@ export default async function EditJobPostPage({ params }: { params: Promise<{ id
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-2xl font-medium">Sửa tin tuyển dụng</h1>
-      <JobForm role={profile.role} job={job} action={action} />
+      <JobForm allowPublish={await canPublish(profile.role)} job={job} action={action} />
     </div>
   );
 }

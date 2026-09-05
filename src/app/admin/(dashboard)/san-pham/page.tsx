@@ -8,6 +8,7 @@ type ProductRow = { id: string; image_url: string; name_vi: string; tag_vi: stri
 
 export default async function AdminProductsListPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const profile = await getCurrentProfile();
+  const allowDelete = profile ? await canDelete(profile.role) : false;
   const supabase = await createClient();
   const { q } = await searchParams;
   const query = (q ?? "").trim();
@@ -84,7 +85,7 @@ export default async function AdminProductsListPage({ searchParams }: { searchPa
                   <Link href={`/admin/san-pham/${product.id}`} className="text-sm font-medium text-accent hover:text-ink">
                     Sửa →
                   </Link>
-                  {profile && canDelete(profile.role) && <DeleteButton id={product.id} />}
+                  {allowDelete && <DeleteButton id={product.id} />}
                 </div>
               </div>
             </div>

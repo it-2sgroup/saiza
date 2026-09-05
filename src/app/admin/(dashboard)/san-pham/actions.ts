@@ -86,19 +86,13 @@ function toRow(fields: ReturnType<typeof readFields>) {
 
 type UploadResult = { error: string } | { url: string };
 
-async function uploadProductImage(
-  admin: ReturnType<typeof createAdminClient>,
-  id: string,
-  file: File,
-): Promise<UploadResult> {
+async function uploadProductImage(admin: ReturnType<typeof createAdminClient>, id: string, file: File): Promise<UploadResult> {
   const ext = ALLOWED_TYPES[file.type];
   if (!ext) return { error: "Chỉ nhận ảnh JPEG, PNG hoặc WEBP." };
   if (file.size > MAX_IMAGE_BYTES) return { error: "Ảnh tối đa 5MB." };
 
   const path = `products/${id}.${ext}`;
-  const { error: uploadError } = await admin.storage
-    .from("site-images")
-    .upload(path, file, { upsert: true, contentType: file.type });
+  const { error: uploadError } = await admin.storage.from("site-images").upload(path, file, { upsert: true, contentType: file.type });
   if (uploadError) return { error: `Không tải lên được: ${uploadError.message}` };
 
   const { data } = admin.storage.from("site-images").getPublicUrl(path);
@@ -107,7 +101,7 @@ async function uploadProductImage(
 
 export async function createProduct(_prev: ProductFormState, formData: FormData): Promise<ProductFormState> {
   const profile = await getCurrentProfile();
-  if (!profile || !canPublish(profile.role)) return { error: "Bạn không có quyền thực hiện." };
+  if (!profile || !(await canPublish(profile.role))) return { error: "Bạn không có quyền thực hiện." };
 
   const fields = readFields(formData);
   if (!fields.nameVi || !fields.nameEn) return { error: "Cần nhập tên sản phẩm cho cả hai ngôn ngữ." };
@@ -140,13 +134,9 @@ export async function createProduct(_prev: ProductFormState, formData: FormData)
   redirect("/admin/san-pham");
 }
 
-export async function updateProduct(
-  id: string,
-  _prev: ProductFormState,
-  formData: FormData,
-): Promise<ProductFormState> {
+export async function updateProduct(id: string, _prev: ProductFormState, formData: FormData): Promise<ProductFormState> {
   const profile = await getCurrentProfile();
-  if (!profile || !canPublish(profile.role)) return { error: "Bạn không có quyền thực hiện." };
+  if (!profile || !(await canPublish(profile.role))) return { error: "Bạn không có quyền thực hiện." };
 
   const fields = readFields(formData);
   if (!fields.nameVi || !fields.nameEn) return { error: "Cần nhập tên sản phẩm cho cả hai ngôn ngữ." };
@@ -177,7 +167,7 @@ export async function updateProduct(
 
 export async function deleteProduct(id: string) {
   const profile = await getCurrentProfile();
-  if (!profile || !canDelete(profile.role)) return;
+  if (!profile || !(await canDelete(profile.role))) return;
 
   const admin = createAdminClient();
   await admin.from("products").delete().eq("id", id);

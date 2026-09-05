@@ -4,24 +4,20 @@ import { useActionState, useState } from "react";
 import { inviteStaffAccount, type StaffFormState } from "./actions";
 import { Combobox } from "../Combobox";
 import type { ConfigOption } from "@/lib/admin/configLists";
+import type { RoleOption } from "@/lib/admin/roleCapabilities";
 
 const initialState: StaffFormState = { error: null, success: false };
 const fieldClasses =
   "rounded-[14px] border border-line bg-paper px-4 py-3 text-[15px] text-ink outline-none transition-all duration-300 ease-soft focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/30";
 
-const ROLE_OPTIONS = [
-  { value: "admin", label: "Quản trị" },
-  { value: "editor", label: "Biên tập viên" },
-  { value: "contributor", label: "Cộng tác viên" },
-];
-
-export function StaffForm({ departments }: { departments: ConfigOption[] }) {
+export function StaffForm({ departments, roles }: { departments: ConfigOption[]; roles: RoleOption[] }) {
   const [state, formAction, pending] = useActionState(inviteStaffAccount, initialState);
   const departmentOptions = [
     { value: "", label: "Chưa gán — sẽ chọn khi tạo file" },
     ...departments.map((d) => ({ value: d.code, label: `${d.code} — ${d.label}` })),
   ];
-  const [role, setRole] = useState("contributor");
+  const roleOptions = roles.map((r) => ({ value: r.code, label: r.label }));
+  const [role, setRole] = useState(roles.find((r) => !r.isSuperAdmin && !r.canManageStaff)?.code ?? roles[0]?.code ?? "");
   const [department, setDepartment] = useState("");
 
   return (
@@ -45,7 +41,7 @@ export function StaffForm({ departments }: { departments: ConfigOption[] }) {
         <Combobox
           name="role"
           value={role}
-          options={ROLE_OPTIONS}
+          options={roleOptions}
           onChange={setRole}
           buttonClassName={`${fieldClasses} flex w-full items-center justify-between gap-2 text-left`}
         />

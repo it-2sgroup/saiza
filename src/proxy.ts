@@ -1,13 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { decodeJwtClaims } from "@/lib/admin/jwt";
-
-// decodeJwtClaims reads the `user_role` custom claim set by the
-// `custom_access_token_hook` SQL function (see
-// supabase/migrations/0002_security_hardening.sql) — once that hook is
-// enabled in the Supabase Dashboard, the role travels inside the
-// already-verified JWT, so middleware can act on it without a second
-// round-trip to the `profiles` table.
 
 function buildCsp(nonce: string) {
   // React's dev-mode tooling (component stack reconstruction) needs eval() —
@@ -96,24 +88,15 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Extra, earlier gate on the most sensitive route (staff management).
-  // Only acts once the JWT actually carries `user_role` — before the Auth
-  // Hook is enabled the claim is simply absent, and we fall through to the
-  // page-level `canManageStaff()` check rather than block everyone.
-  if (user && pathname.startsWith("/admin/nhan-su")) {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    const claims = session ? decodeJwtClaims(session.access_token) : null;
-    const role = typeof claims?.user_role === "string" ? claims.user_role : null;
-
-    if (role && role !== "admin") {
-      const url = request.nextUrl.clone();
-      url.pathname = "/admin";
-      return NextResponse.redirect(url);
-    }
-  }
-
+  // The extra early gate that used to live here (redirect away from
+  // /admin/nhan-su unless the JWT's `user_role` claim was literally
+  // "admin") was removed when roles became admin-editable — canManageStaff()
+  // now reads a capability from the roles table, so a custom role (e.g.
+  // "Nhân sự") can legitimately pass it without the code being "admin".
+  // Middleware has no cheap way to re-check that same DB-backed capability
+  // per request, and every other admin-only page in this app already relies
+  // solely on its own page-level check (no middleware mirroring) — so this
+  // route now does the same instead of hardcoding a role string here too.
   return response;
 }
 

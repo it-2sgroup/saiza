@@ -1,35 +1,49 @@
-import type { StaffRole } from "@/lib/supabase/profile";
+import "server-only";
+import { getRoles } from "./roles";
+import { resolveRole } from "./roleCapabilities";
 
-export const ROLE_LABELS: Record<StaffRole, string> = {
-  admin: "Quản trị",
-  editor: "Biên tập viên",
-  contributor: "Cộng tác viên",
-};
+// Every check here used to be a hardcoded switch on the exact string
+// "admin"/"editor"/"contributor". Roles are now admin-editable (a `roles`
+// table, see supabase/migrations/0019_custom_roles.sql), so each function
+// reads its answer from that role's capability flags instead — a fresh
+// small read per call rather than caching, since roles change rarely and
+// this table is tiny (a handful of rows).
 
-export function canPublish(role: StaffRole) {
-  return role === "admin" || role === "editor";
+export async function canPublish(role: string): Promise<boolean> {
+  const roles = await getRoles();
+  return resolveRole(role, roles).canManageContent;
 }
 
-export function canDelete(role: StaffRole) {
-  return role === "admin" || role === "editor";
+export async function canDelete(role: string): Promise<boolean> {
+  const roles = await getRoles();
+  return resolveRole(role, roles).canManageContent;
 }
 
 // Distinct from canDelete on purpose: canDelete governs this site's OWN
-// content (Tin tức/Tuyển dụng/Sản phẩm), where "editor" legitimately means
-// "can delete anything in this section". Lark documents are a different
-// trust boundary — most of the org Drive was never created through this
-// app at all, so "editor" there would mean "can move/delete/transfer
+// content (Tin tức/Tuyển dụng/Sản phẩm), where "can manage content"
+// legitimately means "can delete anything in this section". Lark documents
+// are a different trust boundary — most of the org Drive was never created
+// through this app at all, so this would mean "can move/delete/transfer
 // ownership of any file in the company, including ones they've never seen
 // before, that belongs to someone else." Only an owner (checked separately)
-// or an admin should be able to act on a Lark doc they didn't create.
-export function canManageAnyLarkDoc(role: StaffRole) {
-  return role === "admin";
+// or a role with canManageLarkOrgWide should be able to act on a Lark doc
+// they didn't create.
+export async function canManageAnyLarkDoc(role: string): Promise<boolean> {
+  const roles = await getRoles();
+  return resolveRole(role, roles).canManageLarkOrgWide;
 }
 
-export function canViewInbox(role: StaffRole) {
-  return role === "admin" || role === "editor";
+export async function canViewInbox(role: string): Promise<boolean> {
+  const roles = await getRoles();
+  return resolveRole(role, roles).canViewInbox;
 }
 
-export function canManageStaff(role: StaffRole) {
-  return role === "admin";
+export async function canManageStaff(role: string): Promise<boolean> {
+  const roles = await getRoles();
+  return resolveRole(role, roles).canManageStaff;
+}
+
+export async function isSuperAdmin(role: string): Promise<boolean> {
+  const roles = await getRoles();
+  return resolveRole(role, roles).isSuperAdmin;
 }

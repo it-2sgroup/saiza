@@ -7,6 +7,7 @@ import type { NewsPost } from "@/lib/admin/types";
 
 export default async function AdminNewsListPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const profile = await getCurrentProfile();
+  const allowDelete = profile ? await canDelete(profile.role) : false;
   const supabase = await createClient();
   const { q } = await searchParams;
   const query = (q ?? "").trim();
@@ -104,7 +105,7 @@ export default async function AdminNewsListPage({ searchParams }: { searchParams
                   <Link href={`/admin/tin-tuc/${post.id}`} className="text-sm font-medium text-accent hover:text-ink">
                     Sửa →
                   </Link>
-                  {profile && canDelete(profile.role) && <DeleteButton id={post.id} />}
+                  {allowDelete && <DeleteButton id={post.id} />}
                 </div>
               </div>
             </div>

@@ -28,7 +28,7 @@ export async function createNewsPost(_prev: NewsFormState, formData: FormData): 
   const { title, excerpt, body, tag, cover_image, wantsPublish } = readFields(formData);
   if (!title) return { error: "Cần có tiêu đề." };
 
-  const status = wantsPublish && canPublish(profile.role) ? "published" : "draft";
+  const status = wantsPublish && (await canPublish(profile.role)) ? "published" : "draft";
 
   const supabase = await createClient();
   const { error } = await supabase.from("news_posts").insert({
@@ -57,7 +57,7 @@ export async function updateNewsPost(id: string, _prev: NewsFormState, formData:
   const { title, excerpt, body, tag, cover_image, wantsPublish } = readFields(formData);
   if (!title) return { error: "Cần có tiêu đề." };
 
-  const status = wantsPublish && canPublish(profile.role) ? "published" : "draft";
+  const status = wantsPublish && (await canPublish(profile.role)) ? "published" : "draft";
 
   const supabase = await createClient();
   const { error } = await supabase
@@ -82,7 +82,7 @@ export async function updateNewsPost(id: string, _prev: NewsFormState, formData:
 
 export async function deleteNewsPost(id: string) {
   const profile = await getCurrentProfile();
-  if (!profile || !canDelete(profile.role)) return;
+  if (!profile || !(await canDelete(profile.role))) return;
 
   const supabase = await createClient();
   await supabase.from("news_posts").delete().eq("id", id);

@@ -2,10 +2,10 @@ import Link from "next/link";
 import { getCurrentProfile } from "@/lib/supabase/profile";
 import { createClient } from "@/lib/supabase/server";
 import { canManageStaff, canViewInbox } from "@/lib/admin/permissions";
+import { getRoles, resolveRoleLabel } from "@/lib/admin/roles";
 import { DashboardCharts } from "./DashboardCharts";
 import { StatTile } from "./StatTile";
 import type { PostStatus, JobStatus, ContactStatus } from "@/lib/admin/types";
-import type { StaffRole } from "@/lib/supabase/profile";
 
 function countBy<T extends string, K extends string>(rows: Record<K, T>[] | null, field: K, keys: readonly T[]) {
   const result = {} as Record<T, number>;
@@ -50,16 +50,21 @@ export default async function AdminDashboardPage() {
   const heroTotal = news.published + jobs.open + totalProducts;
 
   let contacts;
-  if (canViewInbox(profile.role)) {
+  if (await canViewInbox(profile.role)) {
     const { data } = await supabase.from("contact_submissions").select("status, created_at");
     const statusCounts = countBy<ContactStatus, "status">(data, "status", ["new", "contacted", "archived"]);
     contacts = { ...statusCounts, trend: buildTrend(data) };
   }
 
-  let staff;
-  if (canManageStaff(profile.role)) {
-    const { data } = await supabase.from("profiles").select("role");
-    staff = countBy<StaffRole, "role">(data, "role", ["admin", "editor", "contributor"]);
+  let staff: { label: string; count: number }[] | undefined;
+  if (await canManageStaff(profile.role)) {
+    const [{ data }, roles] = await Promise.all([supabase.from("profiles").select("role"), getRoles()]);
+    const counts = countBy<string, "role">(
+      data,
+      "role",
+      roles.map((r) => r.code),
+    );
+    staff = roles.map((r) => ({ label: resolveRoleLabel(r.code, roles) ?? r.code, count: counts[r.code] ?? 0 }));
   }
 
   return (

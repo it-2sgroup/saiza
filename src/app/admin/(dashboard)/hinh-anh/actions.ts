@@ -15,13 +15,9 @@ const ALLOWED_TYPES: Record<string, string> = {
   "image/webp": "webp",
 };
 
-export async function uploadSiteImage(
-  key: string,
-  _prev: SiteImageUploadState,
-  formData: FormData,
-): Promise<SiteImageUploadState> {
+export async function uploadSiteImage(key: string, _prev: SiteImageUploadState, formData: FormData): Promise<SiteImageUploadState> {
   const profile = await getCurrentProfile();
-  if (!profile || !canPublish(profile.role)) return { error: "Bạn không có quyền thực hiện.", success: false };
+  if (!profile || !(await canPublish(profile.role))) return { error: "Bạn không có quyền thực hiện.", success: false };
 
   const file = formData.get("image");
   if (!(file instanceof File) || file.size === 0) {
@@ -36,9 +32,7 @@ export async function uploadSiteImage(
   const path = `${key}.${ext}`;
 
   const admin = createAdminClient();
-  const { error: uploadError } = await admin.storage
-    .from("site-images")
-    .upload(path, file, { upsert: true, contentType: file.type });
+  const { error: uploadError } = await admin.storage.from("site-images").upload(path, file, { upsert: true, contentType: file.type });
   if (uploadError) return { error: `Không tải lên được: ${uploadError.message}`, success: false };
 
   const { data: publicUrlData } = admin.storage.from("site-images").getPublicUrl(path);
@@ -65,7 +59,7 @@ export async function uploadSiteImage(
 
 export async function resetSiteImage(key: string): Promise<{ error: string | null }> {
   const profile = await getCurrentProfile();
-  if (!profile || !canPublish(profile.role)) return { error: "Bạn không có quyền thực hiện." };
+  if (!profile || !(await canPublish(profile.role))) return { error: "Bạn không có quyền thực hiện." };
 
   const admin = createAdminClient();
   const { error } = await admin.from("site_images").delete().eq("key", key);
@@ -89,13 +83,9 @@ export async function resetSiteImage(key: string): Promise<{ error: string | nul
 
 export type SiteImageItemState = { error: string | null; success: boolean };
 
-export async function addSiteImageItem(
-  listKey: string,
-  _prev: SiteImageItemState,
-  formData: FormData,
-): Promise<SiteImageItemState> {
+export async function addSiteImageItem(listKey: string, _prev: SiteImageItemState, formData: FormData): Promise<SiteImageItemState> {
   const profile = await getCurrentProfile();
-  if (!profile || !canPublish(profile.role)) return { error: "Bạn không có quyền thực hiện.", success: false };
+  if (!profile || !(await canPublish(profile.role))) return { error: "Bạn không có quyền thực hiện.", success: false };
 
   const file = formData.get("image");
   if (!(file instanceof File) || file.size === 0) {
@@ -111,18 +101,13 @@ export async function addSiteImageItem(
   const id = crypto.randomUUID();
   const path = `items/${listKey}/${id}.${ext}`;
 
-  const { error: uploadError } = await admin.storage
-    .from("site-images")
-    .upload(path, file, { upsert: true, contentType: file.type });
+  const { error: uploadError } = await admin.storage.from("site-images").upload(path, file, { upsert: true, contentType: file.type });
   if (uploadError) return { error: `Không tải lên được: ${uploadError.message}`, success: false };
 
   const { data: publicUrlData } = admin.storage.from("site-images").getPublicUrl(path);
   const url = `${publicUrlData.publicUrl}?t=${Date.now()}`;
 
-  const { count } = await admin
-    .from("site_image_items")
-    .select("id", { count: "exact", head: true })
-    .eq("list_key", listKey);
+  const { count } = await admin.from("site_image_items").select("id", { count: "exact", head: true }).eq("list_key", listKey);
 
   const { error: dbError } = await admin.from("site_image_items").insert({
     id,
@@ -155,7 +140,7 @@ export async function replaceSiteImageItem(
   formData: FormData,
 ): Promise<SiteImageItemState> {
   const profile = await getCurrentProfile();
-  if (!profile || !canPublish(profile.role)) return { error: "Bạn không có quyền thực hiện.", success: false };
+  if (!profile || !(await canPublish(profile.role))) return { error: "Bạn không có quyền thực hiện.", success: false };
 
   const file = formData.get("image");
   if (!(file instanceof File) || file.size === 0) {
@@ -168,18 +153,13 @@ export async function replaceSiteImageItem(
   const admin = createAdminClient();
   const path = `items/${listKey}/${id}.${ext}`;
 
-  const { error: uploadError } = await admin.storage
-    .from("site-images")
-    .upload(path, file, { upsert: true, contentType: file.type });
+  const { error: uploadError } = await admin.storage.from("site-images").upload(path, file, { upsert: true, contentType: file.type });
   if (uploadError) return { error: `Không tải lên được: ${uploadError.message}`, success: false };
 
   const { data: publicUrlData } = admin.storage.from("site-images").getPublicUrl(path);
   const url = `${publicUrlData.publicUrl}?t=${Date.now()}`;
 
-  const { error: dbError } = await admin
-    .from("site_image_items")
-    .update({ url, updated_by: profile.id })
-    .eq("id", id);
+  const { error: dbError } = await admin.from("site_image_items").update({ url, updated_by: profile.id }).eq("id", id);
   if (dbError) return { error: `Không lưu được: ${dbError.message}`, success: false };
 
   await recordAuditLog({
@@ -198,7 +178,7 @@ export async function replaceSiteImageItem(
 
 export async function deleteSiteImageItem(id: string, listKey: string): Promise<{ error: string | null }> {
   const profile = await getCurrentProfile();
-  if (!profile || !canPublish(profile.role)) return { error: "Bạn không có quyền thực hiện." };
+  if (!profile || !(await canPublish(profile.role))) return { error: "Bạn không có quyền thực hiện." };
 
   const admin = createAdminClient();
 

@@ -8,7 +8,7 @@ import { updateProduct } from "../actions";
 export default async function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const profile = await getCurrentProfile();
-  if (!profile || !canPublish(profile.role)) {
+  if (!profile || !(await canPublish(profile.role))) {
     return <p className="text-ink-2">Bạn không có quyền truy cập trang này.</p>;
   }
 

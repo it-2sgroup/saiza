@@ -6,25 +6,38 @@ import { canManageStaff } from "@/lib/admin/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { recordAuditLog } from "@/lib/admin/audit";
 import { getConfigLists } from "@/lib/admin/configLists";
+import { getRoles } from "@/lib/admin/roles";
 import type { StaffRole } from "@/lib/supabase/profile";
 
 export type StaffFormState = { error: string | null; success: boolean };
 
-const VALID_ROLES: StaffRole[] = ["admin", "editor", "contributor"];
+// Counts staff currently holding ANY role with is_super_admin — the
+// structural "true admin" tier, not just the literal code "admin" (which no
+// longer means anything special by itself now that roles are custom). Used
+// to stop the org ever being left with nobody who can administer it,
+// whether by deleting the last one or demoting them to a lesser role.
+async function countSuperAdmins(admin: ReturnType<typeof createAdminClient>): Promise<number> {
+  const roles = await getRoles();
+  const superAdminCodes = roles.filter((r) => r.isSuperAdmin).map((r) => r.code);
+  if (superAdminCodes.length === 0) return 0;
+  const { count } = await admin.from("profiles").select("id", { count: "exact", head: true }).in("role", superAdminCodes);
+  return count ?? 0;
+}
 
 export async function inviteStaffAccount(_prev: StaffFormState, formData: FormData): Promise<StaffFormState> {
   const profile = await getCurrentProfile();
-  if (!profile || !canManageStaff(profile.role)) return { error: "Bạn không có quyền thực hiện.", success: false };
+  if (!profile || !(await canManageStaff(profile.role))) return { error: "Bạn không có quyền thực hiện.", success: false };
 
   const fullName = String(formData.get("full_name") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim();
-  const role = String(formData.get("role") ?? "contributor") as StaffRole;
+  const role = String(formData.get("role") ?? "").trim() as StaffRole;
   const department = String(formData.get("department") ?? "").trim();
 
   if (!fullName || !email) {
     return { error: "Nhập đầy đủ họ tên và email.", success: false };
   }
-  if (!VALID_ROLES.includes(role)) {
+  const roles = await getRoles();
+  if (!roles.some((r) => r.code === role)) {
     return { error: "Vai trò không hợp lệ.", success: false };
   }
   if (department) {
@@ -71,12 +84,24 @@ export async function inviteStaffAccount(_prev: StaffFormState, formData: FormDa
 
 export async function updateStaffRole(id: string, formData: FormData) {
   const profile = await getCurrentProfile();
-  if (!profile || !canManageStaff(profile.role)) return;
+  if (!profile || !(await canManageStaff(profile.role))) return;
 
   const role = String(formData.get("role") ?? "");
-  if (!VALID_ROLES.includes(role as StaffRole)) return;
+  const roles = await getRoles();
+  const newRole = roles.find((r) => r.code === role);
+  if (!newRole) return;
 
   const admin = createAdminClient();
+
+  // Same protection as deleteStaffAccount, extended to cover demotion —
+  // moving the last super-admin-capable person to a lesser role leaves the
+  // org exactly as unadministerable as deleting them would.
+  if (!newRole.isSuperAdmin) {
+    const { data: current } = await admin.from("profiles").select("role").eq("id", id).maybeSingle();
+    const currentRole = roles.find((r) => r.code === current?.role);
+    if (currentRole?.isSuperAdmin && (await countSuperAdmins(admin)) <= 1) return;
+  }
+
   await admin.from("profiles").update({ role }).eq("id", id);
 
   await recordAuditLog({
@@ -92,7 +117,7 @@ export async function updateStaffRole(id: string, formData: FormData) {
 
 export async function updateStaffDepartment(id: string, formData: FormData) {
   const profile = await getCurrentProfile();
-  if (!profile || !canManageStaff(profile.role)) return;
+  if (!profile || !(await canManageStaff(profile.role))) return;
 
   const department = String(formData.get("department") ?? "").trim();
   if (department) {
@@ -121,7 +146,7 @@ export type DeleteStaffState = { error: string | null };
 
 export async function deleteStaffAccount(id: string, _prev: DeleteStaffState, _formData: FormData): Promise<DeleteStaffState> {
   const profile = await getCurrentProfile();
-  if (!profile || !canManageStaff(profile.role)) return { error: "Bạn không có quyền thực hiện." };
+  if (!profile || !(await canManageStaff(profile.role))) return { error: "Bạn không có quyền thực hiện." };
   if (id === profile.id) {
     return { error: "Dùng trang Hồ sơ cá nhân để xoá tài khoản của chính bạn." };
   }
@@ -129,12 +154,11 @@ export async function deleteStaffAccount(id: string, _prev: DeleteStaffState, _f
   const admin = createAdminClient();
 
   const { data: target } = await admin.from("profiles").select("role, full_name").eq("id", id).single();
+  const roles = await getRoles();
+  const targetRole = roles.find((r) => r.code === target?.role);
 
-  if (target?.role === "admin") {
-    const { count } = await admin.from("profiles").select("id", { count: "exact", head: true }).eq("role", "admin");
-    if ((count ?? 0) <= 1) {
-      return { error: "Không thể xoá quản trị viên duy nhất còn lại." };
-    }
+  if (targetRole?.isSuperAdmin && (await countSuperAdmins(admin)) <= 1) {
+    return { error: "Không thể xoá quản trị viên duy nhất còn lại." };
   }
 
   await recordAuditLog({

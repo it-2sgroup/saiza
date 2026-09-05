@@ -21,6 +21,10 @@ const STATUS_TABS: { value: JobPost["status"] | ""; label: string }[] = [
 
 export default async function AdminJobsListPage({ searchParams }: { searchParams: Promise<{ q?: string; status?: string }> }) {
   const profile = await getCurrentProfile();
+  const [allowPublish, allowDelete] = await Promise.all([
+    profile ? canPublish(profile.role) : Promise.resolve(false),
+    profile ? canDelete(profile.role) : Promise.resolve(false),
+  ]);
   const supabase = await createClient();
   const { q, status } = await searchParams;
   const query = (q ?? "").trim();
@@ -137,8 +141,8 @@ export default async function AdminJobsListPage({ searchParams }: { searchParams
                     Sửa →
                   </Link>
                   <div className="flex items-center gap-2">
-                    {job.status === "open" && profile && canPublish(profile.role) && <CloseButton id={job.id} />}
-                    {profile && canDelete(profile.role) && <DeleteButton id={job.id} />}
+                    {job.status === "open" && allowPublish && <CloseButton id={job.id} />}
+                    {allowDelete && <DeleteButton id={job.id} />}
                   </div>
                 </div>
               </div>

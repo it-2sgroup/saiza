@@ -7,7 +7,7 @@ import { canViewInbox } from "@/lib/admin/permissions";
 
 export async function updateSubmissionStatus(id: string, formData: FormData) {
   const profile = await getCurrentProfile();
-  if (!profile || !canViewInbox(profile.role)) return;
+  if (!profile || !(await canViewInbox(profile.role))) return;
 
   const status = String(formData.get("status") ?? "new");
 
