@@ -27,9 +27,11 @@ async function assertTrashSchemaReady(): Promise<void> {
     admin.from("lark_trash").select("document_id").limit(0),
   ]);
   if (a.error || b.error) {
-    throw new Error(
-      "Tính năng thùng rác chưa sẵn sàng (thiếu bảng lark_trash/lark_trash_folder trong Supabase) — chạy migration 0017_lark_trash.sql trước, chưa có file nào bị ảnh hưởng.",
-    );
+    // Logged with full detail for whoever's debugging; the caller (actions.ts)
+    // wraps this in friendlyError and shows a generic message to the user —
+    // "run migration 0017" means nothing to someone who isn't the developer.
+    console.error("[assertTrashSchemaReady] lark_trash/lark_trash_folder unreachable", { a: a.error, b: b.error });
+    throw new Error("lark_trash schema not ready");
   }
 }
 

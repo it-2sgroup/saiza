@@ -38,6 +38,8 @@
   --animate-soft-in: softIn 1s ease both;
   --animate-pulse-ring: pulseRing 2.2s ease-out infinite;
   --animate-shake-attn: shakeAttn 4.5s ease-in-out infinite;
+  --animate-toast-in: toastIn 0.4s cubic-bezier(0.22, 0.68, 0, 1) both;
+  --animate-toast-out: toastOut 0.25s cubic-bezier(0.4, 0, 1, 1) both;
 }
 
 body {
@@ -182,6 +184,42 @@ body {
   to {
     opacity: 1;
     transform: none;
+  }
+}
+
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateX(28px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes toastOut {
+  from {
+    opacity: 1;
+    max-height: 200px;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    max-height: 0;
+    transform: translateX(28px) scale(0.96);
+  }
+}
+
+/* Countdown bar showing how long until a toast auto-dismisses — shrinks from
+   full width to nothing over the toast's own lifetime. `animation-duration`
+   is set inline per-toast so it always matches AUTO_DISMISS_MS exactly. */
+@keyframes toastCountdown {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
   }
 }
 

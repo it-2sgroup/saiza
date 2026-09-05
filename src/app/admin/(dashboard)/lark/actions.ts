@@ -19,6 +19,7 @@ import { getOrCreateDepartmentFolder } from "@/lib/lark/folderRegistry";
 import { addFolderToCache } from "@/lib/lark/folders";
 import { addItemToDriveCache, invalidateDriveCache } from "@/lib/lark/driveCache";
 import { trashDocument, restoreDocument, permanentlyDelete, getTrashRow } from "@/lib/lark/trash";
+import { friendlyError } from "@/lib/errors";
 import { DEPARTMENT_CODES, ORG_CODES } from "@/lib/admin/departments";
 import { buildFileName, buildFolderName, sanitizeNameSegment, MAX_FILENAME_LENGTH } from "@/lib/admin/fileNaming";
 import { canManageAnyLarkDoc } from "@/lib/admin/permissions";
@@ -187,7 +188,7 @@ export async function createLarkDocument(_prev: LarkDocFormState, formData: Form
   try {
     ({ documentId, url } = await createLarkFile(fileType, title, effectiveFolder, appKey));
   } catch (err) {
-    return { error: err instanceof Error ? err.message : "Không tạo được file Lark." };
+    return { error: friendlyError("createLarkDocument", err, "Không tạo được file. Vui lòng thử lại sau ít phút.") };
   }
 
   // Write-through: a manually-created subfolder should appear in the picker
@@ -321,7 +322,7 @@ export async function updateLarkPrefs(_prev: LarkPrefsState, formData: FormData)
   // same reasoning as updateFullName in ho-so/actions.ts.
   const admin = createAdminClient();
   const { error } = await admin.from("profiles").update({ lark_prefs: prefs }).eq("id", profile.id);
-  if (error) return { error: `Không lưu được: ${error.message}` };
+  if (error) return { error: friendlyError("updateLarkPrefs", error, "Không lưu được cài đặt. Vui lòng thử lại.") };
 
   revalidatePath("/admin/lark");
   return { error: null, success: true };
@@ -372,7 +373,7 @@ export async function moveLarkDocument(
   try {
     await moveLarkFile(documentId, targetFolder, fileType, appKey);
   } catch (err) {
-    return { error: err instanceof Error ? err.message : "Không di chuyển được file." };
+    return { error: friendlyError("moveLarkDocument", err, "Không di chuyển được file. Vui lòng thử lại sau ít phút.") };
   }
 
   // Both ends of the move are now wrong in cache: the file left one folder
@@ -416,7 +417,7 @@ export async function deleteLarkDocument(
   try {
     await trashDocument({ documentId, fileType, title, appKey, originalParentToken: sourceFolder, deletedBy: profile.id });
   } catch (err) {
-    return { error: err instanceof Error ? err.message : "Không xoá được file." };
+    return { error: friendlyError("deleteLarkDocument", err, "Không xoá được file. Vui lòng thử lại sau ít phút.") };
   }
 
   await recordAuditLog({
@@ -447,7 +448,7 @@ export async function restoreLarkDocument(documentId: string, _prev: RestoreTras
   try {
     ({ restoredTo } = await restoreDocument(documentId, row));
   } catch (err) {
-    return { error: err instanceof Error ? err.message : "Không khôi phục được file." };
+    return { error: friendlyError("restoreLarkDocument", err, "Không khôi phục được file. Vui lòng thử lại sau ít phút.") };
   }
 
   await recordAuditLog({
@@ -481,7 +482,7 @@ export async function permanentlyDeleteLarkDocument(documentId: string, _prev: P
   try {
     await permanentlyDelete(documentId, row.fileType, row.appKey);
   } catch (err) {
-    return { error: err instanceof Error ? err.message : "Không xoá vĩnh viễn được file." };
+    return { error: friendlyError("permanentlyDeleteLarkDocument", err, "Không xoá vĩnh viễn được file. Vui lòng thử lại sau ít phút.") };
   }
 
   await recordAuditLog({
@@ -519,7 +520,7 @@ export async function transferLarkDocumentOwner(
   try {
     await transferLarkFileOwner(documentId, email, fileType, appKey);
   } catch (err) {
-    return { error: err instanceof Error ? err.message : "Không chuyển được quyền sở hữu." };
+    return { error: friendlyError("transferLarkDocumentOwner", err, "Không chuyển được quyền sở hữu. Vui lòng thử lại sau ít phút.") };
   }
 
   await recordAuditLog({

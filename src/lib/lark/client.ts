@@ -1,5 +1,6 @@
 import "server-only";
 import { LARK_FILE_TYPE_LABELS, type LarkFileType } from "./fileTypes";
+import { UserFacingError } from "@/lib/errors";
 
 export type { LarkFileType } from "./fileTypes";
 export { LARK_FILE_TYPE_LABELS } from "./fileTypes";
@@ -276,7 +277,7 @@ export async function moveLarkFile(documentId: string, targetFolderToken: string
   });
   const data = await res.json();
   if (!res.ok || data.code !== 0) {
-    if (data.code === 1062501) throw new Error(OWNERSHIP_TRANSFERRED_HINT);
+    if (data.code === 1062501) throw new UserFacingError(OWNERSHIP_TRANSFERRED_HINT);
     throw new Error(`Không di chuyển được file: ${data.msg ?? res.statusText}`);
   }
 }
@@ -290,7 +291,7 @@ export async function deleteLarkFile(documentId: string, type: LarkFileType, app
   });
   const data = await res.json();
   if (!res.ok || data.code !== 0) {
-    if (data.code === 1062501) throw new Error(OWNERSHIP_TRANSFERRED_HINT);
+    if (data.code === 1062501) throw new UserFacingError(OWNERSHIP_TRANSFERRED_HINT);
     throw new Error(`Không xoá được file: ${data.msg ?? res.statusText}`);
   }
 }

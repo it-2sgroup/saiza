@@ -4,6 +4,7 @@ import { getAppRootFolderToken, getLarkApps } from "@/lib/lark/client";
 import { listFolderContentsCached } from "@/lib/lark/driveCache";
 import { addFoldersToCache } from "@/lib/lark/folders";
 import { getTrashFolderTokenIfExists } from "@/lib/lark/trash";
+import { friendlyError } from "@/lib/errors";
 
 // Folder browsing lives in a route handler rather than a Server Action on
 // purpose: Next.js serialises Server Action calls from the same client, so a
@@ -52,6 +53,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ folderToken, items });
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Không đọc được thư mục." }, { status: 500 });
+    const message = friendlyError("GET /api/lark/drive", err, "Không đọc được thư mục. Vui lòng thử lại sau ít phút.");
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

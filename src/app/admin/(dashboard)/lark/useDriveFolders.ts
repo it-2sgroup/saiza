@@ -155,13 +155,22 @@ export function useDriveFolders(appKey: string, cacheScope: string, initialItems
         try {
           const res = await fetch(`/api/lark/drive?${params}`, { cache: "no-store" });
           const body = (await res.json()) as { items?: LarkDriveItem[]; error?: string };
-          if (!res.ok || body.error) throw new Error(body.error ?? "Không đọc được thư mục.");
+          // `body.error` is already a hand-written Vietnamese message (the
+          // route sanitizes it via friendlyError) — safe to show as-is. A
+          // non-ok response with no parseable `error` and any exception from
+          // the try block itself (network down, response wasn't JSON) are
+          // both genuine unknowns, so those get one fixed fallback rather
+          // than a raw browser error like "Failed to fetch".
+          if (!res.ok || body.error) {
+            if (!silent) setError(body.error ?? "Không đọc được thư mục. Kiểm tra kết nối mạng và thử lại.");
+            return;
+          }
 
           const items = body.items ?? [];
           setCache((prev) => ({ ...prev, [key]: { items, fetchedAt: Date.now() } }));
           if (!silent) setError(null);
-        } catch (err) {
-          if (!silent) setError(err instanceof Error ? err.message : "Không đọc được thư mục.");
+        } catch {
+          if (!silent) setError("Không đọc được thư mục. Kiểm tra kết nối mạng và thử lại.");
         } finally {
           inFlight.current.delete(key);
           setPending((p) => {
