@@ -59,7 +59,14 @@ export async function listLarkFolderTree(rootToken: string, orgKey = "", appKey:
     .maybeSingle();
 
   if (!error && cached && Date.now() - new Date(cached.updated_at).getTime() < CACHE_TTL_MS) {
-    return cached.tree as FolderOption[];
+    // Re-filter even on a cache hit, not just inside the crawl below — a row
+    // written before the trash folder existed (or before this exclusion
+    // logic did) would otherwise keep serving it as a normal folder for up
+    // to CACHE_TTL_MS after the fact, since a cache hit skips the crawl
+    // entirely.
+    const trashFolderToken = await getTrashFolderTokenIfExists(appKey);
+    const tree = cached.tree as FolderOption[];
+    return trashFolderToken ? tree.filter((f) => f.token !== trashFolderToken) : tree;
   }
 
   const tree = await crawlLarkFolderTree(rootToken, appKey);
