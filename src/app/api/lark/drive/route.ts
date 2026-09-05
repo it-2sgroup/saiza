@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import { getCurrentProfile } from "@/lib/supabase/profile";
+import { canAccessLark } from "@/lib/admin/permissions";
 import { getAppRootFolderToken, getLarkApps } from "@/lib/lark/client";
 import { listFolderContentsCached } from "@/lib/lark/driveCache";
 import { addFoldersToCache } from "@/lib/lark/folders";
-import { getTrashFolderTokenIfExists, TRASH_FOLDER_NAME } from "@/lib/lark/trash";
+import {
+  getTrashFolderTokenIfExists,
+  TRASH_FOLDER_NAME,
+} from "@/lib/lark/trash";
 import { friendlyError } from "@/lib/errors";
 
 // Folder browsing lives in a route handler rather than a Server Action on
@@ -12,11 +16,21 @@ import { friendlyError } from "@/lib/errors";
 // Plain fetches run in parallel, which is what makes hover-prefetch useful.
 export async function GET(request: Request) {
   const profile = await getCurrentProfile();
-  if (!profile) return NextResponse.json({ error: "Bạn cần đăng nhập lại." }, { status: 401 });
+  if (!profile)
+    return NextResponse.json(
+      { error: "Bạn cần đăng nhập lại." },
+      { status: 401 },
+    );
+  if (!(await canAccessLark(profile.role)))
+    return NextResponse.json(
+      { error: "Bạn không có quyền dùng chức năng này." },
+      { status: 403 },
+    );
 
   const url = new URL(request.url);
   const appKey = url.searchParams.get("app");
-  if (!appKey) return NextResponse.json({ error: "Thiếu app." }, { status: 400 });
+  if (!appKey)
+    return NextResponse.json({ error: "Thiếu app." }, { status: 400 });
   // getLarkAppConfig silently falls back to the first configured app on an
   // unknown key — fine for an internal default, not fine for a client-
   // supplied value that should just be rejected if it isn't real.
@@ -33,14 +47,18 @@ export async function GET(request: Request) {
 
   try {
     const folderToken = requested || (await getAppRootFolderToken(appKey));
-    const rawItems = await listFolderContentsCached(folderToken, appKey, { warmChildren: !isPrefetch });
+    const rawItems = await listFolderContentsCached(folderToken, appKey, {
+      warmChildren: !isPrefetch,
+    });
 
     // The trash folder is implementation detail — it must never surface in
     // ordinary Drive browsing (only the dedicated Trash tab reads it).
     // Matched by tracked token AND by name — see TRASH_FOLDER_NAME's doc
     // comment on why an untracked duplicate must also be caught here.
     const trashFolderToken = await getTrashFolderTokenIfExists(appKey);
-    const items = rawItems.filter((i) => i.token !== trashFolderToken && i.name !== TRASH_FOLDER_NAME);
+    const items = rawItems.filter(
+      (i) => i.token !== trashFolderToken && i.name !== TRASH_FOLDER_NAME,
+    );
 
     // Write-through into lark_folder_cache — otherwise pre-existing folders
     // (created outside this app, or missed by the last BFS crawl) only ever
@@ -55,7 +73,11 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ folderToken, items });
   } catch (err) {
-    const message = friendlyError("GET /api/lark/drive", err, "Không đọc được thư mục. Vui lòng thử lại sau ít phút.");
+    const message = friendlyError(
+      "GET /api/lark/drive",
+      err,
+      "Không đọc được thư mục. Vui lòng thử lại sau ít phút.",
+    );
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

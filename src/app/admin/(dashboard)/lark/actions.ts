@@ -13,16 +13,33 @@ import {
   getLarkApps,
   type LarkFileType,
 } from "@/lib/lark/client";
-import { parseShareRows, applyShareRows, type ShareResult } from "@/lib/lark/shareRows";
+import {
+  parseShareRows,
+  applyShareRows,
+  type ShareResult,
+} from "@/lib/lark/shareRows";
 import { resolveRootFolderToken } from "@/lib/lark/orgFolders";
 import { getOrCreateDepartmentFolder } from "@/lib/lark/folderRegistry";
 import { addFolderToCache } from "@/lib/lark/folders";
-import { addItemToDriveCache, invalidateDriveCache } from "@/lib/lark/driveCache";
-import { trashDocument, restoreDocument, permanentlyDelete, getTrashRow } from "@/lib/lark/trash";
+import {
+  addItemToDriveCache,
+  invalidateDriveCache,
+} from "@/lib/lark/driveCache";
+import {
+  trashDocument,
+  restoreDocument,
+  permanentlyDelete,
+  getTrashRow,
+} from "@/lib/lark/trash";
 import { friendlyError } from "@/lib/errors";
 
-import { buildFileName, buildFolderName, sanitizeNameSegment, MAX_FILENAME_LENGTH } from "@/lib/admin/fileNaming";
-import { canManageAnyLarkDoc } from "@/lib/admin/permissions";
+import {
+  buildFileName,
+  buildFolderName,
+  sanitizeNameSegment,
+  MAX_FILENAME_LENGTH,
+} from "@/lib/admin/fileNaming";
+import { canAccessLark, canManageAnyLarkDoc } from "@/lib/admin/permissions";
 import { VERSION_OPTIONS } from "@/lib/admin/docTypes";
 import { getConfigLists } from "@/lib/admin/configLists";
 import type { LarkPrefs } from "@/lib/lark/prefs";
@@ -34,7 +51,10 @@ const VALID_FILE_TYPES: LarkFileType[] = ["docx", "sheet", "bitable", "folder"];
 // wrong one fails outright since apps have separate Drive spaces. Rows
 // created before this feature existed never recorded an appKey, so they
 // default to the original (first-configured) app.
-async function resolveDocAppKey(admin: ReturnType<typeof createAdminClient>, documentId: string): Promise<string> {
+async function resolveDocAppKey(
+  admin: ReturnType<typeof createAdminClient>,
+  documentId: string,
+): Promise<string> {
   const { data } = await admin
     .from("audit_log")
     .select("metadata")
@@ -50,7 +70,10 @@ async function resolveDocAppKey(admin: ReturnType<typeof createAdminClient>, doc
 // Needed so a move/delete can drop the *source* folder's cached listing —
 // otherwise that folder keeps serving a listing containing a file that isn't
 // in it anymore, which no amount of TTL tuning makes correct.
-async function resolveDocFolder(admin: ReturnType<typeof createAdminClient>, documentId: string): Promise<string | null> {
+async function resolveDocFolder(
+  admin: ReturnType<typeof createAdminClient>,
+  documentId: string,
+): Promise<string | null> {
   const { data } = await admin
     .from("audit_log")
     .select("metadata")
@@ -59,20 +82,28 @@ async function resolveDocFolder(admin: ReturnType<typeof createAdminClient>, doc
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
-  return (data?.metadata as { targetFolder?: string | null } | null)?.targetFolder ?? null;
+  return (
+    (data?.metadata as { targetFolder?: string | null } | null)?.targetFolder ??
+    null
+  );
 }
 
 // Best-effort — used only to snapshot a human-readable name into lark_trash,
 // never for anything security-relevant. Missing/renamed-in-Lark just means
 // the trash list shows a slightly stale or generic title.
-async function resolveDocTitle(admin: ReturnType<typeof createAdminClient>, documentId: string): Promise<string> {
+async function resolveDocTitle(
+  admin: ReturnType<typeof createAdminClient>,
+  documentId: string,
+): Promise<string> {
   const { data } = await admin
     .from("audit_log")
     .select("metadata")
     .eq("action", "lark_doc_created")
     .eq("target_id", documentId)
     .maybeSingle();
-  return (data?.metadata as { title?: string } | null)?.title ?? "(không có tiêu đề)";
+  return (
+    (data?.metadata as { title?: string } | null)?.title ?? "(không có tiêu đề)"
+  );
 }
 
 // Move/delete/transfer-ownership all gate on the same rule: the person who
@@ -96,7 +127,8 @@ async function checkDocPermission(
     .maybeSingle();
 
   const isOwner = creationRow?.actor_id === profile.id;
-  if (!isOwner && !(await canManageAnyLarkDoc(profile.role))) return deniedMessage;
+  if (!isOwner && !(await canManageAnyLarkDoc(profile.role)))
+    return deniedMessage;
   return null;
 }
 
@@ -107,32 +139,50 @@ export type LarkDocFormState = {
   shareResults?: ShareResult[];
 };
 
-export async function createLarkDocument(_prev: LarkDocFormState, formData: FormData): Promise<LarkDocFormState> {
+export async function createLarkDocument(
+  _prev: LarkDocFormState,
+  formData: FormData,
+): Promise<LarkDocFormState> {
   const profile = await getCurrentProfile();
   if (!profile) return { error: "Bạn cần đăng nhập lại." };
+  if (!(await canAccessLark(profile.role)))
+    return { error: "Bạn không có quyền dùng chức năng này." };
 
-  const fileType = String(formData.get("fileType") ?? "docx").trim() as LarkFileType;
-  if (!VALID_FILE_TYPES.includes(fileType)) return { error: "Loại file không hợp lệ." };
-  const targetFolder = String(formData.get("targetFolder") ?? "").trim() || undefined;
+  const fileType = String(
+    formData.get("fileType") ?? "docx",
+  ).trim() as LarkFileType;
+  if (!VALID_FILE_TYPES.includes(fileType))
+    return { error: "Loại file không hợp lệ." };
+  const targetFolder =
+    String(formData.get("targetFolder") ?? "").trim() || undefined;
 
   const org = String(formData.get("org") ?? "").trim();
   const content = String(formData.get("content") ?? "").trim();
-  if (!content) return { error: fileType === "folder" ? "Nhập tên thư mục." : "Nhập nội dung/dự án." };
+  if (!content)
+    return {
+      error:
+        fileType === "folder" ? "Nhập tên thư mục." : "Nhập nội dung/dự án.",
+    };
   // buildFileName/buildFolderName strip characters unsafe for a Lark title
   // (see UNSAFE_CHARS in fileNaming.ts) — content that's non-empty here but
   // made up ONLY of those characters (e.g. "///") would otherwise collapse
   // to "" inside the title and silently vanish instead of erroring.
   if (!sanitizeNameSegment(content)) {
-    return { error: 'Nội dung chỉ chứa ký tự không hợp lệ (\\ / : * ? " < > |). Nhập lại.' };
+    return {
+      error:
+        'Nội dung chỉ chứa ký tự không hợp lệ (\\ / : * ? " < > |). Nhập lại.',
+    };
   }
   const { departments, orgCodes } = await getConfigLists();
-  if (org && !orgCodes.some((o) => o.code === org)) return { error: "Mã tổ chức không hợp lệ." };
+  if (org && !orgCodes.some((o) => o.code === org))
+    return { error: "Mã tổ chức không hợp lệ." };
 
   const includeDept = formData.get("includeDept") === "on";
   let department: string | null = null;
   if (includeDept) {
     department = String(formData.get("department") ?? "").trim();
-    if (!department || !departments.some((d) => d.code === department)) return { error: "Chọn phòng ban." };
+    if (!department || !departments.some((d) => d.code === department))
+      return { error: "Chọn phòng ban." };
   }
 
   let title: string;
@@ -150,7 +200,9 @@ export async function createLarkDocument(_prev: LarkDocFormState, formData: Form
       // Unlike docTypeRaw's preset options (DOC_TYPES, already safe), a
       // custom "Khác" value is free text and needs the same sanitizing as
       // `content` — otherwise a stray "/" here lands unescaped in the title.
-      const docTypeOther = sanitizeNameSegment(String(formData.get("docTypeOther") ?? ""));
+      const docTypeOther = sanitizeNameSegment(
+        String(formData.get("docTypeOther") ?? ""),
+      );
       docType = docTypeRaw === "Khác" ? docTypeOther : docTypeRaw;
       if (!docType) return { error: "Chọn hoặc nhập loại tài liệu." };
     }
@@ -167,12 +219,22 @@ export async function createLarkDocument(_prev: LarkDocFormState, formData: Form
       if (!version) return { error: "Chọn version." };
     }
 
-    title = buildFileName({ org: org || null, department, docType, content, date, version, wip });
+    title = buildFileName({
+      org: org || null,
+      department,
+      docType,
+      content,
+      date,
+      version,
+      wip,
+    });
   }
   if (!title) return { error: "Nội dung/tên không hợp lệ để đặt tên file." };
 
   if (title.length > MAX_FILENAME_LENGTH) {
-    return { error: `Tên file dài ${title.length} ký tự, vượt giới hạn ${MAX_FILENAME_LENGTH}. Rút ngắn nội dung.` };
+    return {
+      error: `Tên file dài ${title.length} ký tự, vượt giới hạn ${MAX_FILENAME_LENGTH}. Rút ngắn nội dung.`,
+    };
   }
 
   const appKey = profile.lark_prefs.activeApp || getDefaultAppKey();
@@ -182,26 +244,48 @@ export async function createLarkDocument(_prev: LarkDocFormState, formData: Form
   // always dropping into the bare org root.
   const effectiveFolder =
     targetFolder ||
-    (department ? await getOrCreateDepartmentFolder(org, department, appKey) : undefined) ||
+    (department
+      ? await getOrCreateDepartmentFolder(org, department, appKey)
+      : undefined) ||
     resolveRootFolderToken(org || null, appKey);
 
   let documentId: string;
   let url: string;
   try {
-    ({ documentId, url } = await createLarkFile(fileType, title, effectiveFolder, appKey));
+    ({ documentId, url } = await createLarkFile(
+      fileType,
+      title,
+      effectiveFolder,
+      appKey,
+    ));
   } catch (err) {
-    return { error: friendlyError("createLarkDocument", err, "Không tạo được file. Vui lòng thử lại sau ít phút.") };
+    return {
+      error: friendlyError(
+        "createLarkDocument",
+        err,
+        "Không tạo được file. Vui lòng thử lại sau ít phút.",
+      ),
+    };
   }
 
   // Write-through: a manually-created subfolder should appear in the picker
   // right away instead of waiting for the next cache crawl.
   if (fileType === "folder" && effectiveFolder) {
-    await addFolderToCache(org || "", { token: documentId, name: title, parentToken: effectiveFolder }, appKey);
+    await addFolderToCache(
+      org || "",
+      { token: documentId, name: title, parentToken: effectiveFolder },
+      appKey,
+    );
   }
   // Same idea for the Drive tab's cached listing — otherwise a just-created
   // file/folder only shows up there once the (short) drive-cache TTL expires.
   if (effectiveFolder) {
-    await addItemToDriveCache(effectiveFolder, appKey, { token: documentId, name: title, type: fileType, url });
+    await addItemToDriveCache(effectiveFolder, appKey, {
+      token: documentId,
+      name: title,
+      type: fileType,
+      url,
+    });
   }
 
   // Transferring ownership makes the creator the real Lark owner instead of a
@@ -222,7 +306,13 @@ export async function createLarkDocument(_prev: LarkDocFormState, formData: Form
       if (wantsOwnershipTransfer) {
         await transferLarkFileOwner(documentId, email, fileType, appKey);
       } else {
-        await shareLarkDocByEmail(documentId, email, "full_access", fileType, appKey);
+        await shareLarkDocByEmail(
+          documentId,
+          email,
+          "full_access",
+          fileType,
+          appKey,
+        );
       }
       shared = true;
     } catch {
@@ -230,8 +320,15 @@ export async function createLarkDocument(_prev: LarkDocFormState, formData: Form
     }
   }
 
-  const shareRows = parseShareRows(String(formData.get("shares") ?? "[]")).filter((r) => r.email !== email);
-  const shareResults = await applyShareRows(documentId, shareRows, fileType, appKey);
+  const shareRows = parseShareRows(
+    String(formData.get("shares") ?? "[]"),
+  ).filter((r) => r.email !== email);
+  const shareResults = await applyShareRows(
+    documentId,
+    shareRows,
+    fileType,
+    appKey,
+  );
 
   await recordAuditLog({
     actorId: profile.id,
@@ -259,7 +356,10 @@ export async function createLarkDocument(_prev: LarkDocFormState, formData: Form
   return { error: null, url, title, shareResults };
 }
 
-export type ShareExistingState = { error: string | null; shareResults?: ShareResult[] };
+export type ShareExistingState = {
+  error: string | null;
+  shareResults?: ShareResult[];
+};
 
 export async function shareExistingDocument(
   documentId: string,
@@ -269,12 +369,19 @@ export async function shareExistingDocument(
 ): Promise<ShareExistingState> {
   const profile = await getCurrentProfile();
   if (!profile) return { error: "Bạn cần đăng nhập lại." };
+  if (!(await canAccessLark(profile.role)))
+    return { error: "Bạn không có quyền dùng chức năng này." };
 
   const rows = parseShareRows(String(formData.get("shares") ?? "[]"));
   if (rows.length === 0) return { error: "Chọn ít nhất một người để chia sẻ." };
 
   const admin = createAdminClient();
-  const permissionError = await checkDocPermission(admin, profile, documentId, "Bạn không có quyền chia sẻ file này.");
+  const permissionError = await checkDocPermission(
+    admin,
+    profile,
+    documentId,
+    "Bạn không có quyền chia sẻ file này.",
+  );
   if (permissionError) return { error: permissionError };
 
   const appKey = await resolveDocAppKey(admin, documentId);
@@ -294,19 +401,28 @@ export async function shareExistingDocument(
 
 export type LarkPrefsState = { error: string | null; success?: boolean };
 
-export async function updateLarkPrefs(_prev: LarkPrefsState, formData: FormData): Promise<LarkPrefsState> {
+export async function updateLarkPrefs(
+  _prev: LarkPrefsState,
+  formData: FormData,
+): Promise<LarkPrefsState> {
   const profile = await getCurrentProfile();
   if (!profile) return { error: "Bạn cần đăng nhập lại." };
+  if (!(await canAccessLark(profile.role)))
+    return { error: "Bạn không có quyền dùng chức năng này." };
 
   const org = String(formData.get("defaultOrg") ?? "").trim();
   const version = String(formData.get("defaultVersion") ?? "").trim();
   const department = String(formData.get("defaultDepartment") ?? "").trim();
   const docType = String(formData.get("defaultDocType") ?? "").trim();
   const { departments, orgCodes, docTypes } = await getConfigLists();
-  if (org && !orgCodes.some((o) => o.code === org)) return { error: "Mã tổ chức không hợp lệ." };
-  if (version && !(VERSION_OPTIONS as readonly string[]).includes(version)) return { error: "Version không hợp lệ." };
-  if (department && !departments.some((d) => d.code === department)) return { error: "Phòng ban không hợp lệ." };
-  if (docType && !docTypes.some((d) => d.code === docType)) return { error: "Loại tài liệu không hợp lệ." };
+  if (org && !orgCodes.some((o) => o.code === org))
+    return { error: "Mã tổ chức không hợp lệ." };
+  if (version && !(VERSION_OPTIONS as readonly string[]).includes(version))
+    return { error: "Version không hợp lệ." };
+  if (department && !departments.some((d) => d.code === department))
+    return { error: "Phòng ban không hợp lệ." };
+  if (docType && !docTypes.some((d) => d.code === docType))
+    return { error: "Loại tài liệu không hợp lệ." };
 
   const prefs: LarkPrefs = {
     includeDept: formData.get("includeDept") === "on",
@@ -318,14 +434,26 @@ export async function updateLarkPrefs(_prev: LarkPrefsState, formData: FormData)
     ...(department ? { defaultDepartment: department } : {}),
     ...(docType ? { defaultDocType: docType } : {}),
     // Preserve the app switcher's selection — this form doesn't edit it.
-    ...(profile.lark_prefs.activeApp ? { activeApp: profile.lark_prefs.activeApp } : {}),
+    ...(profile.lark_prefs.activeApp
+      ? { activeApp: profile.lark_prefs.activeApp }
+      : {}),
   };
 
   // Service-role client, but hard-coded to only ever touch `lark_prefs` —
   // same reasoning as updateFullName in ho-so/actions.ts.
   const admin = createAdminClient();
-  const { error } = await admin.from("profiles").update({ lark_prefs: prefs }).eq("id", profile.id);
-  if (error) return { error: friendlyError("updateLarkPrefs", error, "Không lưu được cài đặt. Vui lòng thử lại.") };
+  const { error } = await admin
+    .from("profiles")
+    .update({ lark_prefs: prefs })
+    .eq("id", profile.id);
+  if (error)
+    return {
+      error: friendlyError(
+        "updateLarkPrefs",
+        error,
+        "Không lưu được cài đặt. Vui lòng thử lại.",
+      ),
+    };
 
   revalidatePath("/admin/lark");
   return { error: null, success: true };
@@ -336,6 +464,7 @@ export async function updateLarkPrefs(_prev: LarkPrefsState, formData: FormData)
 export async function switchLarkApp(appKey: string): Promise<void> {
   const profile = await getCurrentProfile();
   if (!profile) return;
+  if (!(await canAccessLark(profile.role))) return;
   // An unvalidated value here would persist into lark_prefs.activeApp and
   // later flow into audit_log.metadata.appKey on the next file the user
   // creates — getLarkAppConfig silently falls back to the default app on an
@@ -362,12 +491,19 @@ export async function moveLarkDocument(
 ): Promise<MoveLarkDocState> {
   const profile = await getCurrentProfile();
   if (!profile) return { error: "Bạn cần đăng nhập lại." };
+  if (!(await canAccessLark(profile.role)))
+    return { error: "Bạn không có quyền dùng chức năng này." };
 
   const targetFolder = String(formData.get("targetFolder") ?? "").trim();
   if (!targetFolder) return { error: "Chọn thư mục đích." };
 
   const admin = createAdminClient();
-  const permissionError = await checkDocPermission(admin, profile, documentId, "Bạn không có quyền di chuyển file này.");
+  const permissionError = await checkDocPermission(
+    admin,
+    profile,
+    documentId,
+    "Bạn không có quyền di chuyển file này.",
+  );
   if (permissionError) return { error: permissionError };
 
   const appKey = await resolveDocAppKey(admin, documentId);
@@ -376,7 +512,13 @@ export async function moveLarkDocument(
   try {
     await moveLarkFile(documentId, targetFolder, fileType, appKey);
   } catch (err) {
-    return { error: friendlyError("moveLarkDocument", err, "Không di chuyển được file. Vui lòng thử lại sau ít phút.") };
+    return {
+      error: friendlyError(
+        "moveLarkDocument",
+        err,
+        "Không di chuyển được file. Vui lòng thử lại sau ít phút.",
+      ),
+    };
   }
 
   // Both ends of the move are now wrong in cache: the file left one folder
@@ -408,9 +550,16 @@ export async function deleteLarkDocument(
 ): Promise<DeleteLarkDocState> {
   const profile = await getCurrentProfile();
   if (!profile) return { error: "Bạn cần đăng nhập lại." };
+  if (!(await canAccessLark(profile.role)))
+    return { error: "Bạn không có quyền dùng chức năng này." };
 
   const admin = createAdminClient();
-  const permissionError = await checkDocPermission(admin, profile, documentId, "Bạn không có quyền xoá file này.");
+  const permissionError = await checkDocPermission(
+    admin,
+    profile,
+    documentId,
+    "Bạn không có quyền xoá file này.",
+  );
   if (permissionError) return { error: permissionError };
 
   const appKey = await resolveDocAppKey(admin, documentId);
@@ -418,9 +567,22 @@ export async function deleteLarkDocument(
   const title = await resolveDocTitle(admin, documentId);
 
   try {
-    await trashDocument({ documentId, fileType, title, appKey, originalParentToken: sourceFolder, deletedBy: profile.id });
+    await trashDocument({
+      documentId,
+      fileType,
+      title,
+      appKey,
+      originalParentToken: sourceFolder,
+      deletedBy: profile.id,
+    });
   } catch (err) {
-    return { error: friendlyError("deleteLarkDocument", err, "Không xoá được file. Vui lòng thử lại sau ít phút.") };
+    return {
+      error: friendlyError(
+        "deleteLarkDocument",
+        err,
+        "Không xoá được file. Vui lòng thử lại sau ít phút.",
+      ),
+    };
   }
 
   await recordAuditLog({
@@ -435,23 +597,39 @@ export async function deleteLarkDocument(
   return { error: null, done: true };
 }
 
-export type RestoreTrashState = { error: string | null; done?: boolean; restoredTo?: "original" | "root" };
+export type RestoreTrashState = {
+  error: string | null;
+  done?: boolean;
+  restoredTo?: "original" | "root";
+};
 
-export async function restoreLarkDocument(documentId: string, _prev: RestoreTrashState): Promise<RestoreTrashState> {
+export async function restoreLarkDocument(
+  documentId: string,
+  _prev: RestoreTrashState,
+): Promise<RestoreTrashState> {
   const profile = await getCurrentProfile();
   if (!profile) return { error: "Bạn cần đăng nhập lại." };
+  if (!(await canAccessLark(profile.role)))
+    return { error: "Bạn không có quyền dùng chức năng này." };
 
   const row = await getTrashRow(documentId);
   if (!row) return { error: "File này không còn trong thùng rác." };
 
   const isDeleter = row.deletedBy === profile.id;
-  if (!isDeleter && !(await canManageAnyLarkDoc(profile.role))) return { error: "Bạn không có quyền khôi phục file này." };
+  if (!isDeleter && !(await canManageAnyLarkDoc(profile.role)))
+    return { error: "Bạn không có quyền khôi phục file này." };
 
   let restoredTo: "original" | "root";
   try {
     ({ restoredTo } = await restoreDocument(documentId, row));
   } catch (err) {
-    return { error: friendlyError("restoreLarkDocument", err, "Không khôi phục được file. Vui lòng thử lại sau ít phút.") };
+    return {
+      error: friendlyError(
+        "restoreLarkDocument",
+        err,
+        "Không khôi phục được file. Vui lòng thử lại sau ít phút.",
+      ),
+    };
   }
 
   await recordAuditLog({
@@ -472,20 +650,32 @@ export type PermanentDeleteState = { error: string | null; done?: boolean };
 // Trash tab (either the user clears their own item early, or an admin does,
 // or the 30-day sweep in purgeExpiredTrash calls permanentlyDelete directly
 // without going through this action).
-export async function permanentlyDeleteLarkDocument(documentId: string, _prev: PermanentDeleteState): Promise<PermanentDeleteState> {
+export async function permanentlyDeleteLarkDocument(
+  documentId: string,
+  _prev: PermanentDeleteState,
+): Promise<PermanentDeleteState> {
   const profile = await getCurrentProfile();
   if (!profile) return { error: "Bạn cần đăng nhập lại." };
+  if (!(await canAccessLark(profile.role)))
+    return { error: "Bạn không có quyền dùng chức năng này." };
 
   const row = await getTrashRow(documentId);
   if (!row) return { error: "File này không còn trong thùng rác." };
 
   const isDeleter = row.deletedBy === profile.id;
-  if (!isDeleter && !(await canManageAnyLarkDoc(profile.role))) return { error: "Bạn không có quyền xoá vĩnh viễn file này." };
+  if (!isDeleter && !(await canManageAnyLarkDoc(profile.role)))
+    return { error: "Bạn không có quyền xoá vĩnh viễn file này." };
 
   try {
     await permanentlyDelete(documentId, row.fileType, row.appKey);
   } catch (err) {
-    return { error: friendlyError("permanentlyDeleteLarkDocument", err, "Không xoá vĩnh viễn được file. Vui lòng thử lại sau ít phút.") };
+    return {
+      error: friendlyError(
+        "permanentlyDeleteLarkDocument",
+        err,
+        "Không xoá vĩnh viễn được file. Vui lòng thử lại sau ít phút.",
+      ),
+    };
   }
 
   await recordAuditLog({
@@ -510,12 +700,19 @@ export async function transferLarkDocumentOwner(
 ): Promise<TransferOwnerState> {
   const profile = await getCurrentProfile();
   if (!profile) return { error: "Bạn cần đăng nhập lại." };
+  if (!(await canAccessLark(profile.role)))
+    return { error: "Bạn không có quyền dùng chức năng này." };
 
   const email = String(formData.get("email") ?? "").trim();
   if (!email) return { error: "Nhập email người nhận." };
 
   const admin = createAdminClient();
-  const permissionError = await checkDocPermission(admin, profile, documentId, "Bạn không có quyền chuyển quyền sở hữu file này.");
+  const permissionError = await checkDocPermission(
+    admin,
+    profile,
+    documentId,
+    "Bạn không có quyền chuyển quyền sở hữu file này.",
+  );
   if (permissionError) return { error: permissionError };
 
   const appKey = await resolveDocAppKey(admin, documentId);
@@ -523,7 +720,13 @@ export async function transferLarkDocumentOwner(
   try {
     await transferLarkFileOwner(documentId, email, fileType, appKey);
   } catch (err) {
-    return { error: friendlyError("transferLarkDocumentOwner", err, "Không chuyển được quyền sở hữu. Vui lòng thử lại sau ít phút.") };
+    return {
+      error: friendlyError(
+        "transferLarkDocumentOwner",
+        err,
+        "Không chuyển được quyền sở hữu. Vui lòng thử lại sau ít phút.",
+      ),
+    };
   }
 
   await recordAuditLog({

@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { resolveRole, resolveRoleLabel, type RoleOption } from "./roleCapabilities";
+import {
+  resolveRole,
+  resolveRoleLabel,
+  type RoleOption,
+} from "./roleCapabilities";
 
 // permissions.ts itself calls getRoles() (server-only, hits Supabase) — the
 // actual capability logic worth unit-testing is resolveRole/resolveRoleLabel,
@@ -11,7 +15,9 @@ const ROLES: RoleOption[] = [
     isSuperAdmin: true,
     canManageContent: true,
     canDraftContent: true,
+    canAccessLark: true,
     canManageLarkOrgWide: true,
+    canViewLarkStats: true,
     canViewInbox: true,
     canManageStaff: true,
   },
@@ -21,7 +27,9 @@ const ROLES: RoleOption[] = [
     isSuperAdmin: false,
     canManageContent: true,
     canDraftContent: true,
+    canAccessLark: true,
     canManageLarkOrgWide: false,
+    canViewLarkStats: false,
     canViewInbox: true,
     canManageStaff: false,
   },
@@ -31,7 +39,9 @@ const ROLES: RoleOption[] = [
     isSuperAdmin: false,
     canManageContent: false,
     canDraftContent: true,
+    canAccessLark: true,
     canManageLarkOrgWide: false,
+    canViewLarkStats: false,
     canViewInbox: false,
     canManageStaff: false,
   },
@@ -39,15 +49,27 @@ const ROLES: RoleOption[] = [
 
 describe("resolveRole", () => {
   it("canManageContent: admin and editor only", () => {
-    expect(ROLES.filter((r) => resolveRole(r.code, ROLES).canManageContent).map((r) => r.code)).toEqual(["admin", "editor"]);
+    expect(
+      ROLES.filter((r) => resolveRole(r.code, ROLES).canManageContent).map(
+        (r) => r.code,
+      ),
+    ).toEqual(["admin", "editor"]);
   });
 
   it("canViewInbox: admin and editor only", () => {
-    expect(ROLES.filter((r) => resolveRole(r.code, ROLES).canViewInbox).map((r) => r.code)).toEqual(["admin", "editor"]);
+    expect(
+      ROLES.filter((r) => resolveRole(r.code, ROLES).canViewInbox).map(
+        (r) => r.code,
+      ),
+    ).toEqual(["admin", "editor"]);
   });
 
   it("canManageStaff: admin only", () => {
-    expect(ROLES.filter((r) => resolveRole(r.code, ROLES).canManageStaff).map((r) => r.code)).toEqual(["admin"]);
+    expect(
+      ROLES.filter((r) => resolveRole(r.code, ROLES).canManageStaff).map(
+        (r) => r.code,
+      ),
+    ).toEqual(["admin"]);
   });
 
   it("canManageLarkOrgWide: admin only — deliberately stricter than canManageContent", () => {
@@ -66,6 +88,7 @@ describe("resolveRole", () => {
   });
 
   it("every seeded role has a label", () => {
-    for (const role of ROLES) expect(resolveRoleLabel(role.code, ROLES)).toBeTruthy();
+    for (const role of ROLES)
+      expect(resolveRoleLabel(role.code, ROLES)).toBeTruthy();
   });
 });

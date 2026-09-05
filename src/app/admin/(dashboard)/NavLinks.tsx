@@ -85,7 +85,36 @@ const ICONS = {
 
 export type NavIconName = keyof typeof ICONS;
 
-export type NavItem = { href: string; label: string; icon: NavIconName };
+// locked = visible but not clickable, because the viewer's role lacks the
+// capability that tab needs — deliberately NOT omitted from the list, so a
+// role change is discoverable ("this exists, ask an admin") instead of
+// looking like the feature doesn't exist at all.
+export type NavItem = {
+  href: string;
+  label: string;
+  icon: NavIconName;
+  locked?: boolean;
+};
+
+function LockIcon() {
+  return (
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="flex-shrink-0"
+      aria-hidden="true"
+    >
+      <rect x="4" y="11" width="16" height="10" rx="2" />
+      <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+    </svg>
+  );
+}
 
 function NavIcon({ name }: { name: NavIconName }) {
   return (
@@ -106,13 +135,59 @@ function NavIcon({ name }: { name: NavIconName }) {
   );
 }
 
-export function NavLinks({ items, collapsed = false }: { items: NavItem[]; collapsed?: boolean }) {
+export function NavLinks({
+  items,
+  collapsed = false,
+}: {
+  items: NavItem[];
+  collapsed?: boolean;
+}) {
   const pathname = usePathname();
 
   return (
     <nav className="flex flex-col gap-1">
       {items.map((item) => {
-        const active = item.href === "/admin" ? pathname === "/admin" : pathname.startsWith(item.href);
+        const active =
+          item.href === "/admin"
+            ? pathname === "/admin"
+            : pathname.startsWith(item.href);
+        const tooltipText = item.locked
+          ? `${item.label} (chưa được cấp quyền)`
+          : item.label;
+
+        if (item.locked) {
+          return (
+            <div key={item.href} className="group relative">
+              <span
+                aria-disabled="true"
+                aria-label={collapsed ? tooltipText : undefined}
+                title={
+                  !collapsed
+                    ? "Bạn chưa được cấp quyền truy cập mục này."
+                    : undefined
+                }
+                className={`flex cursor-not-allowed items-center gap-2.5 rounded-full border-l-[3px] border-transparent py-2.5 text-sm font-medium text-ink-2/40 ${
+                  collapsed ? "justify-center px-2.5" : "px-3.5"
+                }`}
+              >
+                <NavIcon name={item.icon} />
+                {!collapsed && (
+                  <span className="flex flex-1 items-center justify-between gap-2">
+                    {item.label}
+                    <LockIcon />
+                  </span>
+                )}
+                {collapsed && <LockIcon />}
+              </span>
+              {collapsed && (
+                <span className="pointer-events-none absolute top-1/2 left-full z-50 ml-2 -translate-y-1/2 rounded-md bg-ink px-2.5 py-1.5 text-xs font-medium whitespace-nowrap text-white opacity-0 shadow-lg transition-opacity duration-200 group-hover:opacity-100">
+                  {tooltipText}
+                </span>
+              )}
+            </div>
+          );
+        }
+
         return (
           <div key={item.href} className="group relative">
             <Link

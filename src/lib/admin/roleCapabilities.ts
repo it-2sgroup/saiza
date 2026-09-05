@@ -8,7 +8,9 @@ export type RoleOption = {
   isSuperAdmin: boolean;
   canManageContent: boolean;
   canDraftContent: boolean;
+  canAccessLark: boolean;
   canManageLarkOrgWide: boolean;
+  canViewLarkStats: boolean;
   canViewInbox: boolean;
   canManageStaff: boolean;
 };
@@ -21,17 +23,25 @@ const NONE: Omit<RoleOption, "code" | "label"> = {
   isSuperAdmin: false,
   canManageContent: false,
   canDraftContent: false,
+  canAccessLark: false,
   canManageLarkOrgWide: false,
+  canViewLarkStats: false,
   canViewInbox: false,
   canManageStaff: false,
 };
 
-export function resolveRole(code: string | null | undefined, roles: RoleOption[]): RoleOption {
+export function resolveRole(
+  code: string | null | undefined,
+  roles: RoleOption[],
+): RoleOption {
   const found = code ? roles.find((r) => r.code === code) : undefined;
   return found ?? { code: code ?? "", label: code ?? "(chưa gán)", ...NONE };
 }
 
-export function resolveRoleLabel(code: string | null | undefined, roles: RoleOption[]): string | null {
+export function resolveRoleLabel(
+  code: string | null | undefined,
+  roles: RoleOption[],
+): string | null {
   if (!code) return null;
   return roles.find((r) => r.code === code)?.label ?? code;
 }

@@ -33,6 +33,28 @@ export async function canManageAnyLarkDoc(role: string): Promise<boolean> {
   return resolveRole(role, roles).canManageLarkOrgWide;
 }
 
+// Base gate for the whole "Tạo file Lark" feature — create files, browse
+// Drive, manage files this role's holder created themselves. Previously
+// nothing checked this at all (any logged-in profile could call every Lark
+// Server Action), which is exactly the gap that made a "this employee should
+// ONLY create Lark files" role impossible to express. Deliberately separate
+// from canManageLarkOrgWide (acting on files owned by someone else) and
+// canViewLarkStats (company-wide analytics) — a role can have any one of
+// these three without the others.
+export async function canAccessLark(role: string): Promise<boolean> {
+  const roles = await getRoles();
+  return resolveRole(role, roles).canAccessLark;
+}
+
+// The "Thống kê" tab and the company-wide rows/counts on "Tổng quan" — used
+// to piggyback on canManageStaff, which conflated "can administer staff
+// accounts" with "can see company-wide Lark stats". Split into its own
+// capability so a role can have either without the other.
+export async function canViewLarkStats(role: string): Promise<boolean> {
+  const roles = await getRoles();
+  return resolveRole(role, roles).canViewLarkStats;
+}
+
 export async function canViewInbox(role: string): Promise<boolean> {
   const roles = await getRoles();
   return resolveRole(role, roles).canViewInbox;

@@ -1,6 +1,10 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { resolveRole, resolveRoleLabel, type RoleOption } from "./roleCapabilities";
+import {
+  resolveRole,
+  resolveRoleLabel,
+  type RoleOption,
+} from "./roleCapabilities";
 
 export type { RoleOption };
 export { resolveRole, resolveRoleLabel };
@@ -15,7 +19,9 @@ const FALLBACK: RoleOption[] = [
     isSuperAdmin: true,
     canManageContent: true,
     canDraftContent: true,
+    canAccessLark: true,
     canManageLarkOrgWide: true,
+    canViewLarkStats: true,
     canViewInbox: true,
     canManageStaff: true,
   },
@@ -25,7 +31,9 @@ const FALLBACK: RoleOption[] = [
     isSuperAdmin: false,
     canManageContent: true,
     canDraftContent: true,
+    canAccessLark: true,
     canManageLarkOrgWide: false,
+    canViewLarkStats: false,
     canViewInbox: true,
     canManageStaff: false,
   },
@@ -35,7 +43,9 @@ const FALLBACK: RoleOption[] = [
     isSuperAdmin: false,
     canManageContent: false,
     canDraftContent: true,
+    canAccessLark: true,
     canManageLarkOrgWide: false,
+    canViewLarkStats: false,
     canViewInbox: false,
     canManageStaff: false,
   },
@@ -47,7 +57,9 @@ type RoleRow = {
   is_super_admin: boolean;
   can_manage_content: boolean;
   can_draft_content: boolean;
+  can_access_lark: boolean;
   can_manage_lark_org_wide: boolean;
+  can_view_lark_stats: boolean;
   can_view_inbox: boolean;
   can_manage_staff: boolean;
 };
@@ -59,7 +71,9 @@ function fromRow(r: RoleRow): RoleOption {
     isSuperAdmin: r.is_super_admin,
     canManageContent: r.can_manage_content,
     canDraftContent: r.can_draft_content,
+    canAccessLark: r.can_access_lark,
     canManageLarkOrgWide: r.can_manage_lark_org_wide,
+    canViewLarkStats: r.can_view_lark_stats,
     canViewInbox: r.can_view_inbox,
     canManageStaff: r.can_manage_staff,
   };
@@ -71,7 +85,7 @@ export async function getRoles(): Promise<RoleOption[]> {
   const { data, error } = await admin
     .from("roles")
     .select(
-      "code, label, is_super_admin, can_manage_content, can_draft_content, can_manage_lark_org_wide, can_view_inbox, can_manage_staff",
+      "code, label, is_super_admin, can_manage_content, can_draft_content, can_access_lark, can_manage_lark_org_wide, can_view_lark_stats, can_view_inbox, can_manage_staff",
     )
     .order("sort_order");
   if (error || !data || data.length === 0) return FALLBACK;
@@ -84,7 +98,9 @@ export type RoleCapabilitiesInput = {
   isSuperAdmin: boolean;
   canManageContent: boolean;
   canDraftContent: boolean;
+  canAccessLark: boolean;
   canManageLarkOrgWide: boolean;
+  canViewLarkStats: boolean;
   canViewInbox: boolean;
   canManageStaff: boolean;
 };
@@ -94,21 +110,36 @@ function toRow(caps: RoleCapabilitiesInput) {
     is_super_admin: caps.isSuperAdmin,
     can_manage_content: caps.canManageContent,
     can_draft_content: caps.canDraftContent,
+    can_access_lark: caps.canAccessLark,
     can_manage_lark_org_wide: caps.canManageLarkOrgWide,
+    can_view_lark_stats: caps.canViewLarkStats,
     can_view_inbox: caps.canViewInbox,
     can_manage_staff: caps.canManageStaff,
   };
 }
 
-async function nextSortOrder(admin: ReturnType<typeof createAdminClient>): Promise<number> {
-  const { data } = await admin.from("roles").select("sort_order").order("sort_order", { ascending: false }).limit(1).maybeSingle();
+async function nextSortOrder(
+  admin: ReturnType<typeof createAdminClient>,
+): Promise<number> {
+  const { data } = await admin
+    .from("roles")
+    .select("sort_order")
+    .order("sort_order", { ascending: false })
+    .limit(1)
+    .maybeSingle();
   return (data?.sort_order ?? -1) + 1;
 }
 
-export async function addRole(code: string, label: string, caps: RoleCapabilitiesInput): Promise<RoleMutationState> {
+export async function addRole(
+  code: string,
+  label: string,
+  caps: RoleCapabilitiesInput,
+): Promise<RoleMutationState> {
   const admin = createAdminClient();
   const sortOrder = await nextSortOrder(admin);
-  const { error } = await admin.from("roles").insert({ code, label, sort_order: sortOrder, ...toRow(caps) });
+  const { error } = await admin
+    .from("roles")
+    .insert({ code, label, sort_order: sortOrder, ...toRow(caps) });
   if (error) {
     if (error.code === "23505") return { error: "Mã vai trò này đã tồn tại." };
     return { error: "Không thêm được. Vui lòng thử lại." };
@@ -116,7 +147,11 @@ export async function addRole(code: string, label: string, caps: RoleCapabilitie
   return { error: null, success: true };
 }
 
-export async function updateRole(code: string, label: string, caps: RoleCapabilitiesInput): Promise<RoleMutationState> {
+export async function updateRole(
+  code: string,
+  label: string,
+  caps: RoleCapabilitiesInput,
+): Promise<RoleMutationState> {
   const admin = createAdminClient();
   const { error } = await admin
     .from("roles")
@@ -133,7 +168,11 @@ export async function removeRole(code: string): Promise<RoleMutationState> {
   const admin = createAdminClient();
   const { error } = await admin.from("roles").delete().eq("code", code);
   if (error) {
-    if (error.code === "23503") return { error: "Còn nhân viên đang dùng vai trò này — đổi vai trò của họ trước." };
+    if (error.code === "23503")
+      return {
+        error:
+          "Còn nhân viên đang dùng vai trò này — đổi vai trò của họ trước.",
+      };
     return { error: "Không xoá được. Vui lòng thử lại." };
   }
   return { error: null, success: true };
