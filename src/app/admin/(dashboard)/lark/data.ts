@@ -10,7 +10,7 @@ import { getLarkApps, getDefaultAppKey, getAppRootFolderToken, type LarkFileType
 import { listLarkFolderTree, addFoldersToCache, type FolderOption } from "@/lib/lark/folders";
 import { listTenantContactsCached } from "@/lib/lark/contactsCache";
 import { listFolderContentsCached } from "@/lib/lark/driveCache";
-import { listTrashRows, purgeExpiredTrash, getTrashFolderTokenIfExists } from "@/lib/lark/trash";
+import { listTrashRows, purgeExpiredTrash, getTrashFolderTokenIfExists, TRASH_FOLDER_NAME } from "@/lib/lark/trash";
 import { resolveRootFolderToken, listConfiguredOrgs } from "@/lib/lark/orgFolders";
 import { DEFAULT_LARK_PREFS } from "@/lib/lark/prefs";
 import { buildNamingSegments, todayYYYYMMDD, type NamingSegment } from "@/lib/admin/fileNaming";
@@ -141,7 +141,7 @@ export async function getLarkPageData(profile: Profile): Promise<LarkPageData> {
         const rawItems = await listFolderContentsCached(rootToken, activeAppKey);
         // Never surface the trash folder outside the dedicated Trash tab.
         const trashFolderToken = await getTrashFolderTokenIfExists(activeAppKey);
-        const items = trashFolderToken ? rawItems.filter((i) => i.token !== trashFolderToken) : rawItems;
+        const items = rawItems.filter((i) => i.token !== trashFolderToken && i.name !== TRASH_FOLDER_NAME);
         // Same write-through as browseLarkFolder (actions.ts) — keeps the
         // Move/Create-file folder picker's cache warm on every page load,
         // not just when someone actively browses the Drive tab.

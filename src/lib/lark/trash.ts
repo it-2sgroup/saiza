@@ -1,7 +1,7 @@
 import "server-only";
 import { after } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createLarkFile, deleteLarkFile, moveLarkFile, getAppRootFolderToken, type LarkFileType } from "./client";
+import { createLarkFile, deleteLarkFile, moveLarkFile, getAppRootFolderToken, listFolderChildren, type LarkFileType } from "./client";
 import { invalidateDriveCache } from "./driveCache";
 import { recordAuditLog } from "@/lib/admin/audit";
 
@@ -9,7 +9,16 @@ const RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 
 // A well-known, unmistakable name — this folder is only ever managed through
 // this app's trash actions, never meant to be opened/renamed by hand in Lark.
-const TRASH_FOLDER_NAME = "🗑️ Thùng rác hệ thống — đừng xoá/đổi tên thư mục này";
+// Exported so every place that lists/crawls folders (folders.ts, the Drive
+// route, data.ts) can exclude it BY NAME as a second, independent check —
+// relying solely on the tracked token in lark_trash_folder meant that if
+// that row was ever missing (e.g. an insert failing right after the folder
+// was created — exactly what happened before assertTrashSchemaReady existed),
+// the folder would both (a) get excluded from nowhere, since nothing knew
+// its token yet, and (b) get created AGAIN next time, since getOrCreateTrash-
+// Folder had no way to know one already existed — producing duplicate,
+// identically-named "ghost" trash folders. Matching by name breaks that.
+export const TRASH_FOLDER_NAME = "🗑️ Thùng rác hệ thống — đừng xoá/đổi tên thư mục này";
 
 const trashFolderTokenCache = new Map<string, string | null>();
 
@@ -62,14 +71,27 @@ async function getOrCreateTrashFolder(appKey: string): Promise<string> {
 
   const admin = createAdminClient();
   const parentToken = await getAppRootFolderToken(appKey);
-  const created = await createLarkFile("folder", TRASH_FOLDER_NAME, parentToken, appKey);
+
+  // Before creating: a folder with this exact name may already sit in Lark
+  // with no tracking row (the lark_trash_folder insert can fail independently
+  // of the Lark-side create succeeding). Adopting it instead of blindly
+  // creating another is what prevents duplicate "ghost" trash folders — the
+  // exact bug this comment block used to not guard against.
+  let documentId: string;
+  const siblings = await listFolderChildren(parentToken, appKey).catch(() => []);
+  const adopted = siblings.find((f) => f.name === TRASH_FOLDER_NAME);
+  if (adopted) {
+    documentId = adopted.token;
+  } else {
+    ({ documentId } = await createLarkFile("folder", TRASH_FOLDER_NAME, parentToken, appKey));
+  }
 
   await admin
     .from("lark_trash_folder")
-    .upsert({ app_key: appKey, folder_token: created.documentId }, { onConflict: "app_key", ignoreDuplicates: true });
+    .upsert({ app_key: appKey, folder_token: documentId }, { onConflict: "app_key", ignoreDuplicates: true });
 
   const { data: winner } = await admin.from("lark_trash_folder").select("folder_token").eq("app_key", appKey).maybeSingle();
-  const winningToken = winner?.folder_token ?? created.documentId;
+  const winningToken = winner?.folder_token ?? documentId;
   trashFolderTokenCache.set(appKey, winningToken);
   return winningToken;
 }

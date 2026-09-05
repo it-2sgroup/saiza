@@ -1,7 +1,7 @@
 import "server-only";
 import { listFolderChildren, getDefaultAppKey } from "./client";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getTrashFolderTokenIfExists } from "./trash";
+import { getTrashFolderTokenIfExists, TRASH_FOLDER_NAME } from "./trash";
 
 export type FolderOption = { token: string; name: string; depth: number; parentToken: string };
 
@@ -33,7 +33,11 @@ async function crawlLarkFolderTree(rootToken: string, appKey?: string): Promise<
 
     for (const child of children) {
       if (result.length >= MAX_FOLDERS) break;
-      if (child.token === trashFolderToken) continue;
+      // Matched by token (the normal case) AND by name (belt-and-suspenders:
+      // a duplicate "ghost" trash folder with no tracked token — see the
+      // comment on TRASH_FOLDER_NAME — would otherwise slip through here and
+      // get crawled/cached like any other real folder).
+      if (child.token === trashFolderToken || child.name === TRASH_FOLDER_NAME) continue;
       result.push({ token: child.token, name: child.name, depth: depth + 1, parentToken: token });
       queue.push({ token: child.token, depth: depth + 1 });
     }
@@ -66,7 +70,7 @@ export async function listLarkFolderTree(rootToken: string, orgKey = "", appKey:
     // entirely.
     const trashFolderToken = await getTrashFolderTokenIfExists(appKey);
     const tree = cached.tree as FolderOption[];
-    return trashFolderToken ? tree.filter((f) => f.token !== trashFolderToken) : tree;
+    return tree.filter((f) => f.token !== trashFolderToken && f.name !== TRASH_FOLDER_NAME);
   }
 
   const tree = await crawlLarkFolderTree(rootToken, appKey);

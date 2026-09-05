@@ -3,7 +3,7 @@ import { getCurrentProfile } from "@/lib/supabase/profile";
 import { getAppRootFolderToken, getLarkApps } from "@/lib/lark/client";
 import { listFolderContentsCached } from "@/lib/lark/driveCache";
 import { addFoldersToCache } from "@/lib/lark/folders";
-import { getTrashFolderTokenIfExists } from "@/lib/lark/trash";
+import { getTrashFolderTokenIfExists, TRASH_FOLDER_NAME } from "@/lib/lark/trash";
 import { friendlyError } from "@/lib/errors";
 
 // Folder browsing lives in a route handler rather than a Server Action on
@@ -37,8 +37,10 @@ export async function GET(request: Request) {
 
     // The trash folder is implementation detail — it must never surface in
     // ordinary Drive browsing (only the dedicated Trash tab reads it).
+    // Matched by tracked token AND by name — see TRASH_FOLDER_NAME's doc
+    // comment on why an untracked duplicate must also be caught here.
     const trashFolderToken = await getTrashFolderTokenIfExists(appKey);
-    const items = trashFolderToken ? rawItems.filter((i) => i.token !== trashFolderToken) : rawItems;
+    const items = rawItems.filter((i) => i.token !== trashFolderToken && i.name !== TRASH_FOLDER_NAME);
 
     // Write-through into lark_folder_cache — otherwise pre-existing folders
     // (created outside this app, or missed by the last BFS crawl) only ever
