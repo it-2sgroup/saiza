@@ -1,20 +1,13 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { decodeJwtClaims } from "@/lib/admin/jwt";
 
-// Reads the `user_role` custom claim set by the `custom_access_token_hook`
-// SQL function (see supabase/migrations/0002_security_hardening.sql) — once
-// that hook is enabled in the Supabase Dashboard, the role travels inside
-// the already-verified JWT, so middleware can act on it without a second
+// decodeJwtClaims reads the `user_role` custom claim set by the
+// `custom_access_token_hook` SQL function (see
+// supabase/migrations/0002_security_hardening.sql) — once that hook is
+// enabled in the Supabase Dashboard, the role travels inside the
+// already-verified JWT, so middleware can act on it without a second
 // round-trip to the `profiles` table.
-function decodeJwtClaims(token: string): Record<string, unknown> | null {
-  try {
-    const payload = token.split(".")[1];
-    const json = Buffer.from(payload, "base64url").toString("utf8");
-    return JSON.parse(json);
-  } catch {
-    return null;
-  }
-}
 
 function buildCsp(nonce: string) {
   // React's dev-mode tooling (component stack reconstruction) needs eval() —
@@ -50,6 +43,12 @@ export async function proxy(request: NextRequest) {
 
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
+  // Must also be set on the REQUEST headers, not just the response — Next.js
+  // reads the nonce it stamps onto its own <script> tags from the request's
+  // CSP header. Without this, the nonce on the response is real but nothing
+  // in the actual HTML ever carries it, and 'strict-dynamic' (which drops
+  // 'self' as a fallback per CSP3) blocks every one of Next's own bundles.
+  requestHeaders.set("Content-Security-Policy", csp);
 
   let response = NextResponse.next({ request: { headers: requestHeaders } });
   response.headers.set("Content-Security-Policy", csp);
@@ -62,23 +61,19 @@ export async function proxy(request: NextRequest) {
   // Admin-only from here: verify the session and gate access. Kept out of
   // the public-page path above so ordinary pages don't pay for a Supabase
   // round-trip on every request.
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-          response = NextResponse.next({ request: { headers: requestHeaders } });
-          response.headers.set("Content-Security-Policy", csp);
-          cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
-        },
+  const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!, {
+    cookies: {
+      getAll() {
+        return request.cookies.getAll();
+      },
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+        response = NextResponse.next({ request: { headers: requestHeaders } });
+        response.headers.set("Content-Security-Policy", csp);
+        cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
       },
     },
-  );
+  });
 
   const {
     data: { user },

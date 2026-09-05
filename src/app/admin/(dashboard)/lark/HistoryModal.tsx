@@ -6,7 +6,7 @@ import { Pagination } from "../Pagination";
 import { ItemActionsMenu } from "./ItemActionsMenu";
 import { departmentLabel } from "@/lib/admin/departments";
 import type { StaffOption } from "./StaffSharePicker";
-import { LARK_FILE_TYPE_LABELS, type LarkFileType } from "@/lib/lark/fileTypes";
+import { LARK_FILE_TYPE_LABELS, itemNoun, countNoun, type LarkFileType } from "@/lib/lark/fileTypes";
 
 export type HistoryRow = {
   targetId: string;
@@ -95,7 +95,7 @@ export function HistoryModal({
           type="text"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Tìm theo tên file..."
+          placeholder="Tìm theo tên..."
           className="min-w-[180px] flex-1 rounded-full border border-line bg-paper px-4 py-2.5 text-[14.5px] text-ink outline-none transition-all duration-300 ease-soft focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/30"
         />
         <div className="flex flex-wrap gap-1.5">
@@ -127,13 +127,17 @@ export function HistoryModal({
 
       <div className={inline ? "flex flex-col gap-3" : "flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto"}>
         {filtered.length === 0 ? (
-          <p className="text-sm text-ink-2">{q || typeFilter ? "Không tìm thấy file khớp bộ lọc." : "Bạn chưa tạo file nào."}</p>
+          <p className="text-sm text-ink-2">
+            {q || typeFilter ? `Không tìm thấy ${itemNoun(typeFilter)} khớp bộ lọc.` : "Bạn chưa tạo gì cả."}
+          </p>
         ) : (
           <div className="overflow-x-auto rounded-card border border-line">
             <table className="w-full min-w-[680px] border-collapse text-sm">
               <thead>
                 <tr className="border-b border-line bg-paper text-left text-xs font-semibold tracking-[0.06em] text-ink-2 uppercase">
-                  <th className="px-4 py-2.5">Tên file</th>
+                  {/* Follows the active filter — this list holds folders too,
+                      so a fixed "Tên file" mislabels every folder row. */}
+                  <th className="px-4 py-2.5">Tên {itemNoun(typeFilter)}</th>
                   <th className="px-4 py-2.5">Loại</th>
                   <th className="px-4 py-2.5">Thư mục</th>
                   <th className="px-4 py-2.5">Phòng ban</th>
@@ -196,7 +200,11 @@ export function HistoryModal({
         onClose={() => setOpen(false)}
         panelClassName="flex max-h-[88vh] w-full max-w-[720px] flex-col overflow-hidden p-6"
       >
-        <ModalHeader title="Lịch sử tạo file của bạn" subtitle={`${rows.length} file (chưa xoá).`} onClose={() => setOpen(false)} />
+        <ModalHeader
+          title="Lịch sử tạo của bạn"
+          subtitle={`${rows.length} ${countNoun(rows.map((r) => r.fileType))} (chưa xoá).`}
+          onClose={() => setOpen(false)}
+        />
         {content}
       </Modal>
     </>

@@ -20,7 +20,7 @@ export function DeleteLarkFileButton({
 }) {
   const [confirming, setConfirming] = useState(embedded);
   const [state, formAction, pending] = useActionState(deleteLarkDocument.bind(null, documentId, fileType), initialState);
-  useToastOnActionState(state, state.done ? "Đã xoá file." : null);
+  useToastOnActionState(state, state.done ? "Đã chuyển vào thùng rác. Có thể khôi phục trong 30 ngày." : null);
 
   const triggerClassName =
     variant === "button"
@@ -35,7 +35,7 @@ export function DeleteLarkFileButton({
       ? "cursor-pointer rounded-full border border-line px-3 py-1.5 text-xs font-medium text-ink-2 transition-colors duration-300 ease-soft hover:border-ink hover:text-ink"
       : "cursor-pointer text-xs font-medium text-ink-2 hover:text-ink";
 
-  if (state.done) return <span className="text-xs text-ink-2">Đã xoá.</span>;
+  if (state.done) return <span className="text-xs text-ink-2">Đã chuyển vào thùng rác.</span>;
 
   const isFolder = fileType === "folder";
 
@@ -49,9 +49,11 @@ export function DeleteLarkFileButton({
 
   return (
     <form action={formAction} className="flex flex-wrap items-center gap-2.5">
-      <span className="text-xs text-ink-2">{isFolder ? "Xoá thư mục này vĩnh viễn khỏi Lark?" : "Xoá vĩnh viễn khỏi Lark?"}</span>
+      <span className="text-xs text-ink-2">
+        {isFolder ? "Chuyển thư mục này vào thùng rác?" : "Chuyển file này vào thùng rác?"} Có thể khôi phục trong 30 ngày.
+      </span>
       <button type="submit" disabled={pending} className={confirmClassName}>
-        {pending ? "Đang xoá..." : "Xác nhận xoá"}
+        {pending ? "Đang chuyển..." : "Chuyển vào thùng rác"}
       </button>
       {!embedded && (
         <button type="button" onClick={() => setConfirming(false)} disabled={pending} className={cancelClassName}>

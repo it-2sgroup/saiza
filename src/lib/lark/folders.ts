@@ -1,6 +1,7 @@
 import "server-only";
 import { listFolderChildren, getDefaultAppKey } from "./client";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getTrashFolderTokenIfExists } from "./trash";
 
 export type FolderOption = { token: string; name: string; depth: number; parentToken: string };
 
@@ -14,6 +15,10 @@ const CACHE_TTL_MS = 10 * 60 * 1000;
 async function crawlLarkFolderTree(rootToken: string, appKey?: string): Promise<FolderOption[]> {
   const result: FolderOption[] = [];
   const queue: { token: string; depth: number }[] = [{ token: rootToken, depth: 0 }];
+  // Excluded so the trash folder never appears as a pickable move/create
+  // destination, or as a browsable node in the folder-tree sidebar — it's
+  // implementation detail, not a folder anyone should manually put things in.
+  const trashFolderToken = await getTrashFolderTokenIfExists(appKey ?? getDefaultAppKey());
 
   while (queue.length > 0 && result.length < MAX_FOLDERS) {
     const { token, depth } = queue.shift()!;
@@ -28,6 +33,7 @@ async function crawlLarkFolderTree(rootToken: string, appKey?: string): Promise<
 
     for (const child of children) {
       if (result.length >= MAX_FOLDERS) break;
+      if (child.token === trashFolderToken) continue;
       result.push({ token: child.token, name: child.name, depth: depth + 1, parentToken: token });
       queue.push({ token: child.token, depth: depth + 1 });
     }

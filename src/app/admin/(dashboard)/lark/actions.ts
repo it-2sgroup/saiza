@@ -6,11 +6,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { recordAuditLog } from "@/lib/admin/audit";
 import {
   createLarkFile,
-  deleteLarkFile,
   moveLarkFile,
   shareLarkDocByEmail,
   transferLarkFileOwner,
   getDefaultAppKey,
+  getLarkApps,
   type LarkFileType,
 } from "@/lib/lark/client";
 import { parseShareRows, applyShareRows, type ShareResult } from "@/lib/lark/shareRows";
@@ -18,9 +18,10 @@ import { resolveRootFolderToken } from "@/lib/lark/orgFolders";
 import { getOrCreateDepartmentFolder } from "@/lib/lark/folderRegistry";
 import { addFolderToCache } from "@/lib/lark/folders";
 import { addItemToDriveCache, invalidateDriveCache } from "@/lib/lark/driveCache";
+import { trashDocument, restoreDocument, permanentlyDelete, getTrashRow } from "@/lib/lark/trash";
 import { DEPARTMENT_CODES, ORG_CODES } from "@/lib/admin/departments";
-import { buildFileName, buildFolderName, MAX_FILENAME_LENGTH } from "@/lib/admin/fileNaming";
-import { canDelete } from "@/lib/admin/permissions";
+import { buildFileName, buildFolderName, sanitizeNameSegment, MAX_FILENAME_LENGTH } from "@/lib/admin/fileNaming";
+import { canManageAnyLarkDoc } from "@/lib/admin/permissions";
 import { VERSION_OPTIONS, DOC_TYPES } from "@/lib/admin/docTypes";
 import type { LarkPrefs } from "@/lib/lark/prefs";
 
@@ -59,9 +60,26 @@ async function resolveDocFolder(admin: ReturnType<typeof createAdminClient>, doc
   return (data?.metadata as { targetFolder?: string | null } | null)?.targetFolder ?? null;
 }
 
+// Best-effort — used only to snapshot a human-readable name into lark_trash,
+// never for anything security-relevant. Missing/renamed-in-Lark just means
+// the trash list shows a slightly stale or generic title.
+async function resolveDocTitle(admin: ReturnType<typeof createAdminClient>, documentId: string): Promise<string> {
+  const { data } = await admin
+    .from("audit_log")
+    .select("metadata")
+    .eq("action", "lark_doc_created")
+    .eq("target_id", documentId)
+    .maybeSingle();
+  return (data?.metadata as { title?: string } | null)?.title ?? "(không có tiêu đề)";
+}
+
 // Move/delete/transfer-ownership all gate on the same rule: the person who
-// created the file, or anyone with canDelete rights. Returns an error
-// message to return from the caller's action, or null when allowed.
+// created the file, or an admin. Deliberately NOT canDelete/"editor" — most
+// of the org Drive was never created through this app (see the Drive tab's
+// own doc comment), so "editor" here would mean "can move/delete/transfer
+// ownership of any file in the company, including ones they've never seen
+// before that belong to someone else." Returns an error message to return
+// from the caller's action, or null when allowed.
 async function checkDocPermission(
   admin: ReturnType<typeof createAdminClient>,
   profile: Profile,
@@ -76,7 +94,7 @@ async function checkDocPermission(
     .maybeSingle();
 
   const isOwner = creationRow?.actor_id === profile.id;
-  if (!isOwner && !canDelete(profile.role)) return deniedMessage;
+  if (!isOwner && !canManageAnyLarkDoc(profile.role)) return deniedMessage;
   return null;
 }
 
@@ -98,6 +116,13 @@ export async function createLarkDocument(_prev: LarkDocFormState, formData: Form
   const org = String(formData.get("org") ?? "").trim();
   const content = String(formData.get("content") ?? "").trim();
   if (!content) return { error: fileType === "folder" ? "Nhập tên thư mục." : "Nhập nội dung/dự án." };
+  // buildFileName/buildFolderName strip characters unsafe for a Lark title
+  // (see UNSAFE_CHARS in fileNaming.ts) — content that's non-empty here but
+  // made up ONLY of those characters (e.g. "///") would otherwise collapse
+  // to "" inside the title and silently vanish instead of erroring.
+  if (!sanitizeNameSegment(content)) {
+    return { error: 'Nội dung chỉ chứa ký tự không hợp lệ (\\ / : * ? " < > |). Nhập lại.' };
+  }
   if (org && !(ORG_CODES as readonly string[]).includes(org)) return { error: "Mã tổ chức không hợp lệ." };
 
   const includeDept = formData.get("includeDept") === "on";
@@ -119,7 +144,10 @@ export async function createLarkDocument(_prev: LarkDocFormState, formData: Form
     let docType: string | null = null;
     if (includeDocType) {
       const docTypeRaw = String(formData.get("docType") ?? "").trim();
-      const docTypeOther = String(formData.get("docTypeOther") ?? "").trim();
+      // Unlike docTypeRaw's preset options (DOC_TYPES, already safe), a
+      // custom "Khác" value is free text and needs the same sanitizing as
+      // `content` — otherwise a stray "/" here lands unescaped in the title.
+      const docTypeOther = sanitizeNameSegment(String(formData.get("docTypeOther") ?? ""));
       docType = docTypeRaw === "Khác" ? docTypeOther : docTypeRaw;
       if (!docType) return { error: "Chọn hoặc nhập loại tài liệu." };
     }
@@ -243,6 +271,9 @@ export async function shareExistingDocument(
   if (rows.length === 0) return { error: "Chọn ít nhất một người để chia sẻ." };
 
   const admin = createAdminClient();
+  const permissionError = await checkDocPermission(admin, profile, documentId, "Bạn không có quyền chia sẻ file này.");
+  if (permissionError) return { error: permissionError };
+
   const appKey = await resolveDocAppKey(admin, documentId);
   const shareResults = await applyShareRows(documentId, rows, fileType, appKey);
 
@@ -301,6 +332,12 @@ export async function updateLarkPrefs(_prev: LarkPrefsState, formData: FormData)
 export async function switchLarkApp(appKey: string): Promise<void> {
   const profile = await getCurrentProfile();
   if (!profile) return;
+  // An unvalidated value here would persist into lark_prefs.activeApp and
+  // later flow into audit_log.metadata.appKey on the next file the user
+  // creates — getLarkAppConfig silently falls back to the default app on an
+  // unknown key, so nothing breaks today, but there's no reason to let a
+  // garbage value in in the first place.
+  if (!getLarkApps().some((a) => a.key === appKey)) return;
 
   const admin = createAdminClient();
   await admin
@@ -356,6 +393,10 @@ export async function moveLarkDocument(
 
 export type DeleteLarkDocState = { error: string | null; done?: boolean };
 
+// "Xoá" moves the item into this app's own Trash instead of deleting it
+// outright — see src/lib/lark/trash.ts for why (Lark's own recycle bin has
+// no restore/list API we can drive). Recoverable for 30 days via the Trash
+// tab; permanentlyDeleteLarkDocument below is the actual point of no return.
 export async function deleteLarkDocument(
   documentId: string,
   fileType: LarkFileType,
@@ -370,23 +411,85 @@ export async function deleteLarkDocument(
 
   const appKey = await resolveDocAppKey(admin, documentId);
   const sourceFolder = await resolveDocFolder(admin, documentId);
+  const title = await resolveDocTitle(admin, documentId);
 
   try {
-    await deleteLarkFile(documentId, fileType, appKey);
+    await trashDocument({ documentId, fileType, title, appKey, originalParentToken: sourceFolder, deletedBy: profile.id });
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Không xoá được file." };
   }
 
-  // Deleting a folder also invalidates its own cached listing, not just its
-  // parent's — otherwise a later browse could still serve its old contents.
-  await invalidateDriveCache(appKey, fileType === "folder" ? [sourceFolder, documentId] : [sourceFolder]);
+  await recordAuditLog({
+    actorId: profile.id,
+    action: "lark_doc_trashed",
+    targetTable: "lark_docs",
+    targetId: documentId,
+    metadata: { fileType, targetFolder: sourceFolder },
+  });
+
+  revalidatePath("/admin/lark");
+  return { error: null, done: true };
+}
+
+export type RestoreTrashState = { error: string | null; done?: boolean; restoredTo?: "original" | "root" };
+
+export async function restoreLarkDocument(documentId: string, _prev: RestoreTrashState): Promise<RestoreTrashState> {
+  const profile = await getCurrentProfile();
+  if (!profile) return { error: "Bạn cần đăng nhập lại." };
+
+  const row = await getTrashRow(documentId);
+  if (!row) return { error: "File này không còn trong thùng rác." };
+
+  const isDeleter = row.deletedBy === profile.id;
+  if (!isDeleter && !canManageAnyLarkDoc(profile.role)) return { error: "Bạn không có quyền khôi phục file này." };
+
+  let restoredTo: "original" | "root";
+  try {
+    ({ restoredTo } = await restoreDocument(documentId, row));
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Không khôi phục được file." };
+  }
 
   await recordAuditLog({
     actorId: profile.id,
-    action: "lark_doc_deleted",
+    action: "lark_doc_restored",
     targetTable: "lark_docs",
     targetId: documentId,
-    metadata: { fileType },
+    metadata: { fileType: row.fileType, restoredTo },
+  });
+
+  revalidatePath("/admin/lark");
+  return { error: null, done: true, restoredTo };
+}
+
+export type PermanentDeleteState = { error: string | null; done?: boolean };
+
+// The actual point of no return — real Lark delete, called directly from the
+// Trash tab (either the user clears their own item early, or an admin does,
+// or the 30-day sweep in purgeExpiredTrash calls permanentlyDelete directly
+// without going through this action).
+export async function permanentlyDeleteLarkDocument(documentId: string, _prev: PermanentDeleteState): Promise<PermanentDeleteState> {
+  const profile = await getCurrentProfile();
+  if (!profile) return { error: "Bạn cần đăng nhập lại." };
+
+  const row = await getTrashRow(documentId);
+  if (!row) return { error: "File này không còn trong thùng rác." };
+
+  const isDeleter = row.deletedBy === profile.id;
+  if (!isDeleter && !canManageAnyLarkDoc(profile.role)) return { error: "Bạn không có quyền xoá vĩnh viễn file này." };
+
+  try {
+    await permanentlyDelete(documentId, row.fileType, row.appKey);
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Không xoá vĩnh viễn được file." };
+  }
+
+  await recordAuditLog({
+    actorId: profile.id,
+    action: "lark_doc_purged",
+    targetTable: "lark_docs",
+    targetId: documentId,
+    metadata: { fileType: row.fileType, manual: true },
   });
 
   revalidatePath("/admin/lark");

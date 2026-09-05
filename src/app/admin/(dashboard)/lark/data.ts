@@ -10,6 +10,7 @@ import { getLarkApps, getDefaultAppKey, getAppRootFolderToken, type LarkFileType
 import { listLarkFolderTree, addFoldersToCache, type FolderOption } from "@/lib/lark/folders";
 import { listTenantContactsCached } from "@/lib/lark/contactsCache";
 import { listFolderContentsCached } from "@/lib/lark/driveCache";
+import { listTrashRows, purgeExpiredTrash, getTrashFolderTokenIfExists } from "@/lib/lark/trash";
 import { resolveRootFolderToken, listConfiguredOrgs } from "@/lib/lark/orgFolders";
 import { DEFAULT_LARK_PREFS } from "@/lib/lark/prefs";
 import { buildNamingSegments, todayYYYYMMDD, type NamingSegment } from "@/lib/admin/fileNaming";
@@ -28,6 +29,21 @@ type AuditRow = {
   created_at: string;
 };
 
+export type TrashUiRow = {
+  documentId: string;
+  fileType: LarkFileType;
+  title: string;
+  originalFolderName: string;
+  deletedByName: string;
+  deletedAt: string;
+  purgeAt: string;
+  // Whether the current viewer may restore/permanently-delete this row —
+  // the deleter, or an admin. Precomputed here (not re-derived in the UI)
+  // since it depends on data.ts's own isAdmin/profile.id, not anything the
+  // client component should be trusted to decide for itself.
+  canManage: boolean;
+};
+
 export type LarkPageData = {
   isAdmin: boolean;
   larkApps: { key: string; label: string }[];
@@ -37,6 +53,7 @@ export type LarkPageData = {
   staff: StaffOption[];
   historyRows: HistoryRow[];
   overviewRows: OverviewRow[];
+  trashRows: TrashUiRow[];
   dashboardData: DashboardData | null;
   driveRootItems: LarkDriveItem[] | undefined;
   namingPrefs: typeof DEFAULT_LARK_PREFS & Profile["lark_prefs"];
@@ -56,10 +73,15 @@ export async function getLarkPageData(profile: Profile): Promise<LarkPageData> {
   const activeAppKey = profile.lark_prefs.activeApp || getDefaultAppKey();
   const orgKeys = ["", ...listConfiguredOrgs(activeAppKey)];
 
+  // Best-effort, debounced retention sweep for this app's trash — see
+  // purgeExpiredTrash's own doc comment for why this is "opportunistic on
+  // page load" rather than a real cron.
+  purgeExpiredTrash(activeAppKey);
+
   const [
     { data: ownRows },
     { data: allCreatedRows },
-    { data: deletedRows },
+    trashRowsRaw,
     { data: movedRows },
     { data: profilesData },
     { data: usersData },
@@ -80,7 +102,11 @@ export async function getLarkPageData(profile: Profile): Promise<LarkPageData> {
           .eq("action", "lark_doc_created")
           .order("created_at", { ascending: false })
       : Promise.resolve({ data: [] }),
-    admin.from("audit_log").select("target_id").eq("action", "lark_doc_deleted"),
+    // The trash table itself, not audit_log, is the source of truth for
+    // "is this currently deleted" — a restore has to be able to un-hide an
+    // item, which a write-once, ever-growing action log can't cleanly do
+    // without also reasoning about event ordering.
+    listTrashRows(activeAppKey),
     // Newest-first so the folder a file currently lives in is whichever move
     // (or creation, if never moved) has the most recent timestamp per target.
     admin
@@ -112,7 +138,10 @@ export async function getLarkPageData(profile: Profile): Promise<LarkPageData> {
     (async (): Promise<LarkDriveItem[] | undefined> => {
       try {
         const rootToken = await getAppRootFolderToken(activeAppKey);
-        const items = await listFolderContentsCached(rootToken, activeAppKey);
+        const rawItems = await listFolderContentsCached(rootToken, activeAppKey);
+        // Never surface the trash folder outside the dedicated Trash tab.
+        const trashFolderToken = await getTrashFolderTokenIfExists(activeAppKey);
+        const items = trashFolderToken ? rawItems.filter((i) => i.token !== trashFolderToken) : rawItems;
         // Same write-through as browseLarkFolder (actions.ts) — keeps the
         // Move/Create-file folder picker's cache warm on every page load,
         // not just when someone actively browses the Drive tab.
@@ -167,7 +196,7 @@ export async function getLarkPageData(profile: Profile): Promise<LarkPageData> {
     return token ? (folderNameByToken.get(token) ?? null) : null;
   };
 
-  const deletedIds = new Set((deletedRows ?? []).map((r) => r.target_id));
+  const deletedIds = new Set<string | null>(trashRowsRaw.map((r) => r.documentId));
   const emailById = new Map(usersData?.users.map((u) => [u.id, u.email]) ?? []);
   const profileById = new Map(
     (profilesData ?? []).map((p) => [p.id as string, { fullName: p.full_name as string, department: p.department as string | null }]),
@@ -197,6 +226,22 @@ export async function getLarkPageData(profile: Profile): Promise<LarkPageData> {
     }
   }
   const staff: StaffOption[] = [...tenantContacts, ...websiteStaff.filter((s) => !seenEmails.has(s.email.toLowerCase()))];
+
+  // Personal trash + admin oversight, same split as most of these lists:
+  // everyone can see and restore what THEY deleted, admins see the whole
+  // app's trash (someone has to be able to recover a departed colleague's
+  // accidental delete).
+  const visibleTrashRows = isAdmin ? trashRowsRaw : trashRowsRaw.filter((r) => r.deletedBy === profile.id);
+  const trashRows: TrashUiRow[] = visibleTrashRows.map((r) => ({
+    documentId: r.documentId,
+    fileType: r.fileType,
+    title: r.title,
+    originalFolderName: r.originalParentToken ? (folderNameByToken.get(r.originalParentToken) ?? "—") : "Thư mục gốc",
+    deletedByName: r.deletedBy ? (profileById.get(r.deletedBy)?.fullName ?? "—") : "—",
+    deletedAt: r.deletedAt,
+    purgeAt: r.purgeAt,
+    canManage: r.deletedBy === profile.id || isAdmin,
+  }));
 
   // Rows created before multi-app support existed never recorded an appKey —
   // treat those as belonging to the original (default) app so switching apps
@@ -329,6 +374,7 @@ export async function getLarkPageData(profile: Profile): Promise<LarkPageData> {
     staff,
     historyRows,
     overviewRows,
+    trashRows,
     dashboardData,
     driveRootItems,
     namingPrefs,

@@ -5,7 +5,7 @@ import { Modal, ModalHeader } from "../Modal";
 import { ItemActionsMenu } from "./ItemActionsMenu";
 import type { StaffOption } from "./StaffSharePicker";
 import { DEPARTMENTS, departmentLabel } from "@/lib/admin/departments";
-import { LARK_FILE_TYPE_LABELS, type LarkFileType } from "@/lib/lark/fileTypes";
+import { LARK_FILE_TYPE_LABELS, countNoun, type LarkFileType } from "@/lib/lark/fileTypes";
 
 export type OverviewRow = {
   targetId: string;
@@ -115,7 +115,7 @@ export function OverviewModal({
           type="text"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Tìm theo tên file..."
+          placeholder="Tìm theo tên..."
           className="min-w-[180px] flex-1 rounded-full border border-line bg-paper px-4 py-2.5 text-[14.5px] text-ink outline-none transition-all duration-300 ease-soft focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/30"
         />
         <select
@@ -148,7 +148,7 @@ export function OverviewModal({
 
       <div className={inline ? "" : "min-h-0 flex-1 overflow-y-auto"}>
         {filtered.length === 0 ? (
-          <p className="text-sm text-ink-2">Không có file khớp bộ lọc.</p>
+          <p className="text-sm text-ink-2">Không có {fileType === "folder" ? "thư mục" : "mục"} nào khớp bộ lọc.</p>
         ) : (
           <div className="flex flex-col divide-y divide-line">
             {filtered.map((row) => (
@@ -203,7 +203,7 @@ export function OverviewModal({
       >
         <ModalHeader
           title="Tổng quan file Lark — toàn công ty"
-          subtitle={`${rows.length} file (chưa xoá) · thuộc dung lượng lưu trữ của tổ chức 2SGROUP.`}
+          subtitle={`${rows.length} ${countNoun(rows.map((r) => r.fileType))} (chưa xoá) · thuộc dung lượng lưu trữ của tổ chức 2SGROUP.`}
           onClose={() => setOpen(false)}
         />
         {content}

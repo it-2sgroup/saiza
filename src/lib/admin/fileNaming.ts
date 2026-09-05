@@ -13,6 +13,16 @@ function toTitleCaseVN(input: string): string {
     .join(" ");
 }
 
+// A caller only ever checks `content.trim()` before calling buildFileName —
+// but toTitleCaseVN ALSO strips the UNSAFE_CHARS, so content that's
+// non-empty pre-strip (e.g. someone pastes only "///" as a project name)
+// can still collapse to "" here, silently vanishing from the final title
+// instead of surfacing as the "empty content" error it actually is. Exported
+// so the caller can validate post-strip, not just post-trim.
+export function sanitizeNameSegment(input: string): string {
+  return toTitleCaseVN(input);
+}
+
 export function todayYYYYMMDD(): string {
   const now = new Date();
   const y = now.getFullYear();

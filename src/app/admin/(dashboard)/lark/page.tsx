@@ -12,8 +12,9 @@ import { AppSwitcher } from "./AppSwitcher";
 import { DriveExplorer } from "./DriveExplorer";
 import { LarkTabs, LarkTabPanel } from "./LarkTabs";
 import { RecentFilesList } from "./RecentFilesList";
+import { TrashTab } from "./TrashTab";
 import { StatTile } from "../StatTile";
-import type { LarkFileType } from "@/lib/lark/client";
+import { countNoun, type LarkFileType } from "@/lib/lark/fileTypes";
 import { getLarkPageData } from "./data";
 
 const NAMING_CHECKLIST: { key: "includeDept" | "includeDocType" | "includeDate" | "includeVersion"; label: string }[] = [
@@ -45,6 +46,7 @@ export default async function AdminLarkPage() {
     staff,
     historyRows,
     overviewRows,
+    trashRows,
     dashboardData,
     driveRootItems,
     namingPrefs,
@@ -196,6 +198,8 @@ export default async function AdminLarkPage() {
     />
   );
 
+  const trashTab = <TrashTab rows={trashRows} />;
+
   const statsTab = isAdmin ? (
     <div className="flex flex-col gap-6">
       {dashboardData && <DashboardModal inline data={dashboardData} />}
@@ -214,7 +218,9 @@ export default async function AdminLarkPage() {
           <div className="flex flex-col gap-0.5">
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-medium">Tạo file Lark</h1>
-              <span className="rounded-full bg-wash px-2.5 py-0.5 text-xs font-semibold text-ink-2">{historyRows.length} file</span>
+              <span className="rounded-full bg-wash px-2.5 py-0.5 text-xs font-semibold text-ink-2">
+                {historyRows.length} {countNoun(historyRows.map((r) => r.fileType))}
+              </span>
             </div>
             <span className="text-xs text-ink-2">
               {profile.full_name} · {departmentLabel(profile.department) ?? "chưa gán phòng ban"}
@@ -237,6 +243,9 @@ export default async function AdminLarkPage() {
         </LarkTabPanel>
         <LarkTabPanel key="drive" label="Drive">
           {driveTab}
+        </LarkTabPanel>
+        <LarkTabPanel key="trash" label={`Thùng rác${trashRows.length > 0 ? ` (${trashRows.length})` : ""}`}>
+          {trashTab}
         </LarkTabPanel>
         {isAdmin && (
           <LarkTabPanel key="stats" label="Thống kê">

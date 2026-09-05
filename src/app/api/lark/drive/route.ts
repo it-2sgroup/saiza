@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { getCurrentProfile } from "@/lib/supabase/profile";
-import { getAppRootFolderToken } from "@/lib/lark/client";
+import { getAppRootFolderToken, getLarkApps } from "@/lib/lark/client";
 import { listFolderContentsCached } from "@/lib/lark/driveCache";
 import { addFoldersToCache } from "@/lib/lark/folders";
+import { getTrashFolderTokenIfExists } from "@/lib/lark/trash";
 
 // Folder browsing lives in a route handler rather than a Server Action on
 // purpose: Next.js serialises Server Action calls from the same client, so a
@@ -15,6 +16,12 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const appKey = url.searchParams.get("app");
   if (!appKey) return NextResponse.json({ error: "Thiếu app." }, { status: 400 });
+  // getLarkAppConfig silently falls back to the first configured app on an
+  // unknown key — fine for an internal default, not fine for a client-
+  // supplied value that should just be rejected if it isn't real.
+  if (!getLarkApps().some((a) => a.key === appKey)) {
+    return NextResponse.json({ error: "App không hợp lệ." }, { status: 400 });
+  }
 
   // Empty/absent `folder` means "the app's root folder" — the client doesn't
   // know the root token, so it can't pass one on the first load.
@@ -25,7 +32,12 @@ export async function GET(request: Request) {
 
   try {
     const folderToken = requested || (await getAppRootFolderToken(appKey));
-    const items = await listFolderContentsCached(folderToken, appKey, { warmChildren: !isPrefetch });
+    const rawItems = await listFolderContentsCached(folderToken, appKey, { warmChildren: !isPrefetch });
+
+    // The trash folder is implementation detail — it must never surface in
+    // ordinary Drive browsing (only the dedicated Trash tab reads it).
+    const trashFolderToken = await getTrashFolderTokenIfExists(appKey);
+    const items = trashFolderToken ? rawItems.filter((i) => i.token !== trashFolderToken) : rawItems;
 
     // Write-through into lark_folder_cache — otherwise pre-existing folders
     // (created outside this app, or missed by the last BFS crawl) only ever
