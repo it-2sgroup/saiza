@@ -6,8 +6,8 @@ import { Combobox } from "../Combobox";
 import { LarkSettingsModal } from "./LarkSettingsModal";
 import { useToastOnActionState } from "../useToastOnActionState";
 import { StaffSharePicker, type StaffOption, type ShareRow } from "./StaffSharePicker";
-import { DEPARTMENTS, ORG_CODES, departmentLabel } from "@/lib/admin/departments";
-import { DOC_TYPES, VERSION_OPTIONS } from "@/lib/admin/docTypes";
+import { resolveConfigLabel, type ConfigOption } from "@/lib/admin/configListHelpers";
+import { VERSION_OPTIONS } from "@/lib/admin/docTypes";
 import { buildFileName, buildFolderName, todayYYYYMMDD, dateInputToYYYYMMDD, MAX_FILENAME_LENGTH } from "@/lib/admin/fileNaming";
 import { LARK_FILE_TYPE_LABELS, type LarkFileType } from "@/lib/lark/fileTypes";
 import type { FolderOption } from "@/lib/lark/folders";
@@ -18,9 +18,6 @@ const fieldClasses =
   "rounded-xl border border-line bg-paper px-3.5 py-2.5 text-[14.5px] text-ink outline-none transition-all duration-300 ease-soft focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/30";
 const labelClasses = "text-[11px] font-medium tracking-[0.06em] text-ink-2 uppercase";
 
-const ORG_OPTIONS = [{ value: "", label: "Không riêng" }, ...ORG_CODES.map((o) => ({ value: o, label: o }))];
-const DEPARTMENT_OPTIONS = DEPARTMENTS.map((d) => ({ value: d.code, label: `${d.code} — ${d.label}` }));
-const DOC_TYPE_OPTIONS = [...DOC_TYPES.map((d) => ({ value: d.code, label: `${d.label} (${d.code})` })), { value: "Khác", label: "Khác…" }];
 const VERSION_SELECT_OPTIONS = VERSION_OPTIONS.map((v) => ({ value: v, label: v }));
 
 export function LarkDocForm({
@@ -29,23 +26,36 @@ export function LarkDocForm({
   staff,
   foldersByOrg,
   prefs,
+  departments,
+  orgCodes,
+  docTypes,
 }: {
   fileType: LarkFileType;
   defaultDepartment: string | null;
   staff: StaffOption[];
   foldersByOrg: Record<string, FolderOption[]>;
   prefs: LarkPrefs;
+  departments: ConfigOption[];
+  orgCodes: ConfigOption[];
+  docTypes: ConfigOption[];
 }) {
   const [state, formAction, pending] = useActionState(createLarkDocument, initialState);
   const formRef = useRef<HTMLFormElement>(null);
   useToastOnActionState(state, state.title ? `Đã tạo "${state.title}".` : null);
+
+  const ORG_OPTIONS = [{ value: "", label: "Không riêng" }, ...orgCodes.map((o) => ({ value: o.code, label: o.label }))];
+  const DEPARTMENT_OPTIONS = departments.map((d) => ({ value: d.code, label: `${d.code} — ${d.label}` }));
+  const DOC_TYPE_OPTIONS = [
+    ...docTypes.map((d) => ({ value: d.code, label: `${d.label} (${d.code})` })),
+    { value: "Khác", label: "Khác…" },
+  ];
 
   const [shareOpen, setShareOpen] = useState(false);
   const [shares, setShares] = useState<ShareRow[]>([]);
   const [targetFolder, setTargetFolder] = useState("");
   const [org, setOrg] = useState(prefs.defaultOrg ?? "");
   const [department, setDepartment] = useState(defaultDepartment ?? prefs.defaultDepartment ?? "");
-  const [docType, setDocType] = useState(prefs.defaultDocType ?? DOC_TYPES[0].code);
+  const [docType, setDocType] = useState(prefs.defaultDocType ?? docTypes[0]?.code ?? "");
   const [docTypeOther, setDocTypeOther] = useState("");
   const [content, setContent] = useState("");
   const [dateInput, setDateInput] = useState(() => {
@@ -64,11 +74,11 @@ export function LarkDocForm({
   const [includeDate, setIncludeDate] = useState(prefs.includeDate ?? DEFAULT_LARK_PREFS.includeDate);
   const [includeVersion, setIncludeVersion] = useState(prefs.includeVersion ?? DEFAULT_LARK_PREFS.includeVersion);
 
-  const autoDeptLabel = includeDept && department ? ` — thư mục ${departmentLabel(department) ?? department}` : "";
+  const autoDeptLabel = includeDept && department ? ` — thư mục ${resolveConfigLabel(department, departments) ?? department}` : "";
   const rootLabel = org
     ? `— Tự động (${org}${autoDeptLabel}) —`
     : autoDeptLabel
-      ? `— Tự động (${departmentLabel(department) ?? department}) —`
+      ? `— Tự động (${resolveConfigLabel(department, departments) ?? department}) —`
       : "— Thư mục gốc (dùng chung) —";
   const FOLDER_OPTIONS = [
     { value: "", label: rootLabel },
@@ -134,7 +144,8 @@ export function LarkDocForm({
           />
           {!targetFolder && includeDept && department && (
             <p className="text-xs text-ink-2">
-              Để trống sẽ tự động vào đúng thư mục phòng ban {departmentLabel(department) ?? department}, tạo sẵn nếu chưa có.
+              Để trống sẽ tự động vào đúng thư mục phòng ban {resolveConfigLabel(department, departments) ?? department}, tạo sẵn nếu chưa
+              có.
             </p>
           )}
         </div>
@@ -387,7 +398,15 @@ export function LarkDocForm({
         </button>
       </form>
 
-      <LarkSettingsModal prefs={prefs} department={department || defaultDepartment} open={namingOpen} onOpenChange={setNamingOpen} />
+      <LarkSettingsModal
+        prefs={prefs}
+        department={department || defaultDepartment}
+        open={namingOpen}
+        onOpenChange={setNamingOpen}
+        departments={departments}
+        orgCodes={orgCodes}
+        docTypes={docTypes}
+      />
 
       {state.url && state.url !== dismissedUrl && (
         <div className="flex flex-col gap-2.5 rounded-card border border-line bg-card p-4">

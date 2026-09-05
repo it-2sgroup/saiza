@@ -8,6 +8,7 @@ import type { FolderOption } from "@/lib/lark/folders";
 import type { StaffOption } from "./StaffSharePicker";
 import { LarkDocForm } from "./LarkDocForm";
 import type { LarkPrefs } from "@/lib/lark/prefs";
+import type { ConfigOption } from "@/lib/admin/configLists";
 
 type TypeCard = {
   type: LarkFileType;
@@ -73,6 +74,9 @@ export function CreateFileModal({
   prefs,
   trigger,
   initialType,
+  departments,
+  orgCodes,
+  docTypes,
 }: {
   defaultDepartment: string | null;
   staff: StaffOption[];
@@ -80,6 +84,9 @@ export function CreateFileModal({
   prefs: LarkPrefs;
   trigger?: React.ReactNode;
   initialType?: LarkFileType;
+  departments: ConfigOption[];
+  orgCodes: ConfigOption[];
+  docTypes: ConfigOption[];
 }) {
   const [open, setOpen] = useState(false);
   const [fileType, setFileType] = useState<LarkFileType>(initialType ?? DEFAULT_TYPE);
@@ -157,6 +164,9 @@ export function CreateFileModal({
               staff={staff}
               foldersByOrg={foldersByOrg}
               prefs={prefs}
+              departments={departments}
+              orgCodes={orgCodes}
+              docTypes={docTypes}
             />
           </div>
         </div>

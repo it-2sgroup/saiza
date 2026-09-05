@@ -39,6 +39,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       : []),
     ...(canViewInbox(profile.role) ? ([{ href: "/admin/lien-he", label: "Hộp thư liên hệ", icon: "inbox" }] satisfies NavItem[]) : []),
     ...(canManageStaff(profile.role) ? ([{ href: "/admin/nhan-su", label: "Nhân sự", icon: "staff" }] satisfies NavItem[]) : []),
+    ...(canManageStaff(profile.role) ? ([{ href: "/admin/danh-muc", label: "Danh mục", icon: "tags" }] satisfies NavItem[]) : []),
   ];
 
   return (

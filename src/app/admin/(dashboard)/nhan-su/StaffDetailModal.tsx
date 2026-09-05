@@ -3,7 +3,7 @@
 import { Avatar } from "../Avatar";
 import { Modal } from "../Modal";
 import { ROLE_LABELS } from "@/lib/admin/permissions";
-import { departmentLabel } from "@/lib/admin/departments";
+import { resolveConfigLabel, type ConfigOption } from "@/lib/admin/configListHelpers";
 import type { StaffRole } from "@/lib/supabase/profile";
 import { RoleSelect } from "./RoleSelect";
 import { DepartmentSelect } from "./DepartmentSelect";
@@ -23,11 +23,13 @@ export function StaffDetailModal({
   email,
   pendingInvite,
   onClose,
+  departments,
 }: {
   person: StaffPerson;
   email: string;
   pendingInvite: boolean;
   onClose: () => void;
+  departments: ConfigOption[];
 }) {
   return (
     <Modal open onClose={onClose} panelClassName="w-full max-w-[440px] p-6">
@@ -73,7 +75,7 @@ export function StaffDetailModal({
         </div>
         <div className="flex items-center justify-between gap-4">
           <span className="text-sm text-ink-2">Phòng ban</span>
-          <DepartmentSelect id={person.id} department={person.department} />
+          <DepartmentSelect id={person.id} department={person.department} departments={departments} />
         </div>
         <div className="flex items-center justify-between gap-4">
           <span className="text-sm text-ink-2">Tham gia</span>
@@ -85,7 +87,7 @@ export function StaffDetailModal({
         <div className="flex flex-col gap-0.5">
           <span className="text-sm font-medium text-red-700">Xoá tài khoản</span>
           <span className="text-xs text-red-700/70">
-            Hiện tại: {ROLE_LABELS[person.role]} · {departmentLabel(person.department) ?? "chưa gán phòng ban"}
+            Hiện tại: {ROLE_LABELS[person.role]} · {resolveConfigLabel(person.department, departments) ?? "chưa gán phòng ban"}
           </span>
         </div>
         <DeleteStaffButton id={person.id} />

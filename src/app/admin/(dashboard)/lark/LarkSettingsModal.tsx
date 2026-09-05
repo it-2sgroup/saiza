@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { NamingSettingsPanel } from "./NamingSettingsPanel";
 import type { LarkPrefs } from "@/lib/lark/prefs";
+import type { ConfigOption } from "@/lib/admin/configLists";
 
 export function LarkSettingsModal({
   prefs,
@@ -11,6 +12,9 @@ export function LarkSettingsModal({
   trigger,
   open: controlledOpen,
   onOpenChange,
+  departments,
+  orgCodes,
+  docTypes,
 }: {
   prefs: LarkPrefs;
   department?: string | null;
@@ -20,6 +24,9 @@ export function LarkSettingsModal({
   // LarkDocForm) but this drawer's own <form> must not be a descendant of it.
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  departments: ConfigOption[];
+  orgCodes: ConfigOption[];
+  docTypes: ConfigOption[];
 }) {
   const isControlled = controlledOpen !== undefined;
   const [internalOpen, setInternalOpen] = useState(false);
@@ -98,6 +105,9 @@ export function LarkSettingsModal({
                 <NamingSettingsPanel
                   prefs={prefs}
                   department={department}
+                  departments={departments}
+                  orgCodes={orgCodes}
+                  docTypes={docTypes}
                   footer={(pending) => (
                     <div className="flex flex-shrink-0 gap-2.5">
                       <button

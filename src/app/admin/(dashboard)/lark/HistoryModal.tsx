@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { Modal, ModalHeader } from "../Modal";
 import { Pagination } from "../Pagination";
 import { ItemActionsMenu } from "./ItemActionsMenu";
-import { departmentLabel } from "@/lib/admin/departments";
+import { resolveConfigLabel, type ConfigOption } from "@/lib/admin/configListHelpers";
 import type { StaffOption } from "./StaffSharePicker";
 import { LARK_FILE_TYPE_LABELS, itemNoun, countNoun, type LarkFileType } from "@/lib/lark/fileTypes";
 
@@ -37,6 +37,7 @@ export function HistoryModal({
   inline = false,
   creatorName,
   creatorDepartment = null,
+  departments,
 }: {
   rows: HistoryRow[];
   staff: StaffOption[];
@@ -45,6 +46,7 @@ export function HistoryModal({
   inline?: boolean;
   creatorName?: string;
   creatorDepartment?: string | null;
+  departments: ConfigOption[];
 }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
@@ -152,7 +154,7 @@ export function HistoryModal({
                     <td className="max-w-[280px] truncate px-4 py-2.5 font-medium">{row.title}</td>
                     <td className="px-4 py-2.5 text-ink-2">{LARK_FILE_TYPE_LABELS[row.fileType]}</td>
                     <td className="max-w-[160px] truncate px-4 py-2.5 text-ink-2">{row.folderName ?? "—"}</td>
-                    <td className="px-4 py-2.5 text-ink-2">{departmentLabel(creatorDepartment) ?? "(chưa gán)"}</td>
+                    <td className="px-4 py-2.5 text-ink-2">{resolveConfigLabel(creatorDepartment, departments) ?? "(chưa gán)"}</td>
                     <td className="px-4 py-2.5 text-ink-2">{creatorName ?? "—"}</td>
                     <td className="px-4 py-2.5 whitespace-nowrap text-ink-2">{new Date(row.createdAt).toLocaleString("vi-VN")}</td>
                     <td className="px-2 py-2.5 text-right">

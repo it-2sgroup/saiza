@@ -13,6 +13,7 @@ import { listFolderContentsCached } from "@/lib/lark/driveCache";
 import { listTrashRows, purgeExpiredTrash, getTrashFolderTokenIfExists, TRASH_FOLDER_NAME } from "@/lib/lark/trash";
 import { resolveRootFolderToken, listConfiguredOrgs } from "@/lib/lark/orgFolders";
 import { DEFAULT_LARK_PREFS } from "@/lib/lark/prefs";
+import { getConfigLists, type ConfigOption } from "@/lib/admin/configLists";
 import { buildNamingSegments, todayYYYYMMDD, type NamingSegment } from "@/lib/admin/fileNaming";
 
 type AuditRow = {
@@ -60,6 +61,9 @@ export type LarkPageData = {
   namingSegments: NamingSegment[];
   ownLast7Days: number;
   adoptionPct: number;
+  departments: ConfigOption[];
+  orgCodes: ConfigOption[];
+  docTypes: ConfigOption[];
 };
 
 // Everything the "Tạo file Lark" page needs, fetched and shaped once. Kept
@@ -88,6 +92,7 @@ export async function getLarkPageData(profile: Profile): Promise<LarkPageData> {
     folderTrees,
     tenantContactsByApp,
     driveRootItems,
+    { departments, orgCodes, docTypes },
   ] = await Promise.all([
     admin
       .from("audit_log")
@@ -154,6 +159,7 @@ export async function getLarkPageData(profile: Profile): Promise<LarkPageData> {
         return undefined;
       }
     })(),
+    getConfigLists(),
   ]);
 
   const foldersByOrg: Record<string, FolderOption[]> = {};
@@ -381,5 +387,8 @@ export async function getLarkPageData(profile: Profile): Promise<LarkPageData> {
     namingSegments,
     ownLast7Days,
     adoptionPct,
+    departments,
+    orgCodes,
+    docTypes,
   };
 }

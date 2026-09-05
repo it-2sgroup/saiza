@@ -3,7 +3,7 @@
 import { useActionState, useState } from "react";
 import { inviteStaffAccount, type StaffFormState } from "./actions";
 import { Combobox } from "../Combobox";
-import { DEPARTMENTS } from "@/lib/admin/departments";
+import type { ConfigOption } from "@/lib/admin/configLists";
 
 const initialState: StaffFormState = { error: null, success: false };
 const fieldClasses =
@@ -15,13 +15,12 @@ const ROLE_OPTIONS = [
   { value: "contributor", label: "Cộng tác viên" },
 ];
 
-const DEPARTMENT_OPTIONS = [
-  { value: "", label: "Chưa gán — sẽ chọn khi tạo file" },
-  ...DEPARTMENTS.map((d) => ({ value: d.code, label: `${d.code} — ${d.label}` })),
-];
-
-export function StaffForm() {
+export function StaffForm({ departments }: { departments: ConfigOption[] }) {
   const [state, formAction, pending] = useActionState(inviteStaffAccount, initialState);
+  const departmentOptions = [
+    { value: "", label: "Chưa gán — sẽ chọn khi tạo file" },
+    ...departments.map((d) => ({ value: d.code, label: `${d.code} — ${d.label}` })),
+  ];
   const [role, setRole] = useState("contributor");
   const [department, setDepartment] = useState("");
 
@@ -58,15 +57,13 @@ export function StaffForm() {
         <Combobox
           name="department"
           value={department}
-          options={DEPARTMENT_OPTIONS}
+          options={departmentOptions}
           onChange={setDepartment}
           buttonClassName={`${fieldClasses} flex w-full items-center justify-between gap-2 text-left`}
         />
         <p className="text-xs text-ink-2">Dùng để tự điền mã phòng ban khi nhân viên tạo file Lark.</p>
       </div>
-      <p className="text-sm text-ink-2">
-        Nhân viên sẽ nhận email chứa đường dẫn để tự đặt mật khẩu và bắt đầu sử dụng khu quản trị.
-      </p>
+      <p className="text-sm text-ink-2">Nhân viên sẽ nhận email chứa đường dẫn để tự đặt mật khẩu và bắt đầu sử dụng khu quản trị.</p>
       {state.error && <p className="text-sm font-medium text-red-600">{state.error}</p>}
       {state.success && <p className="text-sm font-medium text-accent-2">Đã gửi lời mời qua email.</p>}
       <button

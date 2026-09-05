@@ -4,8 +4,9 @@ import { useState } from "react";
 import { ActionButton } from "@/components/ui/Button";
 import { Modal, ModalHeader } from "../Modal";
 import { StaffForm } from "./StaffForm";
+import type { ConfigOption } from "@/lib/admin/configLists";
 
-export function AddStaffModal() {
+export function AddStaffModal({ departments }: { departments: ConfigOption[] }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -19,7 +20,7 @@ export function AddStaffModal() {
 
       <Modal open={open} onClose={() => setOpen(false)} panelClassName="max-h-[88vh] w-full max-w-[480px] overflow-y-auto p-6">
         <ModalHeader title="Thêm nhân viên mới" subtitle="Gửi lời mời qua email để họ tự tạo mật khẩu." onClose={() => setOpen(false)} />
-        <StaffForm />
+        <StaffForm departments={departments} />
       </Modal>
     </>
   );

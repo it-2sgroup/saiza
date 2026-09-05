@@ -1,5 +1,5 @@
 import { getCurrentProfile } from "@/lib/supabase/profile";
-import { departmentLabel } from "@/lib/admin/departments";
+import { resolveConfigLabel } from "@/lib/admin/configLists";
 import { Avatar } from "../Avatar";
 import { CreateFileModal } from "./CreateFileModal";
 import { LarkSettingsModal } from "./LarkSettingsModal";
@@ -53,6 +53,9 @@ export default async function AdminLarkPage() {
     namingSegments,
     ownLast7Days,
     adoptionPct,
+    departments,
+    orgCodes,
+    docTypes,
   } = await getLarkPageData(profile);
 
   const overviewTab = (
@@ -90,6 +93,9 @@ export default async function AdminLarkPage() {
             foldersByOrg={foldersByOrg}
             prefs={profile.lark_prefs}
             initialType={t.type}
+            departments={departments}
+            orgCodes={orgCodes}
+            docTypes={docTypes}
             trigger={
               <button
                 type="button"
@@ -118,6 +124,9 @@ export default async function AdminLarkPage() {
               <LarkSettingsModal
                 prefs={profile.lark_prefs}
                 department={profile.department}
+                departments={departments}
+                orgCodes={orgCodes}
+                docTypes={docTypes}
                 trigger={
                   <button type="button" className="cursor-pointer text-xs font-medium text-accent hover:text-ink">
                     Sửa
@@ -181,6 +190,7 @@ export default async function AdminLarkPage() {
       folderOptions={flatFolderOptions}
       creatorName={profile.full_name}
       creatorDepartment={profile.department}
+      departments={departments}
     />
   );
 
@@ -202,10 +212,10 @@ export default async function AdminLarkPage() {
 
   const statsTab = isAdmin ? (
     <div className="flex flex-col gap-6">
-      {dashboardData && <DashboardModal inline data={dashboardData} />}
+      {dashboardData && <DashboardModal inline data={dashboardData} departments={departments} />}
       <div className="flex flex-col gap-3 border-t border-line pt-6">
         <h2 className="text-sm font-semibold tracking-[0.06em] text-ink-2 uppercase">Toàn bộ file công ty</h2>
-        <OverviewModal inline rows={overviewRows} folderOptions={flatFolderOptions} staff={staff} />
+        <OverviewModal inline rows={overviewRows} folderOptions={flatFolderOptions} staff={staff} departments={departments} />
       </div>
     </div>
   ) : null;
@@ -223,14 +233,28 @@ export default async function AdminLarkPage() {
               </span>
             </div>
             <span className="text-xs text-ink-2">
-              {profile.full_name} · {departmentLabel(profile.department) ?? "chưa gán phòng ban"}
+              {profile.full_name} · {resolveConfigLabel(profile.department, departments) ?? "chưa gán phòng ban"}
             </span>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <AppSwitcher apps={larkApps.map((a) => ({ key: a.key, label: a.label }))} activeKey={activeAppKey} />
-          <CreateFileModal defaultDepartment={profile.department} staff={staff} foldersByOrg={foldersByOrg} prefs={profile.lark_prefs} />
-          <LarkSettingsModal prefs={profile.lark_prefs} department={profile.department} />
+          <CreateFileModal
+            defaultDepartment={profile.department}
+            staff={staff}
+            foldersByOrg={foldersByOrg}
+            prefs={profile.lark_prefs}
+            departments={departments}
+            orgCodes={orgCodes}
+            docTypes={docTypes}
+          />
+          <LarkSettingsModal
+            prefs={profile.lark_prefs}
+            department={profile.department}
+            departments={departments}
+            orgCodes={orgCodes}
+            docTypes={docTypes}
+          />
         </div>
       </div>
 

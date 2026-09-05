@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getCurrentProfile } from "@/lib/supabase/profile";
 import { canManageStaff, ROLE_LABELS } from "@/lib/admin/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { DEPARTMENTS } from "@/lib/admin/departments";
+import { getConfigLists } from "@/lib/admin/configLists";
 import { AddStaffModal } from "./AddStaffModal";
 import { StaffRow } from "./StaffRow";
 import type { StaffPerson } from "./StaffDetailModal";
@@ -34,12 +34,10 @@ export default async function AdminStaffPage({
   const phongBan = sp.phongBan ?? "";
 
   const admin = createAdminClient();
-  const [{ data: profilesData }, { data: usersData }] = await Promise.all([
-    admin
-      .from("profiles")
-      .select("id, full_name, role, department, avatar_url, created_at")
-      .order("created_at", { ascending: false }),
+  const [{ data: profilesData }, { data: usersData }, { departments }] = await Promise.all([
+    admin.from("profiles").select("id, full_name, role, department, avatar_url, created_at").order("created_at", { ascending: false }),
     admin.auth.admin.listUsers(),
+    getConfigLists(),
   ]);
 
   const userById = new Map(usersData?.users.map((u) => [u.id, u]) ?? []);
@@ -76,6 +74,7 @@ export default async function AdminStaffPage({
         email={user?.email ?? "—"}
         isSelf={person.id === currentUserId}
         pendingInvite={!user?.email_confirmed_at}
+        departments={departments}
       />
     );
   }
@@ -87,7 +86,7 @@ export default async function AdminStaffPage({
           <h1 className="text-2xl font-medium">Nhân sự</h1>
           <p className="text-ink-2">Tạo tài khoản và phân quyền cho nhân viên truy cập khu quản trị.</p>
         </div>
-        <AddStaffModal />
+        <AddStaffModal departments={departments} />
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -119,16 +118,13 @@ export default async function AdminStaffPage({
           className="rounded-full border border-line bg-card px-4 py-2.5 text-[14.5px] text-ink outline-none"
         >
           <option value="">Tất cả phòng ban</option>
-          {DEPARTMENTS.map((d) => (
+          {departments.map((d) => (
             <option key={d.code} value={d.code}>
               {d.label}
             </option>
           ))}
         </select>
-        <button
-          type="submit"
-          className="cursor-pointer rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-white hover:bg-ink"
-        >
+        <button type="submit" className="cursor-pointer rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-white hover:bg-ink">
           Lọc
         </button>
         {(sp.q || phongBan) && (

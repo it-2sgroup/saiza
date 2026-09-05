@@ -20,10 +20,11 @@ import { addFolderToCache } from "@/lib/lark/folders";
 import { addItemToDriveCache, invalidateDriveCache } from "@/lib/lark/driveCache";
 import { trashDocument, restoreDocument, permanentlyDelete, getTrashRow } from "@/lib/lark/trash";
 import { friendlyError } from "@/lib/errors";
-import { DEPARTMENT_CODES, ORG_CODES } from "@/lib/admin/departments";
+
 import { buildFileName, buildFolderName, sanitizeNameSegment, MAX_FILENAME_LENGTH } from "@/lib/admin/fileNaming";
 import { canManageAnyLarkDoc } from "@/lib/admin/permissions";
-import { VERSION_OPTIONS, DOC_TYPES } from "@/lib/admin/docTypes";
+import { VERSION_OPTIONS } from "@/lib/admin/docTypes";
+import { getConfigLists } from "@/lib/admin/configLists";
 import type { LarkPrefs } from "@/lib/lark/prefs";
 
 const VALID_FILE_TYPES: LarkFileType[] = ["docx", "sheet", "bitable", "folder"];
@@ -124,13 +125,14 @@ export async function createLarkDocument(_prev: LarkDocFormState, formData: Form
   if (!sanitizeNameSegment(content)) {
     return { error: 'Nội dung chỉ chứa ký tự không hợp lệ (\\ / : * ? " < > |). Nhập lại.' };
   }
-  if (org && !(ORG_CODES as readonly string[]).includes(org)) return { error: "Mã tổ chức không hợp lệ." };
+  const { departments, orgCodes } = await getConfigLists();
+  if (org && !orgCodes.some((o) => o.code === org)) return { error: "Mã tổ chức không hợp lệ." };
 
   const includeDept = formData.get("includeDept") === "on";
   let department: string | null = null;
   if (includeDept) {
     department = String(formData.get("department") ?? "").trim();
-    if (!department || !DEPARTMENT_CODES.includes(department)) return { error: "Chọn phòng ban." };
+    if (!department || !departments.some((d) => d.code === department)) return { error: "Chọn phòng ban." };
   }
 
   let title: string;
@@ -300,10 +302,11 @@ export async function updateLarkPrefs(_prev: LarkPrefsState, formData: FormData)
   const version = String(formData.get("defaultVersion") ?? "").trim();
   const department = String(formData.get("defaultDepartment") ?? "").trim();
   const docType = String(formData.get("defaultDocType") ?? "").trim();
-  if (org && !(ORG_CODES as readonly string[]).includes(org)) return { error: "Mã tổ chức không hợp lệ." };
+  const { departments, orgCodes, docTypes } = await getConfigLists();
+  if (org && !orgCodes.some((o) => o.code === org)) return { error: "Mã tổ chức không hợp lệ." };
   if (version && !(VERSION_OPTIONS as readonly string[]).includes(version)) return { error: "Version không hợp lệ." };
-  if (department && !DEPARTMENT_CODES.includes(department)) return { error: "Phòng ban không hợp lệ." };
-  if (docType && !DOC_TYPES.some((d) => d.code === docType)) return { error: "Loại tài liệu không hợp lệ." };
+  if (department && !departments.some((d) => d.code === department)) return { error: "Phòng ban không hợp lệ." };
+  if (docType && !docTypes.some((d) => d.code === docType)) return { error: "Loại tài liệu không hợp lệ." };
 
   const prefs: LarkPrefs = {
     includeDept: formData.get("includeDept") === "on",

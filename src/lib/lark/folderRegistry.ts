@@ -3,7 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createLarkFile, shareLarkDocByEmail, getDefaultAppKey } from "./client";
 import { resolveRootFolderToken } from "./orgFolders";
 import { addFolderToCache } from "./folders";
-import { departmentLabel } from "@/lib/admin/departments";
+import { getConfigLists, resolveConfigLabel } from "@/lib/admin/configLists";
 
 // Canonical folder per (app, org, department) — see
 // supabase/migrations/0012_lark_folders.sql and 0014_lark_multi_app.sql.
@@ -36,7 +36,9 @@ export async function getOrCreateDepartmentFolder(
   const parentToken = resolveRootFolderToken(org || null, appKey);
   if (!parentToken) return undefined;
 
-  const name = org ? `${org} - ${departmentLabel(department) ?? department}` : (departmentLabel(department) ?? department);
+  const { departments } = await getConfigLists();
+  const deptLabel = resolveConfigLabel(department, departments);
+  const name = org ? `${org} - ${deptLabel ?? department}` : (deptLabel ?? department);
 
   let folderToken: string;
   let folderUrl: string;

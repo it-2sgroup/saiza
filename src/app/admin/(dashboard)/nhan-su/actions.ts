@@ -5,7 +5,7 @@ import { getCurrentProfile } from "@/lib/supabase/profile";
 import { canManageStaff } from "@/lib/admin/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { recordAuditLog } from "@/lib/admin/audit";
-import { DEPARTMENT_CODES } from "@/lib/admin/departments";
+import { getConfigLists } from "@/lib/admin/configLists";
 import type { StaffRole } from "@/lib/supabase/profile";
 
 export type StaffFormState = { error: string | null; success: boolean };
@@ -27,8 +27,11 @@ export async function inviteStaffAccount(_prev: StaffFormState, formData: FormDa
   if (!VALID_ROLES.includes(role)) {
     return { error: "Vai trò không hợp lệ.", success: false };
   }
-  if (department && !DEPARTMENT_CODES.includes(department)) {
-    return { error: "Mã phòng ban không hợp lệ.", success: false };
+  if (department) {
+    const { departments } = await getConfigLists();
+    if (!departments.some((d) => d.code === department)) {
+      return { error: "Mã phòng ban không hợp lệ.", success: false };
+    }
   }
 
   const admin = createAdminClient();
@@ -92,7 +95,10 @@ export async function updateStaffDepartment(id: string, formData: FormData) {
   if (!profile || !canManageStaff(profile.role)) return;
 
   const department = String(formData.get("department") ?? "").trim();
-  if (department && !DEPARTMENT_CODES.includes(department)) return;
+  if (department) {
+    const { departments } = await getConfigLists();
+    if (!departments.some((d) => d.code === department)) return;
+  }
 
   const admin = createAdminClient();
   await admin
@@ -113,11 +119,7 @@ export async function updateStaffDepartment(id: string, formData: FormData) {
 
 export type DeleteStaffState = { error: string | null };
 
-export async function deleteStaffAccount(
-  id: string,
-  _prev: DeleteStaffState,
-  _formData: FormData,
-): Promise<DeleteStaffState> {
+export async function deleteStaffAccount(id: string, _prev: DeleteStaffState, _formData: FormData): Promise<DeleteStaffState> {
   const profile = await getCurrentProfile();
   if (!profile || !canManageStaff(profile.role)) return { error: "Bạn không có quyền thực hiện." };
   if (id === profile.id) {

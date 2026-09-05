@@ -2,22 +2,18 @@
 
 import { useState, useTransition } from "react";
 import { updateStaffDepartment } from "./actions";
-import { DEPARTMENTS } from "@/lib/admin/departments";
+import type { ConfigOption } from "@/lib/admin/configLists";
 import { Combobox } from "../Combobox";
 
-const OPTIONS = [
-  { value: "", label: "Chưa gán" },
-  ...DEPARTMENTS.map((d) => ({ value: d.code, label: `${d.code} — ${d.label}` })),
-];
-
-export function DepartmentSelect({ id, department }: { id: string; department: string | null }) {
+export function DepartmentSelect({ id, department, departments }: { id: string; department: string | null; departments: ConfigOption[] }) {
   const [value, setValue] = useState(department ?? "");
   const [, startTransition] = useTransition();
+  const options = [{ value: "", label: "Chưa gán" }, ...departments.map((d) => ({ value: d.code, label: `${d.code} — ${d.label}` }))];
 
   return (
     <Combobox
       value={value}
-      options={OPTIONS}
+      options={options}
       onChange={(next) => {
         setValue(next);
         const formData = new FormData();

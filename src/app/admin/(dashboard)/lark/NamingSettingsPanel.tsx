@@ -5,8 +5,8 @@ import { updateLarkPrefs, type LarkPrefsState } from "./actions";
 import { Combobox } from "../Combobox";
 import { Toggle } from "./Toggle";
 import { NamingPreviewBox } from "./NamingPreviewBox";
-import { ORG_CODES, DEPARTMENTS } from "@/lib/admin/departments";
-import { VERSION_OPTIONS, DOC_TYPES } from "@/lib/admin/docTypes";
+import type { ConfigOption } from "@/lib/admin/configLists";
+import { VERSION_OPTIONS } from "@/lib/admin/docTypes";
 import { DEFAULT_LARK_PREFS, type LarkPrefs } from "@/lib/lark/prefs";
 import { buildNamingSegments, todayYYYYMMDD } from "@/lib/admin/fileNaming";
 import { useToastOnActionState } from "../useToastOnActionState";
@@ -15,13 +15,7 @@ const initialState: LarkPrefsState = { error: null };
 const fieldClasses =
   "rounded-[9px] border border-line bg-paper px-3.5 py-2.5 text-[13.5px] text-ink outline-none transition-all duration-300 ease-soft focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/30";
 
-const ORG_OPTIONS = [{ value: "", label: "Không đặt sẵn" }, ...ORG_CODES.map((o) => ({ value: o, label: o }))];
 const VERSION_SELECT_OPTIONS = [{ value: "", label: "Không đặt sẵn" }, ...VERSION_OPTIONS.map((v) => ({ value: v, label: v }))];
-const DEPARTMENT_OPTIONS = [
-  { value: "", label: "Theo hồ sơ nhân viên" },
-  ...DEPARTMENTS.map((d) => ({ value: d.code, label: `${d.code} — ${d.label}` })),
-];
-const DOC_TYPE_OPTIONS = [{ value: "", label: "Không đặt sẵn" }, ...DOC_TYPES.map((d) => ({ value: d.code, label: d.label }))];
 
 const TOGGLES: { key: keyof typeof DEFAULT_LARK_PREFS; label: string; hint: string; dot: string }[] = [
   { key: "includeDept", label: "Mã phòng ban", hint: "VD: SAIZA-IT_...", dot: "#14B8A6" },
@@ -36,10 +30,16 @@ export function NamingSettingsPanel({
   prefs,
   department = null,
   footer,
+  departments,
+  orgCodes,
+  docTypes,
 }: {
   prefs: LarkPrefs;
   department?: string | null;
   footer?: (pending: boolean) => React.ReactNode;
+  departments: ConfigOption[];
+  orgCodes: ConfigOption[];
+  docTypes: ConfigOption[];
 }) {
   const [state, formAction, pending] = useActionState(updateLarkPrefs, initialState);
   useToastOnActionState(state, state.success ? "Đã lưu quy ước đặt tên." : null);
@@ -49,6 +49,13 @@ export function NamingSettingsPanel({
   const [defaultDepartment, setDefaultDepartment] = useState(prefs.defaultDepartment ?? "");
   const [defaultDocType, setDefaultDocType] = useState(prefs.defaultDocType ?? "");
   const today = todayYYYYMMDD();
+
+  const orgOptions = [{ value: "", label: "Không đặt sẵn" }, ...orgCodes.map((o) => ({ value: o.code, label: o.label }))];
+  const departmentOptions = [
+    { value: "", label: "Theo hồ sơ nhân viên" },
+    ...departments.map((d) => ({ value: d.code, label: `${d.code} — ${d.label}` })),
+  ];
+  const docTypeOptions = [{ value: "", label: "Không đặt sẵn" }, ...docTypes.map((d) => ({ value: d.code, label: d.label }))];
 
   const segments = buildNamingSegments({ ...toggles, defaultOrg, defaultVersion, defaultDepartment, defaultDocType }, department, today);
 
@@ -84,7 +91,7 @@ export function NamingSettingsPanel({
             <Combobox
               name="defaultOrg"
               value={defaultOrg}
-              options={ORG_OPTIONS}
+              options={orgOptions}
               onChange={setDefaultOrg}
               buttonClassName={`${fieldClasses} flex w-full items-center justify-between gap-2 text-left`}
             />
@@ -104,7 +111,7 @@ export function NamingSettingsPanel({
             <Combobox
               name="defaultDepartment"
               value={defaultDepartment}
-              options={DEPARTMENT_OPTIONS}
+              options={departmentOptions}
               onChange={setDefaultDepartment}
               buttonClassName={`${fieldClasses} flex w-full items-center justify-between gap-2 text-left`}
             />
@@ -114,7 +121,7 @@ export function NamingSettingsPanel({
             <Combobox
               name="defaultDocType"
               value={defaultDocType}
-              options={DOC_TYPE_OPTIONS}
+              options={docTypeOptions}
               onChange={setDefaultDocType}
               buttonClassName={`${fieldClasses} flex w-full items-center justify-between gap-2 text-left`}
             />

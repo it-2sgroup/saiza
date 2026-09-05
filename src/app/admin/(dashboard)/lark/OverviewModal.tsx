@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { Modal, ModalHeader } from "../Modal";
 import { ItemActionsMenu } from "./ItemActionsMenu";
 import type { StaffOption } from "./StaffSharePicker";
-import { DEPARTMENTS, departmentLabel } from "@/lib/admin/departments";
+import { resolveConfigLabel, type ConfigOption } from "@/lib/admin/configListHelpers";
 import { LARK_FILE_TYPE_LABELS, countNoun, type LarkFileType } from "@/lib/lark/fileTypes";
 
 export type OverviewRow = {
@@ -24,12 +24,14 @@ export function OverviewModal({
   staff = [],
   trigger,
   inline = false,
+  departments,
 }: {
   rows: OverviewRow[];
   folderOptions: { value: string; label: string }[];
   staff?: StaffOption[];
   trigger?: React.ReactNode;
   inline?: boolean;
+  departments: ConfigOption[];
 }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
@@ -101,7 +103,7 @@ export function OverviewModal({
           <div className="flex flex-col gap-1.5">
             {byDepartment.map(([dept, count]) => (
               <div key={dept} className="flex items-center justify-between text-sm">
-                <span className="text-ink-2">{departmentLabel(dept) ?? dept}</span>
+                <span className="text-ink-2">{resolveConfigLabel(dept, departments) ?? dept}</span>
                 <span className="font-medium">{count}</span>
               </div>
             ))}
@@ -124,7 +126,7 @@ export function OverviewModal({
           className="rounded-full border border-line bg-paper px-4 py-2.5 text-[14.5px] text-ink outline-none"
         >
           <option value="">Tất cả phòng ban</option>
-          {DEPARTMENTS.map((d) => (
+          {departments.map((d) => (
             <option key={d.code} value={d.code}>
               {d.label}
             </option>
@@ -157,7 +159,7 @@ export function OverviewModal({
                   <span className="truncate text-[14.5px] font-medium">{row.title}</span>
                   <span className="text-xs text-ink-2">
                     {LARK_FILE_TYPE_LABELS[row.fileType]} · {row.creatorName} ·{" "}
-                    {departmentLabel(row.creatorDepartment) ?? "chưa gán phòng ban"} · 📁 {row.folderName ?? "—"} ·{" "}
+                    {resolveConfigLabel(row.creatorDepartment, departments) ?? "chưa gán phòng ban"} · 📁 {row.folderName ?? "—"} ·{" "}
                     {new Date(row.createdAt).toLocaleString("vi-VN")}
                   </span>
                 </div>

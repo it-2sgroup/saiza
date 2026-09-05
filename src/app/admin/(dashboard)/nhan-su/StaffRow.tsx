@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Avatar } from "../Avatar";
 import { ROLE_LABELS } from "@/lib/admin/permissions";
-import { departmentLabel } from "@/lib/admin/departments";
+import { resolveConfigLabel, type ConfigOption } from "@/lib/admin/configListHelpers";
 import { StaffDetailModal, type StaffPerson } from "./StaffDetailModal";
 
 const ROLE_BADGE_CLASSES: Record<StaffPerson["role"], string> = {
@@ -17,11 +17,13 @@ export function StaffRow({
   email,
   isSelf,
   pendingInvite,
+  departments,
 }: {
   person: StaffPerson;
   email: string;
   isSelf: boolean;
   pendingInvite: boolean;
+  departments: ConfigOption[];
 }) {
   const [open, setOpen] = useState(false);
 
@@ -52,13 +54,23 @@ export function StaffRow({
             </span>
           )}
           <span className="hidden text-xs text-ink-2 sm:inline-block">
-            {departmentLabel(person.department) ?? "Chưa gán phòng ban"}
+            {resolveConfigLabel(person.department, departments) ?? "Chưa gán phòng ban"}
           </span>
           <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${ROLE_BADGE_CLASSES[person.role]}`}>
             {ROLE_LABELS[person.role]}
           </span>
           {!isSelf && (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-ink-2">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="text-ink-2"
+            >
               <path d="m9 6 6 6-6 6" />
             </svg>
           )}
@@ -66,7 +78,13 @@ export function StaffRow({
       </button>
 
       {open && (
-        <StaffDetailModal person={person} email={email} pendingInvite={pendingInvite} onClose={() => setOpen(false)} />
+        <StaffDetailModal
+          person={person}
+          email={email}
+          pendingInvite={pendingInvite}
+          onClose={() => setOpen(false)}
+          departments={departments}
+        />
       )}
     </>
   );

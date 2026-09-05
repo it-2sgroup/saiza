@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Tooltip, ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid } from "recharts";
-import { departmentLabel } from "@/lib/admin/departments";
+import { resolveConfigLabel, type ConfigOption } from "@/lib/admin/configListHelpers";
 import { LARK_FILE_TYPE_LABELS, type LarkFileType } from "@/lib/lark/fileTypes";
 import { Modal, ModalHeader } from "../Modal";
 import { StatTile } from "../StatTile";
@@ -109,7 +109,17 @@ function TrendCard({ trend }: { trend: { date: string; count: number }[] }) {
   );
 }
 
-export function DashboardModal({ data, trigger, inline = false }: { data: DashboardData; trigger?: React.ReactNode; inline?: boolean }) {
+export function DashboardModal({
+  data,
+  trigger,
+  inline = false,
+  departments,
+}: {
+  data: DashboardData;
+  trigger?: React.ReactNode;
+  inline?: boolean;
+  departments: ConfigOption[];
+}) {
   const [open, setOpen] = useState(false);
 
   const adoptionPct = data.totalStaff > 0 ? Math.round((data.activeCreators / data.totalStaff) * 100) : 0;
@@ -174,7 +184,7 @@ export function DashboardModal({ data, trigger, inline = false }: { data: Dashbo
                   <div className="flex min-w-0 flex-col">
                     <span className="truncate text-[14.5px] font-medium">{c.fullName}</span>
                     <span className="text-xs text-ink-2">
-                      {departmentLabel(c.department) ?? "chưa gán phòng ban"} · gần nhất{" "}
+                      {resolveConfigLabel(c.department, departments) ?? "chưa gán phòng ban"} · gần nhất{" "}
                       {new Date(c.lastCreatedAt).toLocaleDateString("vi-VN")}
                     </span>
                   </div>
@@ -195,7 +205,7 @@ export function DashboardModal({ data, trigger, inline = false }: { data: Dashbo
             {data.neverCreated.map((p) => (
               <span key={p.id} className="rounded-full border border-line bg-paper px-3 py-1.5 text-sm text-ink-2">
                 {p.fullName}
-                {p.department && <span className="text-ink-2/60"> · {departmentLabel(p.department)}</span>}
+                {p.department && <span className="text-ink-2/60"> · {resolveConfigLabel(p.department, departments)}</span>}
               </span>
             ))}
           </div>
