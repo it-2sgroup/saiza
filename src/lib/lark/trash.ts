@@ -13,6 +13,26 @@ const TRASH_FOLDER_NAME = "🗑️ Thùng rác hệ thống — đừng xoá/đ�
 
 const trashFolderTokenCache = new Map<string, string | null>();
 
+// Guards every mutation below — checked BEFORE anything touches Lark. Without
+// this, a not-yet-migrated environment (migration 0017 not applied) would
+// still call moveLarkFile successfully, then fail on the lark_trash insert
+// afterwards: the file ends up moved into a stray, untracked trash folder in
+// Lark with no way for this app to find it again, while the user just sees a
+// confusing error. Failing fast here means a missing migration produces a
+// clear error and ZERO side effects, instead of a half-completed move.
+async function assertTrashSchemaReady(): Promise<void> {
+  const admin = createAdminClient();
+  const [a, b] = await Promise.all([
+    admin.from("lark_trash_folder").select("app_key").limit(0),
+    admin.from("lark_trash").select("document_id").limit(0),
+  ]);
+  if (a.error || b.error) {
+    throw new Error(
+      "Tính năng thùng rác chưa sẵn sàng (thiếu bảng lark_trash/lark_trash_folder trong Supabase) — chạy migration 0017_lark_trash.sql trước, chưa có file nào bị ảnh hưởng.",
+    );
+  }
+}
+
 // Read-only lookup — never creates. Used to keep the trash folder out of
 // every normal Drive listing/folder-tree/picker, which must work even before
 // trash has ever been used once (i.e. before the folder exists at all).
@@ -114,6 +134,7 @@ export async function trashDocument(params: {
   deletedBy: string;
 }): Promise<void> {
   const { documentId, fileType, title, appKey, originalParentToken, deletedBy } = params;
+  await assertTrashSchemaReady();
   const trashFolder = await getOrCreateTrashFolder(appKey);
 
   await moveLarkFile(documentId, trashFolder, fileType, appKey);
