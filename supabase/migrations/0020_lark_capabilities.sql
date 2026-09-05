@@ -18,35 +18,10 @@ alter table public.roles add column if not exists can_view_lark_stats boolean no
 
 update public.roles set can_view_lark_stats = true where is_super_admin;
 
--- Keep get_my_role_caps()'s shape mirroring the table, even though no RLS
--- policy reads these two yet — Lark's own authorization lives in app-code
--- checks (see permissions.ts), not Postgres RLS.
---
--- Postgres refuses "create or replace" when the OUT-parameter row type
--- changes (adding columns counts as a change) — has to be dropped first.
-drop function if exists public.get_my_role_caps();
-
-create function public.get_my_role_caps()
-returns table (
-  role_code text,
-  is_super_admin boolean,
-  can_manage_content boolean,
-  can_draft_content boolean,
-  can_manage_lark_org_wide boolean,
-  can_view_inbox boolean,
-  can_manage_staff boolean,
-  can_access_lark boolean,
-  can_view_lark_stats boolean
-)
-language sql
-security definer
-stable
-set search_path = public
-as $$
-  select
-    r.code, r.is_super_admin, r.can_manage_content, r.can_draft_content, r.can_manage_lark_org_wide,
-    r.can_view_inbox, r.can_manage_staff, r.can_access_lark, r.can_view_lark_stats
-  from public.roles r
-  join public.profiles p on p.role = r.code
-  where p.id = auth.uid();
-$$;
+-- get_my_role_caps() is DELIBERATELY left untouched: no RLS policy reads
+-- can_access_lark/can_view_lark_stats (Lark's own authorization lives in
+-- app-code checks — see permissions.ts — not Postgres RLS), and every one
+-- of those policies (roles_super_admin_write, profiles_admin_write,
+-- audit_log_admin_read, news/jobs_staff_*, contact_staff_*,
+-- config_lists_admin_write) depends on this function's exact return type,
+-- so widening it would require dropping and recreating all of them too.
