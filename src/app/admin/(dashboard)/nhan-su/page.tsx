@@ -4,7 +4,9 @@ import { canManageStaff } from "@/lib/admin/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getConfigLists } from "@/lib/admin/configLists";
 import { getRoles, resolveRoleLabel } from "@/lib/admin/roles";
+import { listAllTenantContactsMerged } from "@/lib/lark/contactsCache";
 import { AddStaffModal } from "./AddStaffModal";
+import { SyncLarkContactsButton } from "./SyncLarkContactsButton";
 import { StaffRow } from "./StaffRow";
 import type { StaffPerson } from "./StaffDetailModal";
 import type { StaffRole } from "@/lib/supabase/profile";
@@ -26,22 +28,52 @@ export default async function AdminStaffPage({
   const phongBan = sp.phongBan ?? "";
 
   const admin = createAdminClient();
-  const [{ data: profilesData }, { data: usersData }, { departments }, roles] = await Promise.all([
-    admin.from("profiles").select("id, full_name, role, department, avatar_url, created_at").order("created_at", { ascending: false }),
+  const [
+    { data: profilesData },
+    { data: usersData },
+    { departments },
+    roles,
+    tenantContacts,
+  ] = await Promise.all([
+    admin
+      .from("profiles")
+      .select("id, full_name, role, department, avatar_url, created_at")
+      .order("created_at", { ascending: false }),
     admin.auth.admin.listUsers(),
     getConfigLists(),
     getRoles(),
+    listAllTenantContactsMerged().catch(() => []),
   ]);
   // "Tất cả" first, then every role in the order it's configured — replaces
   // the old hardcoded 3-tab list so a newly added role gets a tab/group for
   // free instead of never appearing anywhere in this filter/grouping.
-  const roleTabs = [{ value: "" as StaffRole | "", label: "Tất cả" }, ...roles.map((r) => ({ value: r.code, label: r.label }))];
+  const roleTabs = [
+    { value: "" as StaffRole | "", label: "Tất cả" },
+    ...roles.map((r) => ({ value: r.code, label: r.label })),
+  ];
 
   const userById = new Map(usersData?.users.map((u) => [u.id, u]) ?? []);
   const allStaff = (profilesData ?? []) as StaffPerson[];
 
+  // The picker should only offer Lark org members who don't already have an
+  // account here — someone already listed below isn't "to add", they're
+  // already added.
+  const existingEmails = new Set(
+    (usersData?.users ?? [])
+      .map((u) => (u.email ?? "").toLowerCase())
+      .filter(Boolean),
+  );
+  const larkContacts = tenantContacts.filter(
+    (c) => !existingEmails.has(c.email.toLowerCase()),
+  );
+
   const tabCounts = Object.fromEntries(
-    roleTabs.map((t) => [t.value, t.value ? allStaff.filter((s) => s.role === t.value).length : allStaff.length]),
+    roleTabs.map((t) => [
+      t.value,
+      t.value
+        ? allStaff.filter((s) => s.role === t.value).length
+        : allStaff.length,
+    ]),
   ) as Record<StaffRole | "", number>;
 
   const filtered = allStaff.filter((person) => {
@@ -49,15 +81,22 @@ export default async function AdminStaffPage({
     if (phongBan && person.department !== phongBan) return false;
     if (q) {
       const email = (userById.get(person.id)?.email ?? "").toLowerCase();
-      if (!person.full_name.toLowerCase().includes(q) && !email.includes(q)) return false;
+      if (!person.full_name.toLowerCase().includes(q) && !email.includes(q))
+        return false;
     }
     return true;
   });
 
   const showGrouped = !vaiTro && !q && !phongBan;
   const qs = (overrides: Record<string, string>) => {
-    const params = new URLSearchParams({ vaiTro, q: sp.q ?? "", phongBan, ...overrides });
-    for (const [key, value] of [...params.entries()]) if (!value) params.delete(key);
+    const params = new URLSearchParams({
+      vaiTro,
+      q: sp.q ?? "",
+      phongBan,
+      ...overrides,
+    });
+    for (const [key, value] of [...params.entries()])
+      if (!value) params.delete(key);
     const str = params.toString();
     return str ? `?${str}` : "";
   };
@@ -82,9 +121,18 @@ export default async function AdminStaffPage({
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex flex-col gap-2">
           <h1 className="text-2xl font-medium">Nhân sự</h1>
-          <p className="text-ink-2">Tạo tài khoản và phân quyền cho nhân viên truy cập khu quản trị.</p>
+          <p className="text-ink-2">
+            Tạo tài khoản và phân quyền cho nhân viên truy cập khu quản trị.
+          </p>
         </div>
-        <AddStaffModal departments={departments} roles={roles} />
+        <div className="flex flex-shrink-0 items-center gap-2">
+          <SyncLarkContactsButton />
+          <AddStaffModal
+            departments={departments}
+            roles={roles}
+            larkContacts={larkContacts}
+          />
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -93,7 +141,9 @@ export default async function AdminStaffPage({
             key={tab.value || "all"}
             href={`/admin/nhan-su${qs({ vaiTro: tab.value })}`}
             className={`rounded-full px-4 py-2 text-sm font-medium transition-colors duration-300 ease-soft ${
-              vaiTro === tab.value ? "bg-accent text-white" : "border border-line bg-card text-ink-2 hover:border-ink"
+              vaiTro === tab.value
+                ? "bg-accent text-white"
+                : "border border-line bg-card text-ink-2 hover:border-ink"
             }`}
           >
             {tab.label} ({tabCounts[tab.value]})
@@ -101,7 +151,11 @@ export default async function AdminStaffPage({
         ))}
       </div>
 
-      <form action="/admin/nhan-su" method="get" className="flex flex-wrap gap-2.5">
+      <form
+        action="/admin/nhan-su"
+        method="get"
+        className="flex flex-wrap gap-2.5"
+      >
         {vaiTro && <input type="hidden" name="vaiTro" value={vaiTro} />}
         <input
           type="text"
@@ -122,7 +176,10 @@ export default async function AdminStaffPage({
             </option>
           ))}
         </select>
-        <button type="submit" className="cursor-pointer rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-white hover:bg-ink">
+        <button
+          type="submit"
+          className="cursor-pointer rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-white hover:bg-ink"
+        >
           Lọc
         </button>
         {(sp.q || phongBan) && (
@@ -136,7 +193,9 @@ export default async function AdminStaffPage({
       </form>
 
       {filtered.length === 0 ? (
-        <p className="text-sm text-ink-2">Không có nhân viên nào khớp bộ lọc.</p>
+        <p className="text-sm text-ink-2">
+          Không có nhân viên nào khớp bộ lọc.
+        </p>
       ) : showGrouped ? (
         <div className="flex flex-col gap-6">
           {roles.map((role) => {
@@ -145,7 +204,8 @@ export default async function AdminStaffPage({
             return (
               <div key={role.code} className="flex flex-col gap-2.5">
                 <h2 className="text-sm font-semibold text-ink-2 uppercase tracking-[0.06em]">
-                  {resolveRoleLabel(role.code, roles) ?? role.code} · {rows.length} người
+                  {resolveRoleLabel(role.code, roles) ?? role.code} ·{" "}
+                  {rows.length} người
                 </h2>
                 <div className="flex flex-col gap-2">{rows.map(renderRow)}</div>
               </div>
