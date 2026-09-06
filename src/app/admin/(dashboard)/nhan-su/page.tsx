@@ -55,17 +55,13 @@ export default async function AdminStaffPage({
   const userById = new Map(usersData?.users.map((u) => [u.id, u]) ?? []);
   const allStaff = (profilesData ?? []) as StaffPerson[];
 
-  // The picker should only offer Lark org members who don't already have an
-  // account here — someone already listed below isn't "to add", they're
-  // already added.
-  const existingEmails = new Set(
-    (usersData?.users ?? [])
-      .map((u) => (u.email ?? "").toLowerCase())
-      .filter(Boolean),
-  );
-  const larkContacts = tenantContacts.filter(
-    (c) => !existingEmails.has(c.email.toLowerCase()),
-  );
+  // Deliberately NOT filtering out contacts whose email already has an
+  // account here — someone can belong to several orgs under different
+  // emails (only one of which is already onboarded), and hiding rows by
+  // email made those other, still-unaccounted-for org memberships vanish
+  // from the picker too. Picking an already-registered email just surfaces
+  // Supabase's "already registered" error on submit — no duplicate account.
+  const larkContacts = tenantContacts;
 
   const tabCounts = Object.fromEntries(
     roleTabs.map((t) => [
