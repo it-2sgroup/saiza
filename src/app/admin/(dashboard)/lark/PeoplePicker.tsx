@@ -54,6 +54,11 @@ export function PeoplePicker({
   };
 
   const needle = value.trim().toLowerCase();
+  // Cap exists only to protect the dropdown from a pathologically large
+  // list, not to hide real results — Nhân sự's "add from Lark" picker now
+  // shows one row per org membership (not deduped), which already runs to
+  // ~70+ across 5 orgs. 50 used to be comfortably above the real total; it
+  // silently truncated the last org(s) once the total passed it.
   const matches = (
     needle
       ? staff.filter(
@@ -62,7 +67,7 @@ export function PeoplePicker({
             s.email.toLowerCase().includes(needle),
         )
       : staff
-  ).slice(0, 50);
+  ).slice(0, 500);
 
   const pick = (s: StaffOption) => {
     onChange(s.email);
