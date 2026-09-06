@@ -288,21 +288,20 @@ export async function getLarkPageData(profile: Profile): Promise<LarkPageData> {
     }))
     .filter((s): s is StaffOption => !!s.email);
   // Sharing/transferring ownership needs to reach people across every
-  // connected org, not just whichever app is active for new creations — so
-  // the suggestion pool is every app's directory merged together (deduped by
-  // email, since the same person can show up via more than one org).
-  // Website staff fills in anyone still missing (e.g. contacts scope not
+  // connected org — one row PER ORG MEMBERSHIP, not deduped: someone who
+  // works across e.g. SAIZA and SISMO shows up twice, tagged with which org
+  // each row is from (same rationale as Nhân sự's add-staff picker — see
+  // contactsCache.ts's listOrgContactsForStaffPicker doc comment). Website
+  // staff fills in anyone still missing entirely (e.g. contacts scope not
   // opened for their org yet).
   const seenEmails = new Set<string>();
   const tenantContacts: StaffOption[] = [];
-  for (const contacts of tenantContactsByApp) {
-    for (const c of contacts) {
-      const key = c.email.toLowerCase();
-      if (seenEmails.has(key)) continue;
-      seenEmails.add(key);
-      tenantContacts.push(c);
+  larkApps.forEach((app, i) => {
+    for (const c of tenantContactsByApp[i]) {
+      tenantContacts.push({ ...c, orgLabel: app.label });
+      seenEmails.add(c.email.toLowerCase());
     }
-  }
+  });
   const staff: StaffOption[] = [
     ...tenantContacts,
     ...websiteStaff.filter((s) => !seenEmails.has(s.email.toLowerCase())),
