@@ -4,7 +4,16 @@ import { Combobox } from "../Combobox";
 import { PeoplePicker } from "./PeoplePicker";
 import type { ShareRow } from "@/lib/lark/shareRows";
 
-export type StaffOption = { id: string; full_name: string; email: string; avatar_url: string | null };
+export type StaffOption = {
+  id: string;
+  full_name: string;
+  email: string;
+  avatar_url: string | null;
+  // Set only by Nhân sự's "add from Lark" picker, where the same person can
+  // legitimately appear once per org they belong to — shown as a small tag
+  // so those rows read as "same person, different org" instead of a glitch.
+  orgLabel?: string;
+};
 export type { ShareRow };
 
 const PERM_OPTIONS = [
@@ -35,12 +44,17 @@ export function StaffSharePicker({
   const updateRow = (index: number, patch: Partial<ShareRow>) => {
     onChange(value.map((row, i) => (i === index ? { ...row, ...patch } : row)));
   };
-  const removeRow = (index: number) => onChange(value.filter((_, i) => i !== index));
+  const removeRow = (index: number) =>
+    onChange(value.filter((_, i) => i !== index));
   const addRow = () => onChange([...value, { email: "", perm: "view" }]);
 
   return (
     <div className="flex flex-col gap-2.5">
-      <input type="hidden" name={hiddenFieldName} value={JSON.stringify(value)} />
+      <input
+        type="hidden"
+        name={hiddenFieldName}
+        value={JSON.stringify(value)}
+      />
       {value.map((row, i) => (
         <div key={i} className="flex items-center gap-2.5">
           <PeoplePicker
@@ -54,7 +68,9 @@ export function StaffSharePicker({
             <Combobox
               value={row.perm}
               options={PERM_OPTIONS}
-              onChange={(perm) => updateRow(i, { perm: perm as ShareRow["perm"] })}
+              onChange={(perm) =>
+                updateRow(i, { perm: perm as ShareRow["perm"] })
+              }
               buttonClassName={`${fieldClasses} flex w-full items-center justify-between gap-2 text-left`}
             />
           </div>
@@ -64,13 +80,25 @@ export function StaffSharePicker({
             aria-label="Xoá người này"
             className="flex h-9 w-9 flex-shrink-0 cursor-pointer items-center justify-center rounded-full text-ink-2 hover:bg-wash hover:text-ink"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            >
               <path d="M18 6 6 18M6 6l12 12" />
             </svg>
           </button>
         </div>
       ))}
-      <button type="button" onClick={addRow} className="w-fit cursor-pointer text-sm font-semibold text-accent hover:text-ink">
+      <button
+        type="button"
+        onClick={addRow}
+        className="w-fit cursor-pointer text-sm font-semibold text-accent hover:text-ink"
+      >
         + Thêm người
       </button>
     </div>

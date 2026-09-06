@@ -4,7 +4,7 @@ import { canManageStaff } from "@/lib/admin/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getConfigLists } from "@/lib/admin/configLists";
 import { getRoles, resolveRoleLabel } from "@/lib/admin/roles";
-import { listAllTenantContactsMerged } from "@/lib/lark/contactsCache";
+import { listOrgContactsForStaffPicker } from "@/lib/lark/contactsCache";
 import { AddStaffModal } from "./AddStaffModal";
 import { SyncLarkContactsButton } from "./SyncLarkContactsButton";
 import { StaffRow } from "./StaffRow";
@@ -42,7 +42,7 @@ export default async function AdminStaffPage({
     admin.auth.admin.listUsers(),
     getConfigLists(),
     getRoles(),
-    listAllTenantContactsMerged().catch(() => []),
+    listOrgContactsForStaffPicker().catch(() => []),
   ]);
   // "Tất cả" first, then every role in the order it's configured — replaces
   // the old hardcoded 3-tab list so a newly added role gets a tab/group for

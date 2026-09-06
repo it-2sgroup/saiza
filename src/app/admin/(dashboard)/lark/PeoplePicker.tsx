@@ -126,6 +126,11 @@ export function PeoplePicker({
                   </span>
                   <span className="truncate text-xs text-ink-2">{s.email}</span>
                 </div>
+                {s.orgLabel && (
+                  <span className="ml-auto flex-shrink-0 rounded-full bg-wash px-2 py-0.5 text-[11px] font-medium text-ink-2">
+                    {s.orgLabel}
+                  </span>
+                )}
               </button>
             ))}
           </div>,
