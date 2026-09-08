@@ -43,7 +43,7 @@ import {
 import { canAccessLark, canManageAnyLarkDoc } from "@/lib/admin/permissions";
 import { VERSION_OPTIONS } from "@/lib/admin/docTypes";
 import { getConfigLists } from "@/lib/admin/configLists";
-import type { LarkPrefs } from "@/lib/lark/prefs";
+import type { LarkPrefs, LarkNamingTemplate } from "@/lib/lark/prefs";
 
 const VALID_FILE_TYPES: LarkFileType[] = ["docx", "sheet", "bitable", "folder"];
 
@@ -178,57 +178,72 @@ export async function createLarkDocument(
   if (org && !orgCodes.some((o) => o.code === org))
     return { error: "Mã tổ chức không hợp lệ." };
 
-  const includeDept = formData.get("includeDept") === "on";
+  // "Đặt tên tự do" — the popup-local toggle in LarkDocForm. When on, the
+  // whole naming-convention block (org/phòng ban/loại tài liệu/version/
+  // ngày/WIP) is skipped entirely and `content` becomes the literal title,
+  // sanitized but not prefixed/suffixed. Deliberately not persisted
+  // anywhere (unlike lark_prefs) — it's a one-off choice per file, not a
+  // standing default.
+  const namingMode =
+    String(formData.get("namingMode") ?? "structured").trim() === "custom"
+      ? "custom"
+      : "structured";
+
   let department: string | null = null;
-  if (includeDept) {
-    department = String(formData.get("department") ?? "").trim();
-    if (!department || !departments.some((d) => d.code === department))
-      return { error: "Chọn phòng ban." };
-  }
-
   let title: string;
-  if (fileType === "folder") {
-    title = buildFolderName({ org: org || null, department, name: content });
+  if (namingMode === "custom") {
+    title = sanitizeNameSegment(content);
   } else {
-    const includeDocType = formData.get("includeDocType") === "on";
-    const includeDate = formData.get("includeDate") === "on";
-    const includeVersion = formData.get("includeVersion") === "on";
-    const wip = formData.get("wip") === "on";
-
-    let docType: string | null = null;
-    if (includeDocType) {
-      const docTypeRaw = String(formData.get("docType") ?? "").trim();
-      // Unlike docTypeRaw's preset options (DOC_TYPES, already safe), a
-      // custom "Khác" value is free text and needs the same sanitizing as
-      // `content` — otherwise a stray "/" here lands unescaped in the title.
-      const docTypeOther = sanitizeNameSegment(
-        String(formData.get("docTypeOther") ?? ""),
-      );
-      docType = docTypeRaw === "Khác" ? docTypeOther : docTypeRaw;
-      if (!docType) return { error: "Chọn hoặc nhập loại tài liệu." };
+    const includeDept = formData.get("includeDept") === "on";
+    if (includeDept) {
+      department = String(formData.get("department") ?? "").trim();
+      if (!department || !departments.some((d) => d.code === department))
+        return { error: "Chọn phòng ban." };
     }
 
-    let date: string | null = null;
-    if (includeDate) {
-      date = String(formData.get("date") ?? "").trim();
-      if (!/^\d{8}$/.test(date)) return { error: "Ngày không hợp lệ." };
-    }
+    if (fileType === "folder") {
+      title = buildFolderName({ org: org || null, department, name: content });
+    } else {
+      const includeDocType = formData.get("includeDocType") === "on";
+      const includeDate = formData.get("includeDate") === "on";
+      const includeVersion = formData.get("includeVersion") === "on";
+      const wip = formData.get("wip") === "on";
 
-    let version: string | null = null;
-    if (includeVersion) {
-      version = String(formData.get("version") ?? "").trim();
-      if (!version) return { error: "Chọn version." };
-    }
+      let docType: string | null = null;
+      if (includeDocType) {
+        const docTypeRaw = String(formData.get("docType") ?? "").trim();
+        // Unlike docTypeRaw's preset options (DOC_TYPES, already safe), a
+        // custom "Khác" value is free text and needs the same sanitizing as
+        // `content` — otherwise a stray "/" here lands unescaped in the title.
+        const docTypeOther = sanitizeNameSegment(
+          String(formData.get("docTypeOther") ?? ""),
+        );
+        docType = docTypeRaw === "Khác" ? docTypeOther : docTypeRaw;
+        if (!docType) return { error: "Chọn hoặc nhập loại tài liệu." };
+      }
 
-    title = buildFileName({
-      org: org || null,
-      department,
-      docType,
-      content,
-      date,
-      version,
-      wip,
-    });
+      let date: string | null = null;
+      if (includeDate) {
+        date = String(formData.get("date") ?? "").trim();
+        if (!/^\d{8}$/.test(date)) return { error: "Ngày không hợp lệ." };
+      }
+
+      let version: string | null = null;
+      if (includeVersion) {
+        version = String(formData.get("version") ?? "").trim();
+        if (!version) return { error: "Chọn version." };
+      }
+
+      title = buildFileName({
+        org: org || null,
+        department,
+        docType,
+        content,
+        date,
+        version,
+        wip,
+      });
+    }
   }
   if (!title) return { error: "Nội dung/tên không hợp lệ để đặt tên file." };
 
@@ -462,9 +477,14 @@ export async function updateLarkPrefs(
     ...(version ? { defaultVersion: version } : {}),
     ...(department ? { defaultDepartment: department } : {}),
     ...(docType ? { defaultDocType: docType } : {}),
-    // Preserve the app switcher's selection — this form doesn't edit it.
+    // Preserve fields this form doesn't edit — the app switcher's selection
+    // and any saved naming templates. This rebuilds lark_prefs from scratch,
+    // so leaving either out would silently wipe it on the next save here.
     ...(profile.lark_prefs.activeApp
       ? { activeApp: profile.lark_prefs.activeApp }
+      : {}),
+    ...(profile.lark_prefs.templates
+      ? { templates: profile.lark_prefs.templates }
       : {}),
   };
 
@@ -486,6 +506,113 @@ export async function updateLarkPrefs(
 
   revalidatePath("/admin/lark");
   return { error: null, success: true };
+}
+
+// Not a useActionState/FormData action like the others — this is invoked
+// directly from LarkDocForm's local component state (org/department/
+// includeDept/etc.), which was never part of a submitted <form> (the create
+// form uses those same values for the file being created, not this). Server
+// Actions can be called as plain async functions like this; no native form
+// needed.
+export async function saveLarkNamingTemplate(input: {
+  name: string;
+  includeDept: boolean;
+  includeDocType: boolean;
+  includeDate: boolean;
+  includeVersion: boolean;
+  org: string;
+  department: string;
+  docType: string;
+  version: string;
+  wip: boolean;
+}): Promise<{ error: string | null; template?: LarkNamingTemplate }> {
+  const profile = await getCurrentProfile();
+  if (!profile) return { error: "Bạn cần đăng nhập lại." };
+  if (!(await canAccessLark(profile.role)))
+    return { error: "Bạn không có quyền dùng chức năng này." };
+
+  const name = input.name.trim();
+  if (!name) return { error: "Nhập tên cho mẫu này." };
+
+  const { departments, orgCodes, docTypes } = await getConfigLists();
+  if (input.org && !orgCodes.some((o) => o.code === input.org))
+    return { error: "Mã tổ chức không hợp lệ." };
+  if (input.department && !departments.some((d) => d.code === input.department))
+    return { error: "Phòng ban không hợp lệ." };
+  if (
+    input.docType &&
+    input.docType !== "Khác" &&
+    !docTypes.some((d) => d.code === input.docType)
+  )
+    return { error: "Loại tài liệu không hợp lệ." };
+
+  const template: LarkNamingTemplate = {
+    id: crypto.randomUUID(),
+    name,
+    includeDept: input.includeDept,
+    includeDocType: input.includeDocType,
+    includeDate: input.includeDate,
+    includeVersion: input.includeVersion,
+    org: input.org,
+    department: input.department,
+    docType: input.docType,
+    version: input.version,
+    wip: input.wip,
+  };
+
+  // Caps the list so repeatedly saving doesn't grow this unboundedly inside
+  // the shared lark_prefs JSONB blob — same reasoning as MAX_PERSISTED_FOLDERS
+  // in useDriveFolders.ts.
+  const MAX_TEMPLATES = 20;
+  const templates = [...(profile.lark_prefs.templates ?? []), template].slice(
+    -MAX_TEMPLATES,
+  );
+
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("profiles")
+    .update({ lark_prefs: { ...profile.lark_prefs, templates } })
+    .eq("id", profile.id);
+  if (error)
+    return {
+      error: friendlyError(
+        "saveLarkNamingTemplate",
+        error,
+        "Không lưu được mẫu. Vui lòng thử lại.",
+      ),
+    };
+
+  revalidatePath("/admin/lark");
+  return { error: null, template };
+}
+
+export async function deleteLarkNamingTemplate(
+  templateId: string,
+): Promise<{ error: string | null }> {
+  const profile = await getCurrentProfile();
+  if (!profile) return { error: "Bạn cần đăng nhập lại." };
+  if (!(await canAccessLark(profile.role)))
+    return { error: "Bạn không có quyền dùng chức năng này." };
+
+  const templates = (profile.lark_prefs.templates ?? []).filter(
+    (t) => t.id !== templateId,
+  );
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("profiles")
+    .update({ lark_prefs: { ...profile.lark_prefs, templates } })
+    .eq("id", profile.id);
+  if (error)
+    return {
+      error: friendlyError(
+        "deleteLarkNamingTemplate",
+        error,
+        "Không xoá được mẫu. Vui lòng thử lại.",
+      ),
+    };
+
+  revalidatePath("/admin/lark");
+  return { error: null };
 }
 
 // Lightweight, separate from updateLarkPrefs so switching apps in the header
