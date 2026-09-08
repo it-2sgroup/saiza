@@ -10,6 +10,7 @@ import {
   shareLarkDocByEmail,
   transferLarkFileOwner,
   getDefaultAppKey,
+  getStorageAppKey,
   getLarkApps,
   type LarkFileType,
 } from "@/lib/lark/client";
@@ -237,7 +238,11 @@ export async function createLarkDocument(
     };
   }
 
-  const appKey = profile.lark_prefs.activeApp || getDefaultAppKey();
+  // Always the central Pro-tier tenant — see getStorageAppKey's doc comment.
+  // NOT profile.lark_prefs.activeApp: that reflects which org's Drive the
+  // creator happens to be browsing, which has nothing to do with where a
+  // brand-new file should actually be stored.
+  const appKey = getStorageAppKey();
 
   // No explicit folder picked → route into the canonical (org, department)
   // folder, auto-provisioned on first use (see folderRegistry.ts), instead of
@@ -298,25 +303,44 @@ export async function createLarkDocument(
   const wantsOwnershipTransfer = formData.get("transferOwnership") === "on";
 
   let shared = false;
+  let ownerTransferred = false;
   const admin = createAdminClient();
   const { data: userData } = await admin.auth.admin.getUserById(profile.id);
   const email = userData?.user?.email;
   if (email) {
+    // Always grant full_access first — the guaranteed baseline, which works
+    // even when the creator isn't an actual member of the storage tenant
+    // (2sgroup). Doing this unconditionally, not only when ownership
+    // transfer is skipped, fixes a real lockout: files now always land in
+    // 2sgroup regardless of which org's Lark the creator belongs to, so
+    // "chuyển quyền sở hữu" below routinely fails for anyone outside
+    // 2sgroup — before this, that failure left the creator with zero
+    // access to a file they just made.
     try {
-      if (wantsOwnershipTransfer) {
-        await transferLarkFileOwner(documentId, email, fileType, appKey);
-      } else {
-        await shareLarkDocByEmail(
-          documentId,
-          email,
-          "full_access",
-          fileType,
-          appKey,
-        );
-      }
+      await shareLarkDocByEmail(
+        documentId,
+        email,
+        "full_access",
+        fileType,
+        appKey,
+      );
       shared = true;
     } catch {
       // Best-effort — employee still gets the link, just may need manual access.
+    }
+
+    if (wantsOwnershipTransfer) {
+      // Bonus on top of the share above, not a replacement for it — real
+      // ownership transfer only works when the creator's email is an actual
+      // member of the storage tenant (2sgroup). Failing here is the normal
+      // case for anyone from another org; they keep the full_access grant
+      // already made above instead of losing all access.
+      try {
+        await transferLarkFileOwner(documentId, email, fileType, appKey);
+        ownerTransferred = true;
+      } catch {
+        // Best-effort — falls back to the full_access share already granted.
+      }
     }
   }
 
@@ -342,7 +366,7 @@ export async function createLarkDocument(
       shares: shareResults,
       fileType,
       org: org || null,
-      ownerTransferred: wantsOwnershipTransfer && shared,
+      ownerTransferred,
       appKey,
       // Which Lark folder this landed in — lets the file lists show where a
       // file actually lives, not just who created it. moveLarkDocument
