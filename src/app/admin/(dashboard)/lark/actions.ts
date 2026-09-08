@@ -9,7 +9,6 @@ import {
   moveLarkFile,
   shareLarkDocByEmail,
   transferLarkFileOwner,
-  enableLinkEditAccess,
   getDefaultAppKey,
   getStorageAppKey,
   getLarkApps,
@@ -311,12 +310,15 @@ export async function createLarkDocument(
   if (email) {
     // Always grant full_access first — the guaranteed baseline, which works
     // even when the creator isn't an actual member of the storage tenant
-    // (2sgroup). Doing this unconditionally, not only when ownership
-    // transfer is skipped, fixes a real lockout: files now always land in
-    // 2sgroup regardless of which org's Lark the creator belongs to, so
-    // "chuyển quyền sở hữu" below routinely fails for anyone outside
-    // 2sgroup — before this, that failure left the creator with zero
-    // access to a file they just made.
+    // (2sgroup): shareLarkDocByEmail's resolver checks every connected
+    // app's own directory, not just 2sgroup's, so someone who only has a
+    // SISMO/SAIZA/etc. Lark account still gets real, named access — not a
+    // public "anyone with the link" grant. Doing this unconditionally, not
+    // only when ownership transfer is skipped, fixes a real lockout: files
+    // now always land in 2sgroup regardless of which org's Lark the
+    // creator belongs to, so "chuyển quyền sở hữu" below routinely fails
+    // for anyone outside 2sgroup — before this, that failure left the
+    // creator with zero access to a file they just made.
     try {
       await shareLarkDocByEmail(
         documentId,
@@ -327,17 +329,9 @@ export async function createLarkDocument(
       );
       shared = true;
     } catch {
-      // Named sharing only works for an actual member of the storage
-      // tenant — the normal case now is the creator belongs to a DIFFERENT
-      // org's Lark than where the file is stored (2sgroup). Fall back to a
-      // link the creator (and anyone else with it) can edit — the app stays
-      // the real owner, but they're not locked out of the file they made.
-      try {
-        await enableLinkEditAccess(documentId, fileType, appKey);
-        shared = true;
-      } catch {
-        // Best-effort — employee still gets the link, just may need manual access.
-      }
+      // Best-effort — this only fails if the email isn't resolvable in ANY
+      // connected org's Lark directory at all. Employee still gets the
+      // link, just may need manual access.
     }
 
     if (wantsOwnershipTransfer) {

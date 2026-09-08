@@ -428,24 +428,31 @@ export async function deleteLarkFile(
 // (and apparently others) rejects it outright with a generic "1063001
 // Invalid parameter" — true for every app tested, every doc type, both
 // internal and external emails. Resolving the email to its open_id first,
-// then sharing with `member_type: "openid"`, works reliably — confirmed by
-// direct testing: identical share/transfer calls that failed 100% of the
-// time with member_type "email" succeeded immediately with a resolved
-// open_id instead.
+// then sharing with `member_type: "openid"`, works reliably.
 //
 // Deliberately NOT contact/v3/users/batch_get_id for the resolution — that
 // endpoint matches only against the `email` field, which is blank for every
 // account in this tenant (they only have `enterprise_email` populated), so
 // it always comes back empty regardless of whether the account is real.
 // listTenantContacts already reads `enterprise_email || email` correctly
-// (same scopes+batch flow the people-picker relies on), so it's reused here
-// instead of a second, broken lookup path.
-async function resolveEmailToOpenId(
-  email: string,
-  appKey?: string,
-): Promise<string | null> {
-  const contacts = await listTenantContacts(appKey);
-  return contacts.find((c) => c.email === email)?.id ?? null;
+// (same scopes+batch flow the people-picker relies on).
+//
+// Checks every connected app's own tenant, not just the file's storage app
+// — most files now land in 2sgroup (getStorageAppKey) regardless of which
+// org actually created them, so the creator is routinely NOT a member of
+// the storage tenant at all. An open_id is normally tenant-scoped, but
+// Lark's drive/v1/permissions API accepts an open_id resolved from a
+// DIFFERENT tenant just fine (confirmed by direct testing) — this is
+// exactly what Lark's "External Collaboration" feature is for. That grants
+// real, scoped, named access (shows up as exactly that one person in the
+// file's member list) — nothing like "anyone with the link".
+async function resolveEmailToOpenId(email: string): Promise<string | null> {
+  for (const app of getLarkApps()) {
+    const contacts = await listTenantContacts(app.key).catch(() => []);
+    const match = contacts.find((c) => c.email === email);
+    if (match) return match.id;
+  }
+  return null;
 }
 
 // Makes `email` the actual Lark owner of the file/folder, not just a
@@ -464,7 +471,7 @@ export async function transferLarkFileOwner(
 ): Promise<void> {
   const token = await getTenantAccessToken(appKey);
 
-  const openId = await resolveEmailToOpenId(email, appKey);
+  const openId = await resolveEmailToOpenId(email);
   if (!openId) {
     throw new Error(
       `Không chuyển được quyền sở hữu cho ${email}: không tìm thấy tài khoản Lark tương ứng.`,
@@ -502,7 +509,7 @@ export async function shareLarkDocByEmail(
 ): Promise<void> {
   const token = await getTenantAccessToken(appKey);
 
-  const openId = await resolveEmailToOpenId(email, appKey);
+  const openId = await resolveEmailToOpenId(email);
   if (!openId) {
     throw new Error(
       `Không chia sẻ được cho ${email}: không tìm thấy tài khoản Lark tương ứng.`,
@@ -525,44 +532,6 @@ export async function shareLarkDocByEmail(
   if (!res.ok || data.code !== 0) {
     throw new Error(
       `Không chia sẻ được cho ${email}: ${data.msg ?? res.statusText}`,
-    );
-  }
-}
-
-// Fallback for someone who isn't resolvable in the storage tenant's own
-// directory (see resolveEmailToOpenId) — most files now land in 2sgroup
-// (getStorageAppKey) regardless of which org actually created them, so this
-// is the normal case for anyone outside 2sgroup, not an edge case. Named
-// per-account sharing is impossible for them (Lark has no concept of a
-// collaborator who isn't a member of the tenant the file lives in), so
-// instead the file's own share link is opened to "anyone with the link can
-// edit" — the app/bot stays the real owner, the creator (and anyone else
-// who has the link) can open and edit it. Deliberately not the default for
-// everyone: a real tenant member still gets scoped, named full_access via
-// shareLarkDocByEmail, which doesn't expose the file to anyone else who
-// merely obtains the link.
-export async function enableLinkEditAccess(
-  documentId: string,
-  type: LarkFileType = "docx",
-  appKey?: string,
-): Promise<void> {
-  const token = await getTenantAccessToken(appKey);
-  const res = await fetch(
-    `${LARK_API_BASE}/drive/v1/permissions/${documentId}/public?type=${type}`,
-    {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ link_share_entity: "anyone_editable" }),
-      cache: "no-store",
-    },
-  );
-  const data = await res.json();
-  if (!res.ok || data.code !== 0) {
-    throw new Error(
-      `Không bật được link chỉnh sửa: ${data.msg ?? res.statusText}`,
     );
   }
 }
