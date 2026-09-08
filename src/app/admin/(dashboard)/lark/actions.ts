@@ -9,6 +9,7 @@ import {
   moveLarkFile,
   shareLarkDocByEmail,
   transferLarkFileOwner,
+  enableLinkEditAccess,
   getDefaultAppKey,
   getStorageAppKey,
   getLarkApps,
@@ -326,7 +327,17 @@ export async function createLarkDocument(
       );
       shared = true;
     } catch {
-      // Best-effort — employee still gets the link, just may need manual access.
+      // Named sharing only works for an actual member of the storage
+      // tenant — the normal case now is the creator belongs to a DIFFERENT
+      // org's Lark than where the file is stored (2sgroup). Fall back to a
+      // link the creator (and anyone else with it) can edit — the app stays
+      // the real owner, but they're not locked out of the file they made.
+      try {
+        await enableLinkEditAccess(documentId, fileType, appKey);
+        shared = true;
+      } catch {
+        // Best-effort — employee still gets the link, just may need manual access.
+      }
     }
 
     if (wantsOwnershipTransfer) {

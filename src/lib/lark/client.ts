@@ -423,6 +423,31 @@ export async function deleteLarkFile(
   }
 }
 
+// The drive/v1/permissions "add member"/"transfer owner" endpoints accept
+// `member_type: "email"` per Lark's own docs, but in practice this tenant
+// (and apparently others) rejects it outright with a generic "1063001
+// Invalid parameter" — true for every app tested, every doc type, both
+// internal and external emails. Resolving the email to its open_id first,
+// then sharing with `member_type: "openid"`, works reliably — confirmed by
+// direct testing: identical share/transfer calls that failed 100% of the
+// time with member_type "email" succeeded immediately with a resolved
+// open_id instead.
+//
+// Deliberately NOT contact/v3/users/batch_get_id for the resolution — that
+// endpoint matches only against the `email` field, which is blank for every
+// account in this tenant (they only have `enterprise_email` populated), so
+// it always comes back empty regardless of whether the account is real.
+// listTenantContacts already reads `enterprise_email || email` correctly
+// (same scopes+batch flow the people-picker relies on), so it's reused here
+// instead of a second, broken lookup path.
+async function resolveEmailToOpenId(
+  email: string,
+  appKey?: string,
+): Promise<string | null> {
+  const contacts = await listTenantContacts(appKey);
+  return contacts.find((c) => c.email === email)?.id ?? null;
+}
+
 // Makes `email` the actual Lark owner of the file/folder, not just a
 // full_access collaborator. Matters for folders especially: delete/manage
 // permission on a shared-space item is gated by the PARENT folder's settings
@@ -439,6 +464,13 @@ export async function transferLarkFileOwner(
 ): Promise<void> {
   const token = await getTenantAccessToken(appKey);
 
+  const openId = await resolveEmailToOpenId(email, appKey);
+  if (!openId) {
+    throw new Error(
+      `Không chuyển được quyền sở hữu cho ${email}: không tìm thấy tài khoản Lark tương ứng.`,
+    );
+  }
+
   const res = await fetch(
     `${LARK_API_BASE}/drive/v1/permissions/${documentId}/members/transfer_owner?type=${type}&need_notification=false`,
     {
@@ -447,7 +479,7 @@ export async function transferLarkFileOwner(
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ member_type: "email", member_id: email }),
+      body: JSON.stringify({ member_type: "openid", member_id: openId }),
       cache: "no-store",
     },
   );
@@ -470,6 +502,13 @@ export async function shareLarkDocByEmail(
 ): Promise<void> {
   const token = await getTenantAccessToken(appKey);
 
+  const openId = await resolveEmailToOpenId(email, appKey);
+  if (!openId) {
+    throw new Error(
+      `Không chia sẻ được cho ${email}: không tìm thấy tài khoản Lark tương ứng.`,
+    );
+  }
+
   const res = await fetch(
     `${LARK_API_BASE}/drive/v1/permissions/${documentId}/members?type=${type}`,
     {
@@ -478,7 +517,7 @@ export async function shareLarkDocByEmail(
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ member_type: "email", member_id: email, perm }),
+      body: JSON.stringify({ member_type: "openid", member_id: openId, perm }),
       cache: "no-store",
     },
   );
@@ -486,6 +525,44 @@ export async function shareLarkDocByEmail(
   if (!res.ok || data.code !== 0) {
     throw new Error(
       `Không chia sẻ được cho ${email}: ${data.msg ?? res.statusText}`,
+    );
+  }
+}
+
+// Fallback for someone who isn't resolvable in the storage tenant's own
+// directory (see resolveEmailToOpenId) — most files now land in 2sgroup
+// (getStorageAppKey) regardless of which org actually created them, so this
+// is the normal case for anyone outside 2sgroup, not an edge case. Named
+// per-account sharing is impossible for them (Lark has no concept of a
+// collaborator who isn't a member of the tenant the file lives in), so
+// instead the file's own share link is opened to "anyone with the link can
+// edit" — the app/bot stays the real owner, the creator (and anyone else
+// who has the link) can open and edit it. Deliberately not the default for
+// everyone: a real tenant member still gets scoped, named full_access via
+// shareLarkDocByEmail, which doesn't expose the file to anyone else who
+// merely obtains the link.
+export async function enableLinkEditAccess(
+  documentId: string,
+  type: LarkFileType = "docx",
+  appKey?: string,
+): Promise<void> {
+  const token = await getTenantAccessToken(appKey);
+  const res = await fetch(
+    `${LARK_API_BASE}/drive/v1/permissions/${documentId}/public?type=${type}`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ link_share_entity: "anyone_editable" }),
+      cache: "no-store",
+    },
+  );
+  const data = await res.json();
+  if (!res.ok || data.code !== 0) {
+    throw new Error(
+      `Không bật được link chỉnh sửa: ${data.msg ?? res.statusText}`,
     );
   }
 }
