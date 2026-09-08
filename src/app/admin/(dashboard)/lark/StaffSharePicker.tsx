@@ -9,10 +9,18 @@ export type StaffOption = {
   full_name: string;
   email: string;
   avatar_url: string | null;
-  // Set only by Nhân sự's "add from Lark" picker, where the same person can
-  // legitimately appear once per org they belong to — shown as a small tag
-  // so those rows read as "same person, different org" instead of a glitch.
+  // Both set only by Nhân sự's "add from Lark" picker, where the same
+  // person can legitimately appear once per org they belong to. orgLabel is
+  // the small tag shown so those rows read as "same person, different org"
+  // instead of a glitch; orgKey (the LARK_APPS key, e.g. "sismo") is what
+  // the invite form uses to seed the new account's default Lark app — a
+  // person picked from SISMO's directory needs "sismo" active by default,
+  // or files they create land in whatever app happens to be first in
+  // LARK_APPS, sharing to their own email fails (that email isn't a member
+  // of that unrelated tenant), and they open the file in their real Lark
+  // account to find they have no access to it at all.
   orgLabel?: string;
+  orgKey?: string;
 };
 export type { ShareRow };
 

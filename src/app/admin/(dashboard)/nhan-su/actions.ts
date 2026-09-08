@@ -8,6 +8,7 @@ import { recordAuditLog } from "@/lib/admin/audit";
 import { getConfigLists } from "@/lib/admin/configLists";
 import { getRoles } from "@/lib/admin/roles";
 import { forceSyncTenantContacts } from "@/lib/lark/contactsCache";
+import { getLarkApps } from "@/lib/lark/client";
 import { friendlyError } from "@/lib/errors";
 import type { StaffRole } from "@/lib/supabase/profile";
 
@@ -45,6 +46,16 @@ export async function inviteStaffAccount(
   const email = String(formData.get("email") ?? "").trim();
   const role = String(formData.get("role") ?? "").trim() as StaffRole;
   const department = String(formData.get("department") ?? "").trim();
+  // Which Lark org this person was picked from, if any (see PeoplePicker's
+  // orgKey) — becomes their default active app so a file they create lands
+  // in their own org's tenant instead of whichever app is first in
+  // LARK_APPS. Without this, sharing/transferring ownership to their own
+  // email silently fails (that email isn't a member of the wrong tenant),
+  // and they open the file in their real Lark account to find no access.
+  const larkOrgRaw = String(formData.get("lark_org") ?? "").trim();
+  const larkOrg = getLarkApps().some((a) => a.key === larkOrgRaw)
+    ? larkOrgRaw
+    : null;
 
   if (!fullName || !email) {
     return { error: "Nhập đầy đủ họ tên và email.", success: false };
@@ -76,14 +87,13 @@ export async function inviteStaffAccount(
     };
   }
 
-  const { error: profileError } = await admin
-    .from("profiles")
-    .insert({
-      id: invited.user.id,
-      full_name: fullName,
-      role,
-      department: department || null,
-    });
+  const { error: profileError } = await admin.from("profiles").insert({
+    id: invited.user.id,
+    full_name: fullName,
+    role,
+    department: department || null,
+    ...(larkOrg ? { lark_prefs: { activeApp: larkOrg } } : {}),
+  });
 
   if (profileError) {
     return {
