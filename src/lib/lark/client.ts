@@ -377,9 +377,23 @@ export async function getAppRootFolderToken(appKey?: string): Promise<string> {
 
 // The app loses drive access to a file/folder once its ownership has been
 // transferred to a person (see transferLarkFileOwner below) — Lark answers
-// with this generic node-permission error, which is confusing on its own.
+// with a generic permission error, which is confusing on its own. Confirmed
+// against two real responses for this exact scenario: code 1062501, and
+// separately `msg: "source parent no permission"` with a different code —
+// Lark doesn't use one consistent code/message for "you no longer have
+// rights here", so match on either instead of just the one code seen first.
 const OWNERSHIP_TRANSFERRED_HINT =
   "File này đã được chuyển quyền sở hữu cho một người dùng, app không còn quản lý được nữa — thao tác trực tiếp trong Lark.";
+
+function isOwnershipTransferredError(data: {
+  code?: number;
+  msg?: string;
+}): boolean {
+  return (
+    data.code === 1062501 ||
+    (typeof data.msg === "string" && /no permission/i.test(data.msg))
+  );
+}
 
 export async function moveLarkFile(
   documentId: string,
@@ -402,7 +416,7 @@ export async function moveLarkFile(
   );
   const data = await res.json();
   if (!res.ok || data.code !== 0) {
-    if (data.code === 1062501)
+    if (isOwnershipTransferredError(data))
       throw new UserFacingError(OWNERSHIP_TRANSFERRED_HINT);
     throw new Error(`Không di chuyển được file: ${data.msg ?? res.statusText}`);
   }
@@ -424,7 +438,7 @@ export async function deleteLarkFile(
   );
   const data = await res.json();
   if (!res.ok || data.code !== 0) {
-    if (data.code === 1062501)
+    if (isOwnershipTransferredError(data))
       throw new UserFacingError(OWNERSHIP_TRANSFERRED_HINT);
     throw new Error(`Không xoá được file: ${data.msg ?? res.statusText}`);
   }
