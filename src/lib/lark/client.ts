@@ -346,7 +346,14 @@ export async function listTenantContacts(
       avatar?: { avatar_240?: string };
     };
     for (const u of (data.data?.items ?? []) as ContactUser[]) {
-      const email = u.enterprise_email || u.email || "";
+      // Prefer the Work email (personal-looking address, e.g. @gmail.com —
+      // what a member actually logs into both Lark and this site's own
+      // /admin login with) over the Business email (@2sgroup.vn/@saiza.vn,
+      // an org-assigned alias not everyone treats as their real inbox).
+      // Confirmed against a live batch response: every member in this
+      // tenant now has `email` populated, so `enterprise_email` is only
+      // needed as a fallback for the rare account missing it.
+      const email = u.email || u.enterprise_email || "";
       if (!email) continue;
       contacts.push({
         id: u.open_id,
@@ -431,11 +438,13 @@ export async function deleteLarkFile(
 // then sharing with `member_type: "openid"`, works reliably.
 //
 // Deliberately NOT contact/v3/users/batch_get_id for the resolution — that
-// endpoint matches only against the `email` field, which is blank for every
-// account in this tenant (they only have `enterprise_email` populated), so
-// it always comes back empty regardless of whether the account is real.
-// listTenantContacts already reads `enterprise_email || email` correctly
-// (same scopes+batch flow the people-picker relies on).
+// endpoint only matches against the Work `email` field, and this app shares/
+// transfers using whichever email the caller has on hand (often the site's
+// own Supabase auth email, i.e. Work email — but not guaranteed, e.g. an
+// external collaborator's Business email). listTenantContacts' own
+// `email || enterprise_email` already covers both cases via a full scan
+// (same scopes+batch flow the people-picker relies on), so resolving here
+// reuses that instead of re-implementing a narrower lookup.
 //
 // Checks every connected app's own tenant, not just the file's storage app
 // — most files now land in 2sgroup (getStorageAppKey) regardless of which
