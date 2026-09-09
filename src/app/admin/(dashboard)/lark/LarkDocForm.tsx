@@ -660,8 +660,10 @@ export function LarkDocForm({
                 Chuyển quyền sở hữu cho tôi
               </span>
               <span className="text-xs text-ink-2">
-                Tự xoá/đổi tên được trong Lark, nhưng mất nút Xoá/Di chuyển ở
-                đây.
+                Tự xoá/đổi tên được trong Lark, nhưng sẽ{" "}
+                <strong>biến mất khỏi tab Drive và ô chọn thư mục</strong>{" "}
+                trên trang này — app không còn quyền nhìn thấy nó nữa. Chỉ
+                bật khi chắc chắn không cần quản lý qua đây.
               </span>
             </span>
             <Toggle
