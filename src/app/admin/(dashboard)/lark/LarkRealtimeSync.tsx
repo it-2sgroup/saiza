@@ -15,15 +15,34 @@ export function LarkRealtimeSync({ appKey }: { appKey: string }) {
   const router = useRouter();
 
   useEffect(() => {
-    const supabase = createClient();
-    const channel = supabase
-      .channel(`lark-sync:${appKey}`)
-      .on("broadcast", { event: "changed" }, () => router.refresh())
-      .subscribe();
+    // Best-effort, like every other Lark integration point in this app: a
+    // blocked/failed Realtime connection (CSP, network, an extension, a
+    // Supabase outage) must degrade to "no live sync, reload manually to see
+    // others' changes" — never to an uncaught error that takes the whole
+    // page down. (A CSP misconfiguration blocking the WebSocket did exactly
+    // that once; the CSP is fixed, but this stays as defense-in-depth.)
+    try {
+      const supabase = createClient();
+      const channel = supabase
+        .channel(`lark-sync:${appKey}`)
+        .on("broadcast", { event: "changed" }, () => router.refresh())
+        .subscribe((status, err) => {
+          if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+            console.warn("[LarkRealtimeSync] channel unavailable:", err);
+          }
+        });
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+      return () => {
+        try {
+          supabase.removeChannel(channel);
+        } catch {
+          // Ignore — the page is unmounting anyway.
+        }
+      };
+    } catch (err) {
+      console.warn("[LarkRealtimeSync] failed to start:", err);
+      return undefined;
+    }
   }, [appKey, router]);
 
   return null;

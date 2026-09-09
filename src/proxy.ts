@@ -22,7 +22,11 @@ function buildCsp(nonce: string) {
     "img-src 'self' https: data: blob:",
     "font-src 'self' data:",
     "frame-src https://www.google.com https://www.youtube-nocookie.com https://*.larksuite.com",
-    "connect-src 'self' https://*.supabase.co",
+    // wss:// (not just https://) is required for Supabase Realtime's
+    // WebSocket connection (see LarkRealtimeSync.tsx) — without it the
+    // browser silently blocks the socket per CSP, and the client throws an
+    // uncaught error trying to open it anyway, taking down the whole page.
+    "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",
