@@ -168,14 +168,31 @@ export async function getLarkPageData(profile: Profile): Promise<LarkPageData> {
         // app's real My Space root (same live-API lookup the Drive tab
         // already uses via getAppRootFolderToken), or this org's folder tree
         // silently stays empty forever for apps that never set docFolderToken.
-        const root =
-          resolveRootFolderToken(org || null, activeAppKey) ||
-          (org === "" ? await getAppRootFolderToken(activeAppKey) : undefined);
-        return [
-          org,
-          root,
-          root ? await listLarkFolderTree(root, org, activeAppKey) : [],
-        ] as [string, string | undefined, FolderOption[]];
+        //
+        // Best-effort, like tenantContactsByApp/driveRootItems below — this
+        // is a LIVE Lark API call (getAppRootFolderToken isn't DB-cached
+        // beyond one serverless instance's in-memory Map, so it re-hits Lark
+        // on most cold starts), and this whole block used to have no
+        // try/catch: one transient Lark hiccup here rejected this
+        // Promise.all and crashed the ENTIRE /admin/lark page (mid-stream,
+        // since Next had already started sending the response — the browser
+        // sees this as a broken connection, "This page couldn't load", not
+        // a clean error page). A folder tree that fails to load should just
+        // leave that org's picker empty, not take the whole page down.
+        try {
+          const root =
+            resolveRootFolderToken(org || null, activeAppKey) ||
+            (org === ""
+              ? await getAppRootFolderToken(activeAppKey)
+              : undefined);
+          return [
+            org,
+            root,
+            root ? await listLarkFolderTree(root, org, activeAppKey) : [],
+          ] as [string, string | undefined, FolderOption[]];
+        } catch {
+          return [org, undefined, []] as [string, string | undefined, FolderOption[]];
+        }
       }),
     ),
     // Sharing needs to reach people across ALL connected orgs, not just the
