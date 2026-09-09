@@ -4,13 +4,21 @@ import { Children, isValidElement, useState, type ReactElement } from "react";
 
 // `label` isn't rendered here — LarkTabs reads it off `panel.props.label`
 // to build the tab bar without needing a separate labels array in sync.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function LarkTabPanel({ label, children }: { label: string; children: React.ReactNode }) {
+export function LarkTabPanel({
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return <>{children}</>;
 }
 
 export function LarkTabs({ children }: { children: React.ReactNode }) {
-  const panels = Children.toArray(children).filter(isValidElement) as ReactElement<{ label: string }>[];
+  const panels = Children.toArray(children).filter(
+    isValidElement,
+  ) as ReactElement<{ label: string }>[];
   const [active, setActive] = useState(0);
   const current = panels[active] ?? panels[0];
 
@@ -22,8 +30,10 @@ export function LarkTabs({ children }: { children: React.ReactNode }) {
             key={panel.key ?? i}
             type="button"
             onClick={() => setActive(i)}
-            className={`-mb-px cursor-pointer border-b-2 pb-3 text-sm font-medium transition-colors duration-300 ease-soft ${
-              active === i ? "border-accent text-ink" : "border-transparent text-ink-2 hover:text-ink"
+            className={`-mb-px cursor-pointer border-b-2 pb-3 text-sm transition-colors duration-150 ${
+              active === i
+                ? "border-accent font-medium text-ink"
+                : "border-transparent font-normal text-ink-2/70 hover:border-line hover:text-ink"
             }`}
           >
             {panel.props.label}

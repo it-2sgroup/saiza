@@ -15,16 +15,17 @@ import { LarkTabs, LarkTabPanel } from "./LarkTabs";
 import { RecentFilesList } from "./RecentFilesList";
 import { TrashTab } from "./TrashTab";
 import { StatTile } from "../StatTile";
+import { Btn, cardClasses } from "../controls";
 import { countNoun, type LarkFileType } from "@/lib/lark/fileTypes";
 import { getLarkPageData } from "./data";
 
-const NAMING_CHECKLIST: {
+const NAMING_PARTS: {
   key: "includeDept" | "includeDocType" | "includeDate" | "includeVersion";
   label: string;
 }[] = [
-  { key: "includeDept", label: "Mã phòng ban" },
+  { key: "includeDept", label: "Phòng ban" },
   { key: "includeDocType", label: "Loại tài liệu" },
-  { key: "includeDate", label: "Ngày tạo" },
+  { key: "includeDate", label: "Ngày" },
   { key: "includeVersion", label: "Version" },
 ];
 
@@ -99,9 +100,6 @@ export default async function AdminLarkPage() {
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs font-semibold tracking-[0.06em] text-ink-2 uppercase">
-          Tạo nhanh
-        </span>
         {QUICK_CREATE_TYPES.map((t) => (
           <CreateFileModal
             key={t.type}
@@ -114,13 +112,10 @@ export default async function AdminLarkPage() {
             orgCodes={orgCodes}
             docTypes={docTypes}
             trigger={
-              <button
-                type="button"
-                className="flex cursor-pointer items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-medium text-ink-2 transition-colors duration-300 ease-soft hover:border-accent hover:text-accent"
-              >
+              <Btn size="sm">
                 <span className={`h-2 w-2 rounded-full ${t.badgeClassName}`} />
                 {t.label}
-              </button>
+              </Btn>
             }
           />
         ))}
@@ -128,7 +123,7 @@ export default async function AdminLarkPage() {
 
       <div className="flex flex-col gap-5 lg:flex-row">
         <div className="flex flex-1 flex-col gap-5">
-          <div className="flex flex-col gap-2.5 rounded-card border border-line bg-card p-4">
+          <div className={`flex flex-col gap-2.5 ${cardClasses} p-4`}>
             <h3 className="text-sm font-semibold text-ink">
               Tiếp tục làm việc
             </h3>
@@ -142,7 +137,7 @@ export default async function AdminLarkPage() {
         </div>
 
         <div className="flex w-full flex-col gap-4 lg:w-[400px] lg:flex-shrink-0">
-          <div className="flex flex-col gap-4 rounded-card border border-line bg-card p-4">
+          <div className={`flex flex-col gap-3.5 ${cardClasses} p-4`}>
             <div className="flex items-center justify-between gap-2">
               <h3 className="text-sm font-semibold text-ink">
                 Quy ước đặt tên
@@ -153,53 +148,25 @@ export default async function AdminLarkPage() {
                 departments={departments}
                 orgCodes={orgCodes}
                 docTypes={docTypes}
-                trigger={
-                  <button
-                    type="button"
-                    className="cursor-pointer text-xs font-medium text-accent hover:text-ink"
-                  >
-                    Sửa
-                  </button>
-                }
+                trigger={<Btn size="sm">Sửa</Btn>}
               />
             </div>
             <NamingPreviewBox segments={namingSegments} />
-            <ul className="flex flex-col gap-2.5">
-              {NAMING_CHECKLIST.map((item) => {
-                const on = namingPrefs[item.key];
-                return (
-                  <li
-                    key={item.key}
-                    className="flex items-center gap-2.5 text-[13.5px]"
-                  >
-                    <span
-                      className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-[4px] ${
-                        on
-                          ? "bg-ink text-white"
-                          : "border border-line text-line"
-                      }`}
-                    >
-                      <svg
-                        width="10"
-                        height="10"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M20 6 9 17l-5-5" />
-                      </svg>
-                    </span>
-                    <span className={on ? "text-ink" : "text-ink-2/60"}>
-                      {item.label}
-                      {!on && " — đang tắt"}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
+            {/* Only the parts actually switched on, as plain chips. This was a
+                4-row list of check-boxes that looked interactive but weren't,
+                each spelling out "— đang tắt" for the ones that were off —
+                a lot of words to say something the preview above already
+                shows at a glance. */}
+            <div className="flex flex-wrap gap-1.5">
+              {NAMING_PARTS.filter((p) => namingPrefs[p.key]).map((p) => (
+                <span
+                  key={p.key}
+                  className="rounded-md bg-wash px-2 py-1 text-xs font-medium text-ink-2"
+                >
+                  {p.label}
+                </span>
+              ))}
+            </div>
           </div>
 
           {isAdmin && dashboardData && (
@@ -276,7 +243,7 @@ export default async function AdminLarkPage() {
   ) : null;
 
   return (
-    <div className="lark-theme flex w-full flex-col gap-6 font-[family-name:var(--font-ibm-plex-sans)]">
+    <div className="lark-theme flex w-full flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <Avatar

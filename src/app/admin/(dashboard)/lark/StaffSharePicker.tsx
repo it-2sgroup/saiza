@@ -2,6 +2,7 @@
 
 import { Combobox } from "../Combobox";
 import { PeoplePicker } from "./PeoplePicker";
+import { Btn, inputClasses } from "../controls";
 import type { ShareRow } from "@/lib/lark/shareRows";
 
 export type StaffOption = {
@@ -29,9 +30,6 @@ const PERM_OPTIONS = [
   { value: "edit", label: "Được sửa" },
   { value: "full_access", label: "Toàn quyền" },
 ];
-
-const fieldClasses =
-  "rounded-[14px] border border-line bg-paper px-4 py-3 text-[15px] text-ink outline-none transition-all duration-300 ease-soft focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/30";
 
 // Reusable "share with colleagues" row list: emits its current value via a
 // hidden JSON input under `hiddenFieldName` so a plain <form action> Server
@@ -70,7 +68,7 @@ export function StaffSharePicker({
             value={row.email}
             onChange={(email) => updateRow(i, { email })}
             placeholder="Nhập tên hoặc email@2sgroup.vn"
-            inputClassName={`${fieldClasses} w-full`}
+            inputClassName={inputClasses}
           />
           <div className="w-36 flex-shrink-0">
             <Combobox
@@ -79,14 +77,14 @@ export function StaffSharePicker({
               onChange={(perm) =>
                 updateRow(i, { perm: perm as ShareRow["perm"] })
               }
-              buttonClassName={`${fieldClasses} flex w-full items-center justify-between gap-2 text-left`}
+              buttonClassName={`${inputClasses} flex items-center justify-between gap-2 text-left`}
             />
           </div>
-          <button
-            type="button"
+          <Btn
+            variant="ghost"
+            size="icon-md"
             onClick={() => removeRow(i)}
             aria-label="Xoá người này"
-            className="flex h-9 w-9 flex-shrink-0 cursor-pointer items-center justify-center rounded-full text-ink-2 hover:bg-wash hover:text-ink"
           >
             <svg
               width="16"
@@ -99,16 +97,12 @@ export function StaffSharePicker({
             >
               <path d="M18 6 6 18M6 6l12 12" />
             </svg>
-          </button>
+          </Btn>
         </div>
       ))}
-      <button
-        type="button"
-        onClick={addRow}
-        className="w-fit cursor-pointer text-sm font-semibold text-accent hover:text-ink"
-      >
+      <Btn variant="ghost" size="sm" onClick={addRow} className="w-fit">
         + Thêm người
-      </button>
+      </Btn>
     </div>
   );
 }

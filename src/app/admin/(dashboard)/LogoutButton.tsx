@@ -1,4 +1,5 @@
 import { logout } from "./actions";
+import { btnClasses } from "./controls";
 
 export function LogoutButton({ compact = false }: { compact?: boolean }) {
   return (
@@ -7,7 +8,11 @@ export function LogoutButton({ compact = false }: { compact?: boolean }) {
         type="submit"
         aria-label={compact ? "Đăng xuất" : undefined}
         title={compact ? "Đăng xuất" : undefined}
-        className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-line py-2.5 text-sm font-medium text-ink-2 transition-colors duration-300 ease-soft hover:border-ink hover:text-ink ${compact ? "px-2.5" : "px-4"}`}
+        className={btnClasses(
+          "secondary",
+          "md",
+          `w-full justify-center ${compact ? "px-2.5" : ""}`,
+        )}
       >
         <svg
           width="15"

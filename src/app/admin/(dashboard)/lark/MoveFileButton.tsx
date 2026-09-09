@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { moveLarkDocument, type MoveLarkDocState } from "./actions";
 import { Combobox } from "../Combobox";
+import { Btn, inputClasses, cardClasses } from "../controls";
 import type { LarkFileType } from "@/lib/lark/client";
 import { useToastOnActionState } from "../useToastOnActionState";
 
@@ -23,33 +24,43 @@ export function MoveFileButton({
 }) {
   const [open, setOpen] = useState(false);
   const [targetFolder, setTargetFolder] = useState("");
-  const [state, formAction, pending] = useActionState(moveLarkDocument.bind(null, documentId, fileType), initialState);
+  const [state, formAction, pending] = useActionState(
+    moveLarkDocument.bind(null, documentId, fileType),
+    initialState,
+  );
   useToastOnActionState(state, state.done ? "Đã di chuyển file." : null);
 
-  const triggerClassName =
-    variant === "button"
-      ? "w-fit cursor-pointer rounded-full border border-line px-3 py-1.5 text-xs font-medium text-ink-2 transition-colors duration-300 ease-soft hover:border-accent hover:text-accent"
-      : "w-fit cursor-pointer text-xs font-medium text-accent hover:text-ink";
+  // `variant` used to switch between a pill button and bare accent text; both
+  // are real buttons now, so it only picks the emphasis level.
+  const triggerVariant = variant === "button" ? "secondary" : "ghost";
 
-  if (state.done) return <span className="text-xs text-ink-2">Đã di chuyển.</span>;
+  if (state.done)
+    return <span className="text-xs text-ink-2">Đã di chuyển.</span>;
 
   const form = (
-    <form action={formAction} className="flex flex-col gap-2.5 rounded-xl border border-line bg-paper p-3">
+    <form
+      action={formAction}
+      className={`flex flex-col gap-2.5 p-3 ${cardClasses}`}
+    >
       <Combobox
         name="targetFolder"
         value={targetFolder}
         options={folderOptions}
         onChange={setTargetFolder}
-        buttonClassName="flex w-full items-center justify-between gap-2 rounded-xl border border-line bg-card px-3.5 py-2.5 text-left text-[13.5px] text-ink outline-none"
+        buttonClassName={`${inputClasses} flex items-center justify-between gap-2 text-left`}
       />
-      {state.error && <p className="text-xs font-medium text-red-600">{state.error}</p>}
-      <button
+      {state.error && (
+        <p className="text-xs font-medium text-red-600">{state.error}</p>
+      )}
+      <Btn
         type="submit"
+        variant="primary"
+        size="sm"
         disabled={pending || !targetFolder}
-        className="w-fit cursor-pointer rounded-full bg-accent px-4 py-2 text-xs font-semibold text-white transition-colors duration-300 ease-soft hover:bg-ink disabled:cursor-not-allowed disabled:opacity-60"
+        className="w-fit"
       >
         {pending ? "Đang di chuyển..." : "Di chuyển"}
-      </button>
+      </Btn>
     </form>
   );
 
@@ -57,9 +68,14 @@ export function MoveFileButton({
 
   return (
     <div className="flex flex-col gap-2.5">
-      <button type="button" onClick={() => setOpen((o) => !o)} className={triggerClassName}>
-        {open ? "Đóng" : variant === "button" ? "Di chuyển" : "Di chuyển →"}
-      </button>
+      <Btn
+        variant={triggerVariant}
+        size="sm"
+        onClick={() => setOpen((o) => !o)}
+        className="w-fit"
+      >
+        {open ? "Đóng" : "Di chuyển"}
+      </Btn>
       {open && form}
     </div>
   );

@@ -7,6 +7,7 @@ import { MoveFileButton } from "./MoveFileButton";
 import { TransferOwnerButton } from "./TransferOwnerButton";
 import { DeleteLarkFileButton } from "./DeleteLarkFileButton";
 import { useAnchoredPopover } from "../useAnchoredPopover";
+import { Btn } from "../controls";
 import type { StaffOption } from "./StaffSharePicker";
 import type { LarkFileType } from "@/lib/lark/client";
 
@@ -18,8 +19,10 @@ const MENU_WIDTH = 288;
 // comfortably in 288px.
 const FORM_WIDTH = 360;
 
+// One geometry for every row in the panel — same height, padding and radius
+// whether the row is a link (Mở) or a button, so the list reads as one menu.
 const MENU_ITEM_CLASS =
-  "w-full cursor-pointer rounded-lg px-3 py-2 text-left text-[13.5px] font-medium text-ink transition-colors duration-300 ease-soft hover:bg-wash";
+  "flex h-9 w-full cursor-pointer items-center rounded-lg px-3 text-left text-sm font-medium text-ink transition-colors duration-150 hover:bg-wash";
 
 // Consolidates Mở/Chia sẻ/Di chuyển/Chuyển quyền sở hữu/Xoá — which used to
 // be 4-5 separate buttons cluttering every row — into a single "..." menu.
@@ -50,29 +53,42 @@ export function ItemActionsMenu({
   // coordinates instead of `position: absolute` inside the card — the card
   // is narrower than the menu and clips/misplaces it otherwise.
   const panelWidth = action ? FORM_WIDTH : MENU_WIDTH;
-  const { rootRef, panelRef, anchorRect, placement } = useAnchoredPopover(open, close);
+  const { rootRef, panelRef, anchorRect, placement } = useAnchoredPopover(
+    open,
+    close,
+  );
   const rect = anchorRect && {
-    left: Math.min(Math.max(8, anchorRect.right - panelWidth), window.innerWidth - panelWidth - 8),
+    left: Math.min(
+      Math.max(8, anchorRect.right - panelWidth),
+      window.innerWidth - panelWidth - 8,
+    ),
     top: placement === "top" ? undefined : anchorRect.bottom + 6,
-    bottom: placement === "top" ? window.innerHeight - anchorRect.top + 6 : undefined,
+    bottom:
+      placement === "top" ? window.innerHeight - anchorRect.top + 6 : undefined,
   };
 
   return (
     <div ref={rootRef} className="relative flex-shrink-0">
-      <button
-        type="button"
+      <Btn
+        variant="ghost"
+        size="icon-sm"
         onClick={() => setOpen((o) => !o)}
         aria-label="Tuỳ chọn"
         aria-haspopup="menu"
         aria-expanded={open}
-        className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-ink-2 transition-colors duration-300 ease-soft hover:bg-wash hover:text-ink"
       >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          aria-hidden="true"
+        >
           <circle cx="5" cy="12" r="2" />
           <circle cx="12" cy="12" r="2" />
           <circle cx="19" cy="12" r="2" />
         </svg>
-      </button>
+      </Btn>
 
       {open &&
         rect &&
@@ -81,59 +97,112 @@ export function ItemActionsMenu({
             ref={panelRef}
             data-popover-panel
             role="menu"
-            style={{ position: "fixed", top: rect.top, bottom: rect.bottom, left: rect.left, width: panelWidth }}
-            className="lark-theme z-[100] max-h-[80vh] overflow-y-auto rounded-xl border border-line bg-card p-2 font-[family-name:var(--font-ibm-plex-sans)] shadow-[0_20px_45px_rgba(22,33,62,0.18)]"
+            style={{
+              position: "fixed",
+              top: rect.top,
+              bottom: rect.bottom,
+              left: rect.left,
+              width: panelWidth,
+            }}
+            className="lark-theme z-[100] max-h-[80vh] overflow-y-auto rounded-xl border border-line bg-card p-2 shadow-[0_20px_45px_rgba(22,33,62,0.18)]"
           >
             {action === null ? (
               <div className="flex flex-col gap-0.5">
                 {url && (
-                  <a href={url} target="_blank" rel="noreferrer" onClick={close} className={MENU_ITEM_CLASS}>
-                    Mở trong Lark →
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={close}
+                    className={MENU_ITEM_CLASS}
+                  >
+                    Mở trong Lark
                   </a>
                 )}
-                <button type="button" onClick={() => setAction("share")} className={MENU_ITEM_CLASS}>
-                  Chia sẻ thêm
+                <button
+                  type="button"
+                  onClick={() => setAction("share")}
+                  className={MENU_ITEM_CLASS}
+                >
+                  Chia sẻ
                 </button>
-                <button type="button" onClick={() => setAction("move")} className={MENU_ITEM_CLASS}>
+                <button
+                  type="button"
+                  onClick={() => setAction("move")}
+                  className={MENU_ITEM_CLASS}
+                >
                   Di chuyển
                 </button>
-                <button type="button" onClick={() => setAction("transfer")} className={MENU_ITEM_CLASS}>
+                <button
+                  type="button"
+                  onClick={() => setAction("transfer")}
+                  className={MENU_ITEM_CLASS}
+                >
                   Chuyển quyền sở hữu
                 </button>
                 <div className="my-1 border-t border-line" />
                 <button
                   type="button"
                   onClick={() => setAction("delete")}
-                  className="w-full cursor-pointer rounded-lg px-3 py-2 text-left text-[13.5px] font-medium text-red-600 transition-colors duration-300 ease-soft hover:bg-red-50"
+                  className="flex h-9 w-full cursor-pointer items-center rounded-lg px-3 text-left text-sm font-medium text-red-600 transition-colors duration-150 hover:bg-red-50"
                 >
                   {fileType === "folder" ? "Xoá thư mục" : "Xoá file"}
                 </button>
               </div>
             ) : (
               <div className="flex flex-col gap-2">
-                <button
-                  type="button"
+                <Btn
+                  variant="ghost"
+                  size="sm"
                   onClick={() => setAction(null)}
-                  className="flex w-fit cursor-pointer items-center gap-1 text-xs font-medium text-ink-2 hover:text-ink"
+                  className="w-fit"
                 >
                   <svg
-                    width="12"
-                    height="12"
+                    width="14"
+                    height="14"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="2.5"
                     strokeLinecap="round"
                     strokeLinejoin="round"
+                    aria-hidden="true"
                   >
                     <path d="m15 18-6-6 6-6" />
                   </svg>
                   Quay lại
-                </button>
-                {action === "share" && <ShareExistingDoc documentId={documentId} fileType={fileType} staff={staff} embedded />}
-                {action === "move" && <MoveFileButton documentId={documentId} fileType={fileType} folderOptions={folderOptions} embedded />}
-                {action === "transfer" && <TransferOwnerButton documentId={documentId} fileType={fileType} staff={staff} embedded />}
-                {action === "delete" && <DeleteLarkFileButton documentId={documentId} fileType={fileType} embedded />}
+                </Btn>
+                {action === "share" && (
+                  <ShareExistingDoc
+                    documentId={documentId}
+                    fileType={fileType}
+                    staff={staff}
+                    embedded
+                  />
+                )}
+                {action === "move" && (
+                  <MoveFileButton
+                    documentId={documentId}
+                    fileType={fileType}
+                    folderOptions={folderOptions}
+                    embedded
+                  />
+                )}
+                {action === "transfer" && (
+                  <TransferOwnerButton
+                    documentId={documentId}
+                    fileType={fileType}
+                    staff={staff}
+                    embedded
+                  />
+                )}
+                {action === "delete" && (
+                  <DeleteLarkFileButton
+                    documentId={documentId}
+                    fileType={fileType}
+                    embedded
+                  />
+                )}
               </div>
             )}
           </div>,

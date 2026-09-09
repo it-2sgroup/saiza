@@ -36,13 +36,57 @@ import {
   type LarkNamingTemplate,
 } from "@/lib/lark/prefs";
 import { Toggle } from "./Toggle";
+import {
+  Btn,
+  btnClasses,
+  inputClasses,
+  labelClasses,
+  cardClasses,
+} from "../controls";
 
 const initialState: LarkDocFormState = { error: null };
-const fieldClasses =
-  "rounded-xl border border-line bg-paper px-3.5 py-2.5 text-[14.5px] text-ink outline-none transition-all duration-300 ease-soft focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/30";
-const labelClasses =
-  "text-[11px] font-medium tracking-[0.06em] text-ink-2 uppercase";
 
+/**
+ * Placeholder for a naming component whose toggle is off. Was the sentence
+ * "Không đưa vào tên file", repeated in all four slots — four full-width
+ * boxes of prose restating what the switch beside them already says. An
+ * em dash keeps the grid rows the same height (so nothing jumps when a
+ * switch flips) while saying it in one glyph.
+ */
+function OffField() {
+  return (
+    <div
+      className={`${inputClasses} flex items-center text-ink-2/40`}
+      aria-hidden
+    >
+      —
+    </div>
+  );
+}
+
+/** Label + its on/off switch, on one row above the field it controls. */
+function FieldToggleLabel({
+  label,
+  htmlFor,
+  checked,
+  onChange,
+  name,
+}: {
+  label: string;
+  htmlFor?: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  name: string;
+}) {
+  return (
+    <div className="flex items-center justify-between">
+      <label htmlFor={htmlFor} className={labelClasses}>
+        {label}
+      </label>
+      <Toggle checked={checked} onChange={onChange} name={name} />
+    </div>
+  );
+}
 const VERSION_SELECT_OPTIONS = VERSION_OPTIONS.map((v) => ({
   value: v,
   label: v,
@@ -269,7 +313,7 @@ export function LarkDocForm({
       <form
         ref={formRef}
         action={(formData) => formAction(formData)}
-        className="flex flex-col gap-5 rounded-card border border-line bg-card p-5"
+        className="flex flex-col gap-5"
       >
         <input type="hidden" name="fileType" value={fileType} />
         <input type="hidden" name="namingMode" value={namingMode} />
@@ -279,7 +323,7 @@ export function LarkDocForm({
         <div className="flex flex-col gap-1.5">
           <label htmlFor="content" className={labelClasses}>
             {namingMode === "custom"
-              ? "Tên file (tự đặt)"
+              ? "Tên file"
               : isFolder
                 ? "Tên thư mục"
                 : "Nội dung / dự án"}
@@ -292,45 +336,41 @@ export function LarkDocForm({
             onChange={(e) => setContent(e.target.value)}
             placeholder={
               namingMode === "custom"
-                ? "Nhập đúng tên file bạn muốn, không theo quy ước"
+                ? "Đặt tên tuỳ ý"
                 : isFolder
                   ? "Ví dụ: Hợp đồng khách hàng"
                   : "Ví dụ: Chiến dịch Q3"
             }
-            className={fieldClasses}
+            className={inputClasses}
           />
           {duplicateFolder && (
             <p className="text-xs font-medium text-amber-700">
-              Đã có thư mục tên này trong cây thư mục — cân nhắc dùng lại (chọn
-              ở &quot;Tạo trong thư mục&quot;) thay vì tạo trùng.
+              Đã có thư mục trùng tên — cân nhắc dùng lại thư mục đó.
             </p>
           )}
         </div>
 
         {/* 2. Mọi thứ ảnh hưởng tới TÊN FILE gộp chung một khối — mỗi ô tuỳ
-            chọn (Phòng ban/Loại tài liệu/Version/Ngày) giờ có công tắc bật/tắt
-            rõ ràng ở đầu ô, thay vì một checkbox nhỏ lẫn vào nhãn. Bật "Đặt
-            tên tự do" bỏ qua toàn bộ khối này — chỉ áp dụng cho lần tạo file
-            này, không lưu lại thành mặc định. */}
+            chọn (Phòng ban/Loại tài liệu/Version/Ngày) có công tắc bật/tắt
+            ngay trên đầu ô. Bật "Đặt tên tự do" thu gọn cả khối này lại chỉ
+            còn hàng tiêu đề: chế độ đó không dùng quy ước nào cả, nên không
+            có gì để hiển thị. Chỉ áp dụng cho lần tạo này, không lưu thành
+            mặc định. */}
         <div className="flex flex-col gap-3.5 rounded-xl border border-line bg-paper/60 p-4">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-[11px] font-semibold tracking-[0.08em] text-ink-2 uppercase">
-              Quy ước đặt tên file
-            </p>
-            <div className="flex items-center gap-3">
+            <p className="text-[13px] font-semibold text-ink">Quy ước tên</p>
+            <div className="flex items-center gap-2">
               {namingMode === "structured" && (
-                <button
-                  type="button"
+                <Btn
+                  variant="ghost"
+                  size="sm"
                   onClick={() => setNamingOpen(true)}
-                  className="cursor-pointer text-xs font-semibold text-accent hover:text-ink"
                 >
                   Sửa quy ước
-                </button>
+                </Btn>
               )}
-              <label className="flex cursor-pointer items-center gap-2">
-                <span className="text-[11px] font-medium text-ink-2">
-                  Đặt tên tự do
-                </span>
+              <label className="flex cursor-pointer items-center gap-2 pl-1">
+                <span className="text-[13px] text-ink-2">Đặt tên tự do</span>
                 <Toggle
                   checked={namingMode === "custom"}
                   onChange={(checked) =>
@@ -341,45 +381,38 @@ export function LarkDocForm({
             </div>
           </div>
 
-          {namingMode === "custom" ? (
-            <p className="text-xs text-ink-2">
-              Tên file sẽ dùng đúng nội dung bạn nhập ở trên, không thêm tiền
-              tố/hậu tố theo quy ước.
-            </p>
-          ) : (
+          {namingMode === "structured" && (
             <>
               {templates.length > 0 && (
-                <div className="flex flex-col gap-1.5">
-                  <label className={labelClasses}>Mẫu đã lưu</label>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1">
-                      <Combobox
-                        value={selectedTemplateId}
-                        options={[
-                          { value: "", label: "— Chọn mẫu đã lưu —" },
-                          ...templates.map((t) => ({
-                            value: t.id,
-                            label: t.name,
-                          })),
-                        ]}
-                        onChange={(id) => {
-                          setSelectedTemplateId(id);
-                          const t = templates.find((tt) => tt.id === id);
-                          if (t) applyTemplate(t);
-                        }}
-                        buttonClassName={`${fieldClasses} flex w-full items-center justify-between gap-2 text-left`}
-                      />
-                    </div>
-                    {selectedTemplateId && (
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteTemplate(selectedTemplateId)}
-                        className="flex-shrink-0 cursor-pointer text-xs font-semibold text-red-600 hover:text-red-700"
-                      >
-                        Xoá mẫu
-                      </button>
-                    )}
+                <div className="flex items-end gap-2">
+                  <div className="flex flex-1 flex-col gap-1.5">
+                    <label className={labelClasses}>Mẫu đã lưu</label>
+                    <Combobox
+                      value={selectedTemplateId}
+                      options={[
+                        { value: "", label: "— Chọn mẫu —" },
+                        ...templates.map((t) => ({
+                          value: t.id,
+                          label: t.name,
+                        })),
+                      ]}
+                      onChange={(id) => {
+                        setSelectedTemplateId(id);
+                        const t = templates.find((tt) => tt.id === id);
+                        if (t) applyTemplate(t);
+                      }}
+                      buttonClassName={`${inputClasses} flex items-center justify-between gap-2 text-left`}
+                    />
                   </div>
+                  {selectedTemplateId && (
+                    <Btn
+                      variant="danger"
+                      size="md"
+                      onClick={() => handleDeleteTemplate(selectedTemplateId)}
+                    >
+                      Xoá
+                    </Btn>
+                  )}
                 </div>
               )}
 
@@ -396,69 +429,60 @@ export function LarkDocForm({
                       setOrg(v);
                       setTargetFolder("");
                     }}
-                    buttonClassName={`${fieldClasses} flex w-full items-center justify-between gap-2 text-left`}
+                    buttonClassName={`${inputClasses} flex items-center justify-between gap-2 text-left`}
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <div className="flex items-center justify-between">
-                    <label className={labelClasses}>Phòng ban</label>
-                    <Toggle
-                      checked={includeDept}
-                      onChange={setIncludeDept}
-                      name="includeDept"
-                    />
-                  </div>
+                  <FieldToggleLabel
+                    label="Phòng ban"
+                    checked={includeDept}
+                    onChange={setIncludeDept}
+                    name="includeDept"
+                  />
                   {includeDept ? (
                     <Combobox
                       name="department"
                       value={department}
                       options={DEPARTMENT_OPTIONS}
                       onChange={setDepartment}
-                      buttonClassName={`${fieldClasses} flex w-full items-center justify-between gap-2 text-left`}
+                      buttonClassName={`${inputClasses} flex items-center justify-between gap-2 text-left`}
                     />
                   ) : (
-                    <div className={`${fieldClasses} text-ink-2/50`}>
-                      Không đưa vào tên file
-                    </div>
+                    <OffField />
                   )}
                 </div>
                 {!isFolder && (
                   <div className="flex flex-col gap-1.5">
-                    <div className="flex items-center justify-between">
-                      <label className={labelClasses}>Loại tài liệu</label>
-                      <Toggle
-                        checked={includeDocType}
-                        onChange={setIncludeDocType}
-                        name="includeDocType"
-                      />
-                    </div>
+                    <FieldToggleLabel
+                      label="Loại tài liệu"
+                      checked={includeDocType}
+                      onChange={setIncludeDocType}
+                      name="includeDocType"
+                    />
                     {includeDocType ? (
                       <Combobox
                         name="docType"
                         value={docType}
                         options={DOC_TYPE_OPTIONS}
                         onChange={setDocType}
-                        buttonClassName={`${fieldClasses} flex w-full items-center justify-between gap-2 text-left`}
+                        buttonClassName={`${inputClasses} flex items-center justify-between gap-2 text-left`}
                       />
                     ) : (
-                      <div className={`${fieldClasses} text-ink-2/50`}>
-                        Không đưa vào tên file
-                      </div>
+                      <OffField />
                     )}
                   </div>
                 )}
               </div>
               {includeDept && !defaultDepartment && (
                 <p className="text-xs text-amber-700">
-                  Hồ sơ của bạn chưa gán phòng ban cố định — chọn tạm ở đây,
-                  hoặc báo Quản trị vào Nhân sự để gán.
+                  Hồ sơ chưa gán phòng ban — chọn tạm ở đây.
                 </p>
               )}
 
               {!isFolder && docType === "Khác" && (
                 <div className="flex flex-col gap-1.5">
                   <label htmlFor="docTypeOther" className={labelClasses}>
-                    Loại tài liệu (tự nhập)
+                    Loại tài liệu
                   </label>
                   <input
                     id="docTypeOther"
@@ -466,7 +490,7 @@ export function LarkDocForm({
                     value={docTypeOther}
                     onChange={(e) => setDocTypeOther(e.target.value)}
                     placeholder="Ví dụ: Đề Xuất"
-                    className={fieldClasses}
+                    className={inputClasses}
                   />
                 </div>
               )}
@@ -474,57 +498,48 @@ export function LarkDocForm({
               {!isFolder && (
                 <div className="grid grid-cols-3 gap-3">
                   <div className="flex flex-col gap-1.5">
-                    <div className="flex items-center justify-between">
-                      <label className={labelClasses}>Version</label>
-                      <Toggle
-                        checked={includeVersion}
-                        onChange={setIncludeVersion}
-                        name="includeVersion"
-                      />
-                    </div>
+                    <FieldToggleLabel
+                      label="Version"
+                      checked={includeVersion}
+                      onChange={setIncludeVersion}
+                      name="includeVersion"
+                    />
                     {includeVersion ? (
                       <Combobox
                         name="version"
                         value={version}
                         options={VERSION_SELECT_OPTIONS}
                         onChange={setVersion}
-                        buttonClassName={`${fieldClasses} flex w-full items-center justify-between gap-2 text-left`}
+                        buttonClassName={`${inputClasses} flex items-center justify-between gap-2 text-left`}
                       />
                     ) : (
-                      <div className={`${fieldClasses} text-ink-2/50`}>
-                        Không đưa vào tên file
-                      </div>
+                      <OffField />
                     )}
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <div className="flex items-center justify-between">
-                      <label htmlFor="date" className={labelClasses}>
-                        Ngày
-                      </label>
-                      <Toggle
-                        checked={includeDate}
-                        onChange={setIncludeDate}
-                        name="includeDate"
-                      />
-                    </div>
+                    <FieldToggleLabel
+                      label="Ngày"
+                      htmlFor="date"
+                      checked={includeDate}
+                      onChange={setIncludeDate}
+                      name="includeDate"
+                    />
                     {includeDate ? (
                       <input
                         id="date"
                         type="date"
                         value={dateInput}
                         onChange={(e) => setDateInput(e.target.value)}
-                        className={fieldClasses}
+                        className={inputClasses}
                       />
                     ) : (
-                      <div className={`${fieldClasses} text-ink-2/50`}>
-                        Không đưa vào tên file
-                      </div>
+                      <OffField />
                     )}
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <label className={labelClasses}>WIP</label>
                     <label
-                      className={`${fieldClasses} flex w-full cursor-pointer items-center justify-between gap-2`}
+                      className={`${inputClasses} flex cursor-pointer items-center justify-between gap-2`}
                     >
                       <span className="truncate text-ink-2">Đang soạn</span>
                       <Toggle checked={wip} onChange={setWip} name="wip" />
@@ -534,34 +549,31 @@ export function LarkDocForm({
               )}
 
               {showSaveTemplate ? (
-                <div className="flex flex-col gap-2 rounded-lg border border-line bg-paper p-3">
-                  <label className={labelClasses}>Tên mẫu</label>
+                <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-2">
                     <input
                       value={newTemplateName}
                       onChange={(e) => setNewTemplateName(e.target.value)}
-                      placeholder="Ví dụ: Báo cáo tuần SAIZA-KT"
-                      className={`${fieldClasses} flex-1`}
+                      placeholder="Tên mẫu — ví dụ: Báo cáo tuần KT"
+                      className={inputClasses}
                     />
-                    <button
-                      type="button"
+                    <Btn
+                      variant="primary"
                       disabled={savingTemplate || !newTemplateName.trim()}
                       onClick={handleSaveTemplate}
-                      className="flex-shrink-0 cursor-pointer rounded-lg bg-accent px-3 py-2 text-xs font-semibold text-white hover:bg-ink disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {savingTemplate ? "Đang lưu..." : "Lưu"}
-                    </button>
-                    <button
-                      type="button"
+                    </Btn>
+                    <Btn
+                      variant="ghost"
                       onClick={() => {
                         setShowSaveTemplate(false);
                         setNewTemplateName("");
                         setTemplateError(null);
                       }}
-                      className="flex-shrink-0 cursor-pointer text-xs font-medium text-ink-2 hover:text-ink"
                     >
                       Huỷ
-                    </button>
+                    </Btn>
                   </div>
                   {templateError && (
                     <p className="text-xs font-medium text-red-600">
@@ -570,13 +582,14 @@ export function LarkDocForm({
                   )}
                 </div>
               ) : (
-                <button
-                  type="button"
+                <Btn
+                  variant="ghost"
+                  size="sm"
                   onClick={() => setShowSaveTemplate(true)}
-                  className="w-fit cursor-pointer text-xs font-semibold text-accent hover:text-ink"
+                  className="w-fit"
                 >
-                  + Lưu quy ước hiện tại làm mẫu
-                </button>
+                  Lưu làm mẫu
+                </Btn>
               )}
             </>
           )}
@@ -592,65 +605,63 @@ export function LarkDocForm({
 
         {/* 3. Xem trước — hệ quả trực tiếp của khối phía trên, đặt ngay sau
             để so sánh tại chỗ mỗi khi bật/tắt một ô. */}
-        <div className="flex items-center gap-2 rounded-xl border border-line bg-wash px-3.5 py-2.5">
-          <span className="min-w-0 flex-1 truncate font-mono text-[13.5px] text-ink">
-            {preview ?? "— điền đủ các mục ở trên —"}
+        <div className="flex items-center gap-2 rounded-lg border border-line bg-wash pr-1.5 pl-3.5">
+          <span className="min-w-0 flex-1 truncate py-2.5 font-mono text-[13.5px] text-ink">
+            {preview ?? "— chưa đủ thông tin —"}
           </span>
           {preview && (
-            <button
-              type="button"
+            <Btn
+              variant="ghost"
+              size="sm"
               onClick={() => {
                 navigator.clipboard.writeText(preview);
                 setCopied(true);
                 setTimeout(() => setCopied(false), 1500);
               }}
-              className="flex-shrink-0 cursor-pointer text-xs font-semibold text-accent hover:text-ink"
             >
               {copied ? "Đã chép" : "Chép"}
-            </button>
+            </Btn>
           )}
         </div>
         {previewTooLong && (
           <p className="-mt-2.5 text-xs font-medium text-red-600">
-            Tên dài {preview?.length} ký tự, vượt giới hạn {MAX_FILENAME_LENGTH}
-            . Rút ngắn phần nội dung.
+            Tên dài {preview?.length}/{MAX_FILENAME_LENGTH} ký tự — rút ngắn nội
+            dung.
           </p>
         )}
 
         {/* 4. Việc sau cùng cần quyết định: file này lưu ở đâu, ai được đụng
             vào nó — tách khỏi khối đặt tên vì đây là hai câu hỏi khác nhau. */}
         <div className="flex flex-col gap-3.5 rounded-xl border border-line p-4">
-          <p className="text-[11px] font-semibold tracking-[0.08em] text-ink-2 uppercase">
+          <p className="text-[13px] font-semibold text-ink">
             Lưu trữ &amp; chia sẻ
           </p>
 
           <div className="flex flex-col gap-1.5">
-            <label className={labelClasses}>Tạo trong thư mục</label>
+            <label className={labelClasses}>Thư mục</label>
             <Combobox
               name="targetFolder"
               value={targetFolder}
               options={FOLDER_OPTIONS}
               onChange={setTargetFolder}
-              buttonClassName={`${fieldClasses} flex w-full items-center justify-between gap-2 text-left`}
+              buttonClassName={`${inputClasses} flex items-center justify-between gap-2 text-left`}
             />
             {!targetFolder && includeDept && department && (
               <p className="text-xs text-ink-2">
-                Để trống sẽ tự động vào đúng thư mục phòng ban{" "}
-                {resolveConfigLabel(department, departments) ?? department}, tạo
-                sẵn nếu chưa có.
+                Tự vào thư mục{" "}
+                {resolveConfigLabel(department, departments) ?? department}.
               </p>
             )}
           </div>
 
-          <label className="flex items-start justify-between gap-3 rounded-xl border border-line px-3.5 py-2.5">
+          <label className="flex items-center justify-between gap-3 rounded-lg border border-line px-3.5 py-2.5">
             <span className="flex flex-col gap-0.5">
               <span className="text-[13.5px] font-medium text-ink">
                 Chuyển quyền sở hữu cho tôi
               </span>
               <span className="text-xs text-ink-2">
-                Cho phép bạn tự xoá/đổi tên trực tiếp trong Lark. Đổi lại, nút
-                &quot;Xoá&quot;/&quot;Di chuyển&quot; trên trang web này sẽ
-                không dùng được cho file/thư mục này nữa.
+                Tự xoá/đổi tên được trong Lark, nhưng mất nút Xoá/Di chuyển ở
+                đây.
               </span>
             </span>
             <Toggle
@@ -661,10 +672,11 @@ export function LarkDocForm({
           </label>
 
           <div className="flex flex-col gap-2">
-            <button
-              type="button"
+            <Btn
+              variant="ghost"
+              size="sm"
               onClick={() => setShareOpen((o) => !o)}
-              className="flex w-fit cursor-pointer items-center gap-1.5 text-sm font-medium text-ink-2 hover:text-ink"
+              className="w-fit"
             >
               <svg
                 width="14"
@@ -675,17 +687,14 @@ export function LarkDocForm({
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className={`transition-transform duration-300 ease-soft ${shareOpen ? "rotate-90" : ""}`}
+                className={`transition-transform duration-150 ${shareOpen ? "rotate-90" : ""}`}
               >
                 <path d="m9 6 6 6-6 6" />
               </svg>
-              Chia sẻ thêm với {shares.length > 0 && `(${shares.length})`}
-            </button>
+              Chia sẻ thêm{shares.length > 0 && ` (${shares.length})`}
+            </Btn>
             {shareOpen && (
               <div className="rounded-xl border border-line bg-paper p-3">
-                <p className="mb-2.5 text-xs text-ink-2">
-                  Bạn (người tạo) luôn tự động có toàn quyền.
-                </p>
                 <StaffSharePicker
                   staff={staff}
                   hiddenFieldName="shares"
@@ -700,13 +709,14 @@ export function LarkDocForm({
         {state.error && (
           <p className="text-sm font-medium text-red-600">{state.error}</p>
         )}
-        <button
+        <Btn
+          variant="primary"
           type="submit"
           disabled={pending || !preview}
-          className="w-fit cursor-pointer rounded-full bg-accent px-6 py-2.5 text-sm font-semibold text-white transition-colors duration-300 ease-soft hover:bg-ink disabled:cursor-not-allowed disabled:opacity-60"
+          className="w-fit"
         >
           {pending ? "Đang tạo..." : `Tạo ${LARK_FILE_TYPE_LABELS[fileType]}`}
-        </button>
+        </Btn>
       </form>
 
       <LarkSettingsModal
@@ -720,40 +730,43 @@ export function LarkDocForm({
       />
 
       {state.url && state.url !== dismissedUrl && (
-        <div className="flex flex-col gap-2.5 rounded-card border border-line bg-card p-4">
-          <span className="text-sm font-semibold">
-            Đã tạo &quot;{state.title}&quot;
+        <div className={`flex flex-col gap-3 ${cardClasses} p-4`}>
+          <span className="text-sm font-medium text-ink">
+            Đã tạo {state.title}
           </span>
-          <a
-            href={state.url}
-            target="_blank"
-            rel="noreferrer"
-            className="text-sm text-accent underline break-all"
-          >
-            {state.url}
-          </a>
+          {/* The raw URL used to be printed in full as an underlined link —
+              a 60-character token nobody reads, in place of the one control
+              they actually want. An anchor styled as a button: still a real
+              link (middle-click / open-in-new-tab keep working), but it
+              looks like the action it is. */}
+          <div className="flex flex-wrap gap-2">
+            <a
+              href={state.url}
+              target="_blank"
+              rel="noreferrer"
+              className={btnClasses("primary", "md")}
+            >
+              Mở trong Lark
+            </a>
+            <Btn
+              onClick={() => {
+                setDismissedUrl(state.url ?? null);
+                setContent("");
+              }}
+            >
+              Tạo file khác
+            </Btn>
+          </div>
           {state.shareResults && state.shareResults.length > 0 && (
             <div className="flex flex-col gap-1 border-t border-line pt-3">
               {state.shareResults.map((r) => (
                 <span key={r.email} className="text-xs text-ink-2">
-                  {r.ok ? "✓" : "✗"} {r.email}{" "}
-                  {r.ok
-                    ? ""
-                    : "— chia sẻ thất bại, có thể chưa có tài khoản Lark"}
+                  {r.ok ? "✓" : "✗"} {r.email}
+                  {!r.ok && " — chưa có tài khoản Lark?"}
                 </span>
               ))}
             </div>
           )}
-          <button
-            type="button"
-            onClick={() => {
-              setDismissedUrl(state.url ?? null);
-              setContent("");
-            }}
-            className="w-fit cursor-pointer text-xs font-semibold text-accent hover:text-ink"
-          >
-            + Tạo file khác
-          </button>
         </div>
       )}
     </div>

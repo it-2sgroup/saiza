@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Modal, ModalHeader } from "../Modal";
+import { Btn, btnClasses, cardClasses } from "../controls";
 import type { LarkDriveItem, LarkFileType } from "@/lib/lark/client";
 import type { FolderOption } from "@/lib/lark/folders";
-import { TypeBadge, fileTypeLabel } from "./TypeBadge";
+import { TypeBadge } from "./TypeBadge";
 import { ItemActionsMenu } from "./ItemActionsMenu";
 import type { StaffOption } from "./StaffSharePicker";
 import { useDriveFolders, ROOT_KEY } from "./useDriveFolders";
@@ -20,13 +21,19 @@ const ROOT_PARENT = "";
 // Reconstructs the ancestor chain (for the breadcrumb) for a folder clicked
 // directly in the tree sidebar, since FolderOption only carries a
 // `parentToken` pointer, not the full path.
-function buildPathTo(token: string, tree: FolderOption[], rootLabel: string): Crumb[] {
+function buildPathTo(
+  token: string,
+  tree: FolderOption[],
+  rootLabel: string,
+): Crumb[] {
   const byToken = new Map(tree.map((f) => [f.token, f]));
   const chain: Crumb[] = [];
   let current = byToken.get(token);
   while (current) {
     chain.unshift({ token: current.token, name: current.name });
-    current = current.parentToken ? byToken.get(current.parentToken) : undefined;
+    current = current.parentToken
+      ? byToken.get(current.parentToken)
+      : undefined;
   }
   return [{ token: null, name: rootLabel }, ...chain];
 }
@@ -42,7 +49,7 @@ function buildPathTo(token: string, tree: FolderOption[], rootLabel: string): Cr
 function SkeletonRows() {
   return (
     <div
-      className="flex flex-col divide-y divide-line rounded-card border border-line"
+      className={`flex flex-col divide-y divide-line ${cardClasses}`}
       style={{ animation: `softIn 0.2s ease ${SKELETON_DELAY_MS}ms both` }}
       aria-hidden
     >
@@ -50,7 +57,10 @@ function SkeletonRows() {
         <div key={i} className="flex items-center gap-3 px-4 py-2.5">
           <div className="h-7 w-7 flex-shrink-0 animate-pulse rounded-md bg-wash" />
           <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-            <div className="h-3 animate-pulse rounded bg-wash" style={{ width: `${52 - i * 8}%` }} />
+            <div
+              className="h-3 animate-pulse rounded bg-wash"
+              style={{ width: `${52 - i * 8}%` }}
+            />
             <div className="h-2.5 w-20 animate-pulse rounded bg-wash" />
           </div>
         </div>
@@ -95,7 +105,15 @@ export function DriveExplorer({
 }) {
   const [open, setOpen] = useState(false);
   const [path, setPath] = useState<Crumb[]>([{ token: null, name: appLabel }]);
-  const { cache, getItems, isLoading, isRefreshing, error, open: openFolder, prefetch } = useDriveFolders(appKey, cacheScope, initialItems);
+  const {
+    cache,
+    getItems,
+    isLoading,
+    isRefreshing,
+    error,
+    open: openFolder,
+    prefetch,
+  } = useDriveFolders(appKey, cacheScope, initialItems);
 
   const currentToken = path[path.length - 1]?.token ?? null;
   const items = getItems(currentToken);
@@ -111,7 +129,9 @@ export function DriveExplorer({
   const liveFolders = useMemo(() => {
     const out: FolderOption[] = [];
     const seen = new Set<string>();
-    const queue: { key: string; depth: number }[] = [{ key: ROOT_KEY, depth: 0 }];
+    const queue: { key: string; depth: number }[] = [
+      { key: ROOT_KEY, depth: 0 },
+    ];
     while (queue.length > 0) {
       const { key, depth } = queue.shift()!;
       for (const item of cache[key]?.items ?? []) {
@@ -136,7 +156,10 @@ export function DriveExplorer({
     if (!items) return;
     const subfolders = items.filter((i) => i.type === "folder").slice(0, 6);
     if (subfolders.length === 0) return;
-    const id = window.setTimeout(() => subfolders.forEach((f) => prefetch(f.token)), 400);
+    const id = window.setTimeout(
+      () => subfolders.forEach((f) => prefetch(f.token)),
+      400,
+    );
     return () => window.clearTimeout(id);
   }, [items, prefetch]);
 
@@ -151,7 +174,9 @@ export function DriveExplorer({
     const byToken = new Map<string, FolderOption>();
     for (const f of folderTree) byToken.set(f.token, f);
     for (const f of liveFolders) byToken.set(f.token, f);
-    return [...byToken.values()].sort((a, b) => a.depth - b.depth || a.name.localeCompare(b.name, "vi"));
+    return [...byToken.values()].sort(
+      (a, b) => a.depth - b.depth || a.name.localeCompare(b.name, "vi"),
+    );
   }, [folderTree, liveFolders]);
 
   const openExplorer = () => {
@@ -184,8 +209,13 @@ export function DriveExplorer({
   // content pane only needs to list folders the tree doesn't already show
   // — anything in `tree` would otherwise show up twice.
   const treeTokens = new Set(tree.map((f) => f.token));
-  const visibleFolders = (items ?? []).filter((i) => i.type === "folder" && (!inline || !treeTokens.has(i.token)));
-  const orderedItems = [...visibleFolders, ...(items ?? []).filter((i) => i.type !== "folder")];
+  const visibleFolders = (items ?? []).filter(
+    (i) => i.type === "folder" && (!inline || !treeTokens.has(i.token)),
+  );
+  const orderedItems = [
+    ...visibleFolders,
+    ...(items ?? []).filter((i) => i.type !== "folder"),
+  ];
 
   const driveIcon = (
     <svg
@@ -203,17 +233,29 @@ export function DriveExplorer({
   );
 
   const treeItemClass = (active: boolean) =>
-    `flex w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[13px] font-medium transition-colors duration-300 ease-soft ${
-      active ? "bg-accent/10 text-accent" : "text-ink-2 hover:bg-wash hover:text-ink"
+    `flex min-h-8 w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-[13px] font-medium transition-colors duration-150 ${
+      active
+        ? "bg-accent/10 text-accent"
+        : "text-ink-2 hover:bg-wash hover:text-ink"
     }`;
 
   const content = (
-    <div className={inline ? "flex flex-col gap-3 sm:flex-row sm:gap-5" : "flex min-h-0 flex-1 flex-col gap-3"}>
+    <div
+      className={
+        inline
+          ? "flex flex-col gap-3 sm:flex-row sm:gap-5"
+          : "flex min-h-0 flex-1 flex-col gap-3"
+      }
+    >
       {inline && (
         <div className="flex w-full flex-shrink-0 flex-col gap-2 sm:w-[220px]">
-          <h3 className="text-[11px] font-semibold tracking-[0.06em] text-ink-2 uppercase">Cây thư mục</h3>
-          <div className="flex flex-col gap-0.5 rounded-card border border-line bg-card p-1.5">
-            <button type="button" onClick={() => goToTreeItem(null)} className={treeItemClass(currentToken === null)}>
+          <h3 className="text-[13px] font-semibold text-ink-2">Thư mục</h3>
+          <div className={`flex flex-col gap-0.5 ${cardClasses} p-1.5`}>
+            <button
+              type="button"
+              onClick={() => goToTreeItem(null)}
+              className={treeItemClass(currentToken === null)}
+            >
               <span className="truncate">{appLabel}</span>
             </button>
             {tree.map((f) => (
@@ -233,39 +275,48 @@ export function DriveExplorer({
         </div>
       )}
 
-      <div className={inline ? "flex min-w-0 flex-1 flex-col gap-3" : "flex min-h-0 flex-1 flex-col gap-3"}>
+      <div
+        className={
+          inline
+            ? "flex min-w-0 flex-1 flex-col gap-3"
+            : "flex min-h-0 flex-1 flex-col gap-3"
+        }
+      >
+        {/* Ancestors are real (ghost) buttons; the current folder is plain
+            text, so the row never offers a control that does nothing. */}
         {!inline && (
-          <div className="flex flex-shrink-0 flex-wrap items-center gap-1 text-sm">
-            {path.map((c, i) => (
-              <span key={i} className="flex items-center gap-1">
-                {i > 0 && <span className="text-ink-2">/</span>}
-                <button
-                  type="button"
-                  onClick={() => goToCrumb(i)}
-                  disabled={i === path.length - 1}
-                  className={i === path.length - 1 ? "font-semibold text-ink" : "cursor-pointer text-accent hover:text-ink"}
-                >
-                  {c.name}
-                </button>
-              </span>
-            ))}
+          <div className="flex flex-shrink-0 flex-wrap items-center gap-0.5 text-sm">
+            {path.map((c, i) =>
+              i === path.length - 1 ? (
+                <span key={i} className="flex items-center gap-0.5">
+                  {i > 0 && <span className="px-1 text-ink-2">/</span>}
+                  <span className="px-1.5 font-semibold text-ink">
+                    {c.name}
+                  </span>
+                </span>
+              ) : (
+                <span key={i} className="flex items-center gap-0.5">
+                  {i > 0 && <span className="px-1 text-ink-2">/</span>}
+                  <Btn variant="ghost" size="sm" onClick={() => goToCrumb(i)}>
+                    {c.name}
+                  </Btn>
+                </span>
+              ),
+            )}
           </div>
         )}
 
         {inline && (
           <div className="flex flex-shrink-0 flex-wrap items-baseline justify-between gap-2">
-            <h3 className="text-[14.5px] font-semibold text-ink">
-              {path.length <= 1 ? `${appLabel} / Toàn bộ nội dung` : path.map((c) => c.name).join(" / ")}
+            <h3 className="text-sm font-semibold text-ink">
+              {path.map((c) => c.name).join(" / ")}
             </h3>
-            <span className="flex items-center gap-2 text-xs text-ink-2">
-              {refreshing && (
-                <span className="flex items-center gap-1.5 text-accent">
-                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
-                  Đang làm mới
-                </span>
-              )}
-              Gồm cả file có trước khi hệ thống tồn tại
-            </span>
+            {refreshing && (
+              <span className="flex items-center gap-1.5 text-xs text-accent">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
+                Đang làm mới
+              </span>
+            )}
           </div>
         )}
 
@@ -277,14 +328,18 @@ export function DriveExplorer({
           ) : orderedItems.length === 0 ? (
             <p className="text-sm text-ink-2">Thư mục trống.</p>
           ) : (
-            <div className="flex flex-col divide-y divide-line rounded-card border border-line">
+            <div
+              className={`flex flex-col divide-y divide-line ${cardClasses}`}
+            >
               {orderedItems.map((f) =>
                 f.type === "folder" ? (
                   <div
                     key={f.token}
-                    className="flex items-center gap-3 px-4 py-2.5 transition-colors duration-300 ease-soft hover:bg-wash"
+                    className="flex items-center gap-3 px-4 py-2.5 transition-colors duration-150 hover:bg-wash"
                     onMouseEnter={() => prefetch(f.token)}
                   >
+                    {/* The badge already states the type, so the row carries
+                        the name alone. */}
                     <button
                       type="button"
                       onClick={() => enterFolder(f)}
@@ -292,10 +347,9 @@ export function DriveExplorer({
                       className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 text-left"
                     >
                       <TypeBadge type={f.type} size="sm" />
-                      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                        <span className="truncate text-[14px] font-medium">{f.name}</span>
-                        <span className="text-xs text-ink-2">{fileTypeLabel(f.type)}</span>
-                      </div>
+                      <span className="truncate text-sm font-medium">
+                        {f.name}
+                      </span>
                     </button>
                     <ItemActionsMenu
                       documentId={f.token}
@@ -306,20 +360,22 @@ export function DriveExplorer({
                     />
                   </div>
                 ) : (
-                  <div key={f.token} className="flex items-center gap-3 px-4 py-2.5">
+                  <div
+                    key={f.token}
+                    className="flex items-center gap-3 px-4 py-2.5"
+                  >
                     <TypeBadge type={f.type} size="sm" />
-                    <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                      <span className="truncate text-[14px] font-medium">{f.name}</span>
-                      <span className="text-xs text-ink-2">{fileTypeLabel(f.type)}</span>
-                    </div>
+                    <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                      {f.name}
+                    </span>
                     {f.url && (
                       <a
                         href={f.url}
                         target="_blank"
                         rel="noreferrer"
-                        className="flex-shrink-0 text-xs font-medium text-accent hover:text-ink"
+                        className={btnClasses("secondary", "sm")}
                       >
-                        Mở →
+                        Mở
                       </a>
                     )}
                     <ItemActionsMenu
@@ -348,15 +404,14 @@ export function DriveExplorer({
           {trigger}
         </span>
       ) : (
-        <button
-          type="button"
+        <Btn
+          size="icon-md"
           onClick={openExplorer}
           title="Duyệt Drive"
           aria-label="Duyệt Drive"
-          className="flex h-10 w-10 flex-shrink-0 cursor-pointer items-center justify-center rounded-full border border-line bg-card text-ink-2 transition-colors duration-300 ease-soft hover:border-ink hover:text-ink"
         >
           {driveIcon}
-        </button>
+        </Btn>
       )}
 
       <Modal
@@ -366,7 +421,7 @@ export function DriveExplorer({
       >
         <ModalHeader
           title={`Duyệt Drive — ${appLabel}`}
-          subtitle="Xem toàn bộ thư mục và file thật trong Lark, kể cả file có từ trước khi hệ thống này tồn tại."
+          subtitle="Toàn bộ thư mục và file thật trong Lark, kể cả file có từ trước."
           onClose={() => setOpen(false)}
         />
         {content}

@@ -2,10 +2,18 @@
 
 import { useMemo, useState } from "react";
 import { Modal, ModalHeader } from "../Modal";
+import { Btn, cardClasses, inputClasses } from "../controls";
 import { ItemActionsMenu } from "./ItemActionsMenu";
 import type { StaffOption } from "./StaffSharePicker";
-import { resolveConfigLabel, type ConfigOption } from "@/lib/admin/configListHelpers";
-import { LARK_FILE_TYPE_LABELS, countNoun, type LarkFileType } from "@/lib/lark/fileTypes";
+import {
+  resolveConfigLabel,
+  type ConfigOption,
+} from "@/lib/admin/configListHelpers";
+import {
+  LARK_FILE_TYPE_LABELS,
+  countNoun,
+  type LarkFileType,
+} from "@/lib/lark/fileTypes";
 
 export type OverviewRow = {
   targetId: string;
@@ -82,32 +90,52 @@ export function OverviewModal({
   );
 
   const content = (
-    <div className={inline ? "flex flex-col gap-4" : "flex min-h-0 flex-1 flex-col gap-4"}>
+    <div
+      className={
+        inline ? "flex flex-col gap-4" : "flex min-h-0 flex-1 flex-col gap-4"
+      }
+    >
       <div className="grid flex-shrink-0 grid-cols-1 gap-3 sm:grid-cols-2">
-        <div className="rounded-card border border-line bg-paper p-4">
-          <h3 className="mb-2 text-xs font-semibold tracking-[0.06em] text-ink-2 uppercase">Theo loại file</h3>
+        <div className={`${cardClasses} p-4`}>
+          <h3 className="mb-2 text-[13px] font-semibold text-ink-2">
+            Theo loại
+          </h3>
           <div className="flex flex-col gap-1.5">
             {(Object.keys(LARK_FILE_TYPE_LABELS) as LarkFileType[])
               .filter((t) => (byType.get(t) ?? 0) > 0)
               .map((t) => (
-                <div key={t} className="flex items-center justify-between text-sm">
+                <div
+                  key={t}
+                  className="flex items-center justify-between text-sm"
+                >
                   <span className="text-ink-2">{LARK_FILE_TYPE_LABELS[t]}</span>
                   <span className="font-medium">{byType.get(t)}</span>
                 </div>
               ))}
-            {byType.size === 0 && <p className="text-sm text-ink-2">Chưa có dữ liệu.</p>}
+            {byType.size === 0 && (
+              <p className="text-sm text-ink-2">Chưa có dữ liệu.</p>
+            )}
           </div>
         </div>
-        <div className="rounded-card border border-line bg-paper p-4">
-          <h3 className="mb-2 text-xs font-semibold tracking-[0.06em] text-ink-2 uppercase">Theo phòng ban</h3>
+        <div className={`${cardClasses} p-4`}>
+          <h3 className="mb-2 text-[13px] font-semibold text-ink-2">
+            Theo phòng ban
+          </h3>
           <div className="flex flex-col gap-1.5">
             {byDepartment.map(([dept, count]) => (
-              <div key={dept} className="flex items-center justify-between text-sm">
-                <span className="text-ink-2">{resolveConfigLabel(dept, departments) ?? dept}</span>
+              <div
+                key={dept}
+                className="flex items-center justify-between text-sm"
+              >
+                <span className="text-ink-2">
+                  {resolveConfigLabel(dept, departments) ?? dept}
+                </span>
                 <span className="font-medium">{count}</span>
               </div>
             ))}
-            {byDepartment.length === 0 && <p className="text-sm text-ink-2">Chưa có dữ liệu.</p>}
+            {byDepartment.length === 0 && (
+              <p className="text-sm text-ink-2">Chưa có dữ liệu.</p>
+            )}
           </div>
         </div>
       </div>
@@ -117,15 +145,15 @@ export function OverviewModal({
           type="text"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Tìm theo tên..."
-          className="min-w-[180px] flex-1 rounded-full border border-line bg-paper px-4 py-2.5 text-[14.5px] text-ink outline-none transition-all duration-300 ease-soft focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/30"
+          placeholder="Tìm tên"
+          className={`${inputClasses} min-w-[180px] flex-1`}
         />
         <select
           value={department}
           onChange={(e) => setDepartment(e.target.value)}
-          className="rounded-full border border-line bg-paper px-4 py-2.5 text-[14.5px] text-ink outline-none"
+          className={`${inputClasses} w-auto`}
         >
-          <option value="">Tất cả phòng ban</option>
+          <option value="">Mọi phòng ban</option>
           {departments.map((d) => (
             <option key={d.code} value={d.code}>
               {d.label}
@@ -135,9 +163,9 @@ export function OverviewModal({
         <select
           value={fileType}
           onChange={(e) => setFileType(e.target.value as LarkFileType | "")}
-          className="rounded-full border border-line bg-paper px-4 py-2.5 text-[14.5px] text-ink outline-none"
+          className={`${inputClasses} w-auto`}
         >
-          <option value="">Tất cả loại file</option>
+          <option value="">Mọi loại</option>
           {(Object.keys(LARK_FILE_TYPE_LABELS) as LarkFileType[]).map((t) => (
             <option key={t} value={t}>
               {LARK_FILE_TYPE_LABELS[t]}
@@ -146,21 +174,32 @@ export function OverviewModal({
         </select>
       </div>
 
-      <div className="flex-shrink-0 text-sm text-ink-2">{filtered.length} kết quả</div>
+      <div className="flex-shrink-0 text-[13px] text-ink-2">
+        {filtered.length} kết quả
+      </div>
 
       <div className={inline ? "" : "min-h-0 flex-1 overflow-y-auto"}>
         {filtered.length === 0 ? (
-          <p className="text-sm text-ink-2">Không có {fileType === "folder" ? "thư mục" : "mục"} nào khớp bộ lọc.</p>
+          <p className="text-sm text-ink-2">
+            Không có {fileType === "folder" ? "thư mục" : "mục"} nào.
+          </p>
         ) : (
           <div className="flex flex-col divide-y divide-line">
             {filtered.map((row) => (
-              <div key={row.targetId} className="flex items-center justify-between gap-4 py-3">
+              <div
+                key={row.targetId}
+                className="flex items-center justify-between gap-4 py-3"
+              >
                 <div className="flex min-w-0 flex-col gap-0.5">
-                  <span className="truncate text-[14.5px] font-medium">{row.title}</span>
-                  <span className="text-xs text-ink-2">
+                  <span className="truncate text-sm font-medium">
+                    {row.title}
+                  </span>
+                  <span className="truncate text-xs text-ink-2">
                     {LARK_FILE_TYPE_LABELS[row.fileType]} · {row.creatorName} ·{" "}
-                    {resolveConfigLabel(row.creatorDepartment, departments) ?? "chưa gán phòng ban"} · 📁 {row.folderName ?? "—"} ·{" "}
-                    {new Date(row.createdAt).toLocaleString("vi-VN")}
+                    {resolveConfigLabel(row.creatorDepartment, departments) ??
+                      "—"}{" "}
+                    · {row.folderName ?? "—"} ·{" "}
+                    {new Date(row.createdAt).toLocaleDateString("vi-VN")}
                   </span>
                 </div>
                 <ItemActionsMenu
@@ -187,15 +226,14 @@ export function OverviewModal({
           {trigger}
         </span>
       ) : (
-        <button
-          type="button"
+        <Btn
+          size="icon-md"
           onClick={() => setOpen(true)}
           title="Tổng quan toàn công ty"
           aria-label="Tổng quan toàn công ty"
-          className="flex h-10 w-10 flex-shrink-0 cursor-pointer items-center justify-center rounded-full border border-line bg-card text-ink-2 transition-colors duration-300 ease-soft hover:border-ink hover:text-ink"
         >
           {overviewIcon}
-        </button>
+        </Btn>
       )}
 
       <Modal
@@ -204,8 +242,8 @@ export function OverviewModal({
         panelClassName="flex max-h-[88vh] w-full max-w-[860px] flex-col overflow-hidden p-6"
       >
         <ModalHeader
-          title="Tổng quan file Lark — toàn công ty"
-          subtitle={`${rows.length} ${countNoun(rows.map((r) => r.fileType))} (chưa xoá) · thuộc dung lượng lưu trữ của tổ chức 2SGROUP.`}
+          title="Tổng quan file Lark"
+          subtitle={`${rows.length} ${countNoun(rows.map((r) => r.fileType))} · lưu trên dung lượng 2SGROUP`}
           onClose={() => setOpen(false)}
         />
         {content}

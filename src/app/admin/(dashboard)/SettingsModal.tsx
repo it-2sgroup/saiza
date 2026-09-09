@@ -2,7 +2,10 @@
 
 import { useState } from "react";
 import type { Profile } from "@/lib/supabase/profile";
-import { resolveRoleLabel, type RoleOption } from "@/lib/admin/roleCapabilities";
+import {
+  resolveRoleLabel,
+  type RoleOption,
+} from "@/lib/admin/roleCapabilities";
 import { Avatar } from "./Avatar";
 import { Modal } from "./Modal";
 import { AvatarUpload } from "./AvatarUpload";
@@ -61,7 +64,15 @@ function SectionIcon({ id }: { id: SectionId }) {
   );
 }
 
-export function SettingsModal({ profile, compact = false, roles }: { profile: Profile; compact?: boolean; roles: RoleOption[] }) {
+export function SettingsModal({
+  profile,
+  compact = false,
+  roles,
+}: {
+  profile: Profile;
+  compact?: boolean;
+  roles: RoleOption[];
+}) {
   const [open, setOpen] = useState(false);
   const [section, setSection] = useState<SectionId>("profile");
 
@@ -74,14 +85,22 @@ export function SettingsModal({ profile, compact = false, roles }: { profile: Pr
           setOpen(true);
         }}
         aria-label={compact ? profile.full_name : undefined}
-        className={`flex w-full cursor-pointer items-center gap-3 rounded-2xl p-2 text-left transition-colors duration-300 ease-soft hover:bg-wash ${compact ? "justify-center" : ""}`}
+        className={`flex w-full cursor-pointer items-center gap-3 rounded-lg p-2 text-left transition-colors duration-150 hover:bg-wash ${compact ? "justify-center" : ""}`}
       >
-        <Avatar fullName={profile.full_name} avatarUrl={profile.avatar_url} size={9} />
+        <Avatar
+          fullName={profile.full_name}
+          avatarUrl={profile.avatar_url}
+          size={9}
+        />
         {!compact && (
           <>
             <div className="flex flex-1 flex-col gap-0.5 overflow-hidden">
-              <span className="truncate text-sm font-semibold">{profile.full_name}</span>
-              <span className="text-xs text-ink-2">{resolveRoleLabel(profile.role, roles) ?? profile.role}</span>
+              <span className="truncate text-sm font-semibold">
+                {profile.full_name}
+              </span>
+              <span className="text-xs text-ink-2">
+                {resolveRoleLabel(profile.role, roles) ?? profile.role}
+              </span>
             </div>
             <svg
               width="15"
@@ -101,16 +120,24 @@ export function SettingsModal({ profile, compact = false, roles }: { profile: Pr
         )}
       </button>
 
-      <Modal open={open} onClose={() => setOpen(false)} panelClassName="flex h-[min(600px,88vh)] w-full max-w-[860px] overflow-hidden p-0">
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}
+        panelClassName="flex h-[min(600px,88vh)] w-full max-w-[860px] overflow-hidden p-0"
+      >
         <div className="flex w-52 flex-shrink-0 flex-col gap-1 border-r border-line bg-paper p-4">
-          <span className="mb-2 px-3 text-xs font-semibold tracking-[0.08em] text-ink-2 uppercase">Cài đặt</span>
+          <span className="mb-2 px-3 text-xs font-semibold tracking-[0.08em] text-ink-2 uppercase">
+            Cài đặt
+          </span>
           {SECTIONS.map((s) => (
             <button
               key={s.id}
               type="button"
               onClick={() => setSection(s.id)}
-              className={`flex items-center gap-2.5 rounded-full px-3 py-2.5 text-left text-sm font-medium transition-colors duration-300 ease-soft ${
-                section === s.id ? "bg-wash text-accent" : "text-ink-2 hover:bg-wash"
+              className={`flex cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors duration-150 ${
+                section === s.id
+                  ? "bg-wash text-accent"
+                  : "text-ink-2 hover:bg-wash"
               }`}
             >
               <SectionIcon id={s.id} />
@@ -124,7 +151,7 @@ export function SettingsModal({ profile, compact = false, roles }: { profile: Pr
             type="button"
             onClick={() => setOpen(false)}
             aria-label="Đóng"
-            className="absolute top-5 right-5 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-ink-2 transition-colors duration-300 ease-soft hover:bg-wash hover:text-ink"
+            className="absolute top-5 right-5 flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-ink-2 transition-colors duration-150 hover:bg-wash hover:text-ink"
           >
             <svg
               width="16"
@@ -147,7 +174,11 @@ export function SettingsModal({ profile, compact = false, roles }: { profile: Pr
               <h2 className="mb-4 text-lg font-semibold">Hồ sơ</h2>
               <div className="flex items-center justify-between gap-4 border-b border-line py-4">
                 <span className="text-sm text-ink-2">Ảnh đại diện</span>
-                <AvatarUpload fullName={profile.full_name} avatarUrl={profile.avatar_url} size="sm" />
+                <AvatarUpload
+                  fullName={profile.full_name}
+                  avatarUrl={profile.avatar_url}
+                  size="sm"
+                />
               </div>
               <ProfileForm fullName={profile.full_name} />
             </div>
@@ -160,9 +191,12 @@ export function SettingsModal({ profile, compact = false, roles }: { profile: Pr
           )}
           {section === "danger" && (
             <div className="max-w-[520px]">
-              <h2 className="mb-2 text-lg font-semibold text-red-600">Vùng nguy hiểm</h2>
+              <h2 className="mb-2 text-lg font-semibold text-red-600">
+                Vùng nguy hiểm
+              </h2>
               <p className="mb-4 text-sm text-ink-2">
-                Xoá tài khoản sẽ gỡ quyền truy cập khu quản trị vĩnh viễn. Các bài viết bạn đã đăng vẫn được giữ lại.
+                Xoá tài khoản sẽ gỡ quyền truy cập khu quản trị vĩnh viễn. Các
+                bài viết bạn đã đăng vẫn được giữ lại.
               </p>
               <DeleteAccountForm />
             </div>

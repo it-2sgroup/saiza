@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Pagination } from "../Pagination";
 import { TypeBadge, fileTypeLabel } from "./TypeBadge";
 import { TrashRowActions } from "./TrashRowActions";
+import { cardClasses } from "../controls";
 import type { TrashUiRow } from "./data";
 
 const PAGE_SIZE = 10;
@@ -19,45 +20,63 @@ export function TrashTab({ rows }: { rows: TrashUiRow[] }) {
   const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
   const clampedPage = Math.min(page, totalPages);
   if (clampedPage !== page) setPage(clampedPage);
-  const paged = rows.slice((clampedPage - 1) * PAGE_SIZE, clampedPage * PAGE_SIZE);
+  const paged = rows.slice(
+    (clampedPage - 1) * PAGE_SIZE,
+    clampedPage * PAGE_SIZE,
+  );
 
   return (
     <div className="flex flex-col gap-3">
       <p className="text-xs text-ink-2">
-        Các file/thư mục đã xoá được giữ lại tối đa {RETENTION_DAYS} ngày trước khi xoá vĩnh viễn khỏi Lark — trong thời gian đó bạn có thể
-        khôi phục lại vị trí cũ.
+        Giữ {RETENTION_DAYS} ngày rồi xoá vĩnh viễn khỏi Lark. Trước đó có thể
+        khôi phục về vị trí cũ.
       </p>
 
       {rows.length === 0 ? (
         <p className="text-sm text-ink-2">Thùng rác trống.</p>
       ) : (
         <>
-          <div className="flex flex-col divide-y divide-line rounded-card border border-line">
+          <div className={`flex flex-col divide-y divide-line ${cardClasses}`}>
             {paged.map((row) => {
               const left = daysLeft(row.purgeAt);
               return (
-                <div key={row.documentId} className="flex items-center gap-3 px-4 py-2.5">
+                <div
+                  key={row.documentId}
+                  className="flex items-center gap-3 px-4 py-2.5"
+                >
                   <TypeBadge type={row.fileType} />
                   <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                    <span className="truncate text-[14.5px] font-medium">{row.title}</span>
+                    <span className="truncate text-[14.5px] font-medium">
+                      {row.title}
+                    </span>
                     <span className="text-xs text-ink-2">
-                      {fileTypeLabel(row.fileType)} · {row.deletedByName} · từ 📁 {row.originalFolderName} ·{" "}
+                      {fileTypeLabel(row.fileType)} · {row.deletedByName} · từ
+                      📁 {row.originalFolderName} ·{" "}
                       {new Date(row.deletedAt).toLocaleDateString("vi-VN")}
                     </span>
                   </div>
                   <span
-                    className={`flex-shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold whitespace-nowrap ${
-                      left <= 3 ? "bg-red-50 text-red-600" : "bg-wash text-ink-2"
+                    className={`flex-shrink-0 rounded-lg px-2.5 py-1 text-xs font-medium whitespace-nowrap ${
+                      left <= 3
+                        ? "bg-red-50 text-red-600"
+                        : "bg-wash text-ink-2"
                     }`}
                   >
-                    {left === 0 ? "Xoá vĩnh viễn hôm nay" : `Còn ${left} ngày`}
+                    {left === 0 ? "Xoá hôm nay" : `Còn ${left} ngày`}
                   </span>
-                  <TrashRowActions documentId={row.documentId} canManage={row.canManage} />
+                  <TrashRowActions
+                    documentId={row.documentId}
+                    canManage={row.canManage}
+                  />
                 </div>
               );
             })}
           </div>
-          <Pagination page={clampedPage} totalPages={totalPages} onChange={setPage} />
+          <Pagination
+            page={clampedPage}
+            totalPages={totalPages}
+            onChange={setPage}
+          />
         </>
       )}
     </div>

@@ -1,30 +1,64 @@
 "use client";
 
-export function Pagination({ page, totalPages, onChange }: { page: number; totalPages: number; onChange: (page: number) => void }) {
+import { Btn } from "./controls";
+
+export function Pagination({
+  page,
+  totalPages,
+  onChange,
+}: {
+  page: number;
+  totalPages: number;
+  onChange: (page: number) => void;
+}) {
   if (totalPages <= 1) return null;
 
   return (
     <div className="flex flex-shrink-0 items-center justify-between gap-3 pt-1">
-      <span className="text-xs text-ink-2">
-        Trang {page}/{totalPages}
+      <span className="text-[13px] text-ink-2">
+        {page}/{totalPages}
       </span>
       <div className="flex items-center gap-1.5">
-        <button
-          type="button"
+        <Btn
+          size="icon-sm"
           onClick={() => onChange(page - 1)}
           disabled={page <= 1}
-          className="cursor-pointer rounded-full border border-line px-3 py-1.5 text-xs font-medium text-ink-2 transition-colors duration-300 ease-soft hover:border-ink hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
+          aria-label="Trang trước"
         >
-          ← Trước
-        </button>
-        <button
-          type="button"
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="m15 18-6-6 6-6" />
+          </svg>
+        </Btn>
+        <Btn
+          size="icon-sm"
           onClick={() => onChange(page + 1)}
           disabled={page >= totalPages}
-          className="cursor-pointer rounded-full border border-line px-3 py-1.5 text-xs font-medium text-ink-2 transition-colors duration-300 ease-soft hover:border-ink hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
+          aria-label="Trang sau"
         >
-          Sau →
-        </button>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="m9 18 6-6-6-6" />
+          </svg>
+        </Btn>
       </div>
     </div>
   );

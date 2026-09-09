@@ -3,10 +3,19 @@
 import { useMemo, useState } from "react";
 import { Modal, ModalHeader } from "../Modal";
 import { Pagination } from "../Pagination";
+import { Btn, cardClasses, inputClasses } from "../controls";
 import { ItemActionsMenu } from "./ItemActionsMenu";
-import { resolveConfigLabel, type ConfigOption } from "@/lib/admin/configListHelpers";
+import {
+  resolveConfigLabel,
+  type ConfigOption,
+} from "@/lib/admin/configListHelpers";
 import type { StaffOption } from "./StaffSharePicker";
-import { LARK_FILE_TYPE_LABELS, itemNoun, countNoun, type LarkFileType } from "@/lib/lark/fileTypes";
+import {
+  LARK_FILE_TYPE_LABELS,
+  itemNoun,
+  countNoun,
+  type LarkFileType,
+} from "@/lib/lark/fileTypes";
 
 export type HistoryRow = {
   targetId: string;
@@ -17,9 +26,22 @@ export type HistoryRow = {
   folderName: string | null;
 };
 
+// Short labels for the filter row only. The full LARK_FILE_TYPE_LABELS
+// ("Tài liệu (Docs)") are correct in prose and in the table cell, but as a row
+// of four chips they wrap and swamp the search field next to them.
+const TYPE_FILTER_LABELS: Record<LarkFileType, string> = {
+  docx: "Docs",
+  sheet: "Sheets",
+  bitable: "Base",
+  folder: "Thư mục",
+};
+
 const TYPE_FILTERS: { value: LarkFileType | ""; label: string }[] = [
   { value: "", label: "Tất cả" },
-  ...(Object.keys(LARK_FILE_TYPE_LABELS) as LarkFileType[]).map((t) => ({ value: t, label: LARK_FILE_TYPE_LABELS[t] })),
+  ...(Object.keys(LARK_FILE_TYPE_LABELS) as LarkFileType[]).map((t) => ({
+    value: t,
+    label: TYPE_FILTER_LABELS[t],
+  })),
 ];
 
 const SORT_OPTIONS = [
@@ -51,7 +73,8 @@ export function HistoryModal({
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const [typeFilter, setTypeFilter] = useState<LarkFileType | "">("");
-  const [sort, setSort] = useState<(typeof SORT_OPTIONS)[number]["value"]>("recent");
+  const [sort, setSort] =
+    useState<(typeof SORT_OPTIONS)[number]["value"]>("recent");
   const [page, setPage] = useState(1);
 
   const filtered = useMemo(() => {
@@ -61,7 +84,8 @@ export function HistoryModal({
       if (typeFilter && r.fileType !== typeFilter) return false;
       return true;
     });
-    if (sort === "name") return [...result].sort((a, b) => a.title.localeCompare(b.title, "vi"));
+    if (sort === "name")
+      return [...result].sort((a, b) => a.title.localeCompare(b.title, "vi"));
     return result;
   }, [rows, q, typeFilter, sort]);
 
@@ -71,7 +95,10 @@ export function HistoryModal({
   // filter doesn't jump the user back to the first page unnecessarily.
   const clampedPage = Math.min(page, totalPages);
   if (clampedPage !== page) setPage(clampedPage);
-  const paged = filtered.slice((clampedPage - 1) * PAGE_SIZE, clampedPage * PAGE_SIZE);
+  const paged = filtered.slice(
+    (clampedPage - 1) * PAGE_SIZE,
+    clampedPage * PAGE_SIZE,
+  );
 
   const historyIcon = (
     <svg
@@ -91,33 +118,37 @@ export function HistoryModal({
   );
 
   const content = (
-    <div className={inline ? "flex flex-col gap-3" : "flex min-h-0 flex-1 flex-col gap-3"}>
+    <div
+      className={
+        inline ? "flex flex-col gap-3" : "flex min-h-0 flex-1 flex-col gap-3"
+      }
+    >
       <div className="flex flex-shrink-0 flex-wrap items-center gap-2.5">
         <input
           type="text"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Tìm theo tên..."
-          className="min-w-[180px] flex-1 rounded-full border border-line bg-paper px-4 py-2.5 text-[14.5px] text-ink outline-none transition-all duration-300 ease-soft focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/30"
+          placeholder="Tìm tên"
+          className={`${inputClasses} min-w-[180px] flex-1`}
         />
         <div className="flex flex-wrap gap-1.5">
           {TYPE_FILTERS.map((f) => (
-            <button
+            <Btn
               key={f.value || "all"}
-              type="button"
+              size="sm"
+              variant={typeFilter === f.value ? "primary" : "secondary"}
               onClick={() => setTypeFilter(f.value)}
-              className={`cursor-pointer rounded-full border px-3 py-1.5 text-xs font-medium transition-colors duration-300 ease-soft ${
-                typeFilter === f.value ? "border-accent bg-accent text-white" : "border-line text-ink-2 hover:border-ink hover:text-ink"
-              }`}
             >
               {f.label}
-            </button>
+            </Btn>
           ))}
         </div>
         <select
           value={sort}
-          onChange={(e) => setSort(e.target.value as (typeof SORT_OPTIONS)[number]["value"])}
-          className="ml-auto rounded-full border border-line bg-paper px-3.5 py-2 text-xs font-medium text-ink outline-none"
+          onChange={(e) =>
+            setSort(e.target.value as (typeof SORT_OPTIONS)[number]["value"])
+          }
+          className={`${inputClasses} ml-auto w-auto`}
         >
           {SORT_OPTIONS.map((o) => (
             <option key={o.value} value={o.value}>
@@ -127,16 +158,24 @@ export function HistoryModal({
         </select>
       </div>
 
-      <div className={inline ? "flex flex-col gap-3" : "flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto"}>
+      <div
+        className={
+          inline
+            ? "flex flex-col gap-3"
+            : "flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto"
+        }
+      >
         {filtered.length === 0 ? (
           <p className="text-sm text-ink-2">
-            {q || typeFilter ? `Không tìm thấy ${itemNoun(typeFilter)} khớp bộ lọc.` : "Bạn chưa tạo gì cả."}
+            {q || typeFilter
+              ? `Không tìm thấy ${itemNoun(typeFilter)}.`
+              : "Chưa có gì."}
           </p>
         ) : (
-          <div className="overflow-x-auto rounded-card border border-line">
+          <div className={`overflow-x-auto ${cardClasses}`}>
             <table className="w-full min-w-[680px] border-collapse text-sm">
               <thead>
-                <tr className="border-b border-line bg-paper text-left text-xs font-semibold tracking-[0.06em] text-ink-2 uppercase">
+                <tr className="border-b border-line bg-paper text-left text-[13px] font-semibold text-ink-2">
                   {/* Follows the active filter — this list holds folders too,
                       so a fixed "Tên file" mislabels every folder row. */}
                   <th className="px-4 py-2.5">Tên {itemNoun(typeFilter)}</th>
@@ -144,19 +183,35 @@ export function HistoryModal({
                   <th className="px-4 py-2.5">Thư mục</th>
                   <th className="px-4 py-2.5">Phòng ban</th>
                   <th className="px-4 py-2.5">Người tạo</th>
-                  <th className="px-4 py-2.5">Cập nhật</th>
+                  <th className="px-4 py-2.5">Tạo lúc</th>
                   <th className="px-2 py-2.5" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
                 {paged.map((row) => (
-                  <tr key={row.targetId} className="transition-colors duration-300 ease-soft hover:bg-wash">
-                    <td className="max-w-[280px] truncate px-4 py-2.5 font-medium">{row.title}</td>
-                    <td className="px-4 py-2.5 text-ink-2">{LARK_FILE_TYPE_LABELS[row.fileType]}</td>
-                    <td className="max-w-[160px] truncate px-4 py-2.5 text-ink-2">{row.folderName ?? "—"}</td>
-                    <td className="px-4 py-2.5 text-ink-2">{resolveConfigLabel(creatorDepartment, departments) ?? "(chưa gán)"}</td>
-                    <td className="px-4 py-2.5 text-ink-2">{creatorName ?? "—"}</td>
-                    <td className="px-4 py-2.5 whitespace-nowrap text-ink-2">{new Date(row.createdAt).toLocaleString("vi-VN")}</td>
+                  <tr
+                    key={row.targetId}
+                    className="transition-colors duration-300 ease-soft hover:bg-wash"
+                  >
+                    <td className="max-w-[280px] truncate px-4 py-2.5 font-medium">
+                      {row.title}
+                    </td>
+                    <td className="px-4 py-2.5 text-ink-2">
+                      {LARK_FILE_TYPE_LABELS[row.fileType]}
+                    </td>
+                    <td className="max-w-[160px] truncate px-4 py-2.5 text-ink-2">
+                      {row.folderName ?? "—"}
+                    </td>
+                    <td className="px-4 py-2.5 text-ink-2">
+                      {resolveConfigLabel(creatorDepartment, departments) ??
+                        "(chưa gán)"}
+                    </td>
+                    <td className="px-4 py-2.5 text-ink-2">
+                      {creatorName ?? "—"}
+                    </td>
+                    <td className="px-4 py-2.5 whitespace-nowrap text-ink-2">
+                      {new Date(row.createdAt).toLocaleString("vi-VN")}
+                    </td>
                     <td className="px-2 py-2.5 text-right">
                       <ItemActionsMenu
                         documentId={row.targetId}
@@ -172,7 +227,11 @@ export function HistoryModal({
             </table>
           </div>
         )}
-        <Pagination page={clampedPage} totalPages={totalPages} onChange={setPage} />
+        <Pagination
+          page={clampedPage}
+          totalPages={totalPages}
+          onChange={setPage}
+        />
       </div>
     </div>
   );
@@ -186,15 +245,14 @@ export function HistoryModal({
           {trigger}
         </span>
       ) : (
-        <button
-          type="button"
+        <Btn
+          size="icon-md"
           onClick={() => setOpen(true)}
           title="Lịch sử tạo file của tôi"
           aria-label="Lịch sử tạo file của tôi"
-          className="flex h-10 w-10 flex-shrink-0 cursor-pointer items-center justify-center rounded-full border border-line bg-card text-ink-2 transition-colors duration-300 ease-soft hover:border-ink hover:text-ink"
         >
           {historyIcon}
-        </button>
+        </Btn>
       )}
 
       <Modal
@@ -204,7 +262,7 @@ export function HistoryModal({
       >
         <ModalHeader
           title="Lịch sử tạo của bạn"
-          subtitle={`${rows.length} ${countNoun(rows.map((r) => r.fileType))} (chưa xoá).`}
+          subtitle={`${rows.length} ${countNoun(rows.map((r) => r.fileType))}`}
           onClose={() => setOpen(false)}
         />
         {content}

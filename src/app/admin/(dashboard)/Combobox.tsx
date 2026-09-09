@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { useAnchoredPopover } from "./useAnchoredPopover";
+import { inputClasses } from "./controls";
 
 type Option = { value: string; label: string };
 
@@ -49,7 +50,12 @@ export function Combobox({
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className={buttonClassName}
+        className={
+          buttonClassName ??
+          // Same geometry as a text input and a `md` Btn, so a Combobox
+          // sitting in a row of fields lines up on both axes.
+          `${inputClasses} flex cursor-pointer items-center justify-between gap-2 text-left`
+        }
       >
         <span className="truncate">{selected?.label ?? ""}</span>
         <svg
@@ -84,13 +90,11 @@ export function Combobox({
             }}
             className={
               panelClassName ??
-              // Portaled straight to document.body — same font-family
-              // reinforcement AppSwitcher/PeoplePicker/ItemActionsMenu/
-              // LarkSettingsModal apply, and for the same reason: leaving
-              // the tree under whichever page wraps this Combobox means it
-              // can no longer be assumed to inherit that page's font
-              // without saying so explicitly.
-              "z-[110] max-h-72 min-w-[160px] overflow-y-auto rounded-2xl border border-line bg-card p-1.5 font-[family-name:var(--font-ibm-plex-sans)] shadow-[0_16px_32px_rgba(22,33,62,0.18)]"
+              // Portaled straight to document.body so no ancestor's
+              // `overflow` can clip it (see useAnchoredPopover above). The
+              // radius matches the card tier — dropdown panels are surfaces,
+              // not controls, so they stay at rounded-xl.
+              "z-[110] max-h-72 min-w-[160px] overflow-y-auto rounded-xl border border-line bg-card p-1.5 shadow-[0_16px_32px_rgba(22,33,62,0.18)]"
             }
           >
             {options.map((o) => (
@@ -103,7 +107,7 @@ export function Combobox({
                   onChange(o.value);
                   setOpen(false);
                 }}
-                className={`flex w-full cursor-pointer items-center rounded-xl px-3 py-2 text-left text-sm font-medium transition-colors duration-200 ease-soft ${
+                className={`flex min-h-9 w-full cursor-pointer items-center rounded-lg px-3 py-1.5 text-left text-sm font-medium transition-colors duration-150 ${
                   o.value === value
                     ? "bg-accent text-white"
                     : "text-ink hover:bg-wash"

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { ActionButton } from "@/components/ui/Button";
 import { Modal, ModalHeader } from "../Modal";
+import { Btn } from "../controls";
 import { LARK_FILE_TYPE_LABELS, type LarkFileType } from "@/lib/lark/fileTypes";
 import type { FolderOption } from "@/lib/lark/folders";
 import type { StaffOption } from "./StaffSharePicker";
@@ -20,7 +20,7 @@ type TypeCard = {
 const TYPE_CARDS: TypeCard[] = [
   {
     type: "docx",
-    description: "Văn bản, báo cáo, ghi chú",
+    description: "Văn bản, báo cáo",
     badgeClassName: "bg-blue-100 text-blue-600",
     icon: (
       <>
@@ -32,7 +32,7 @@ const TYPE_CARDS: TypeCard[] = [
   },
   {
     type: "sheet",
-    description: "Bảng tính, dữ liệu dạng cột",
+    description: "Bảng tính",
     badgeClassName: "bg-green-100 text-green-600",
     icon: (
       <>
@@ -43,7 +43,7 @@ const TYPE_CARDS: TypeCard[] = [
   },
   {
     type: "bitable",
-    description: "Cơ sở dữ liệu, quản lý theo bảng",
+    description: "Cơ sở dữ liệu",
     badgeClassName: "bg-purple-100 text-purple-600",
     icon: (
       <>
@@ -55,7 +55,7 @@ const TYPE_CARDS: TypeCard[] = [
   },
   {
     type: "folder",
-    description: "Gom nhiều file lại một chỗ",
+    description: "Gom nhiều file",
     badgeClassName: "bg-amber-100 text-amber-600",
     icon: (
       <>
@@ -89,7 +89,9 @@ export function CreateFileModal({
   docTypes: ConfigOption[];
 }) {
   const [open, setOpen] = useState(false);
-  const [fileType, setFileType] = useState<LarkFileType>(initialType ?? DEFAULT_TYPE);
+  const [fileType, setFileType] = useState<LarkFileType>(
+    initialType ?? DEFAULT_TYPE,
+  );
 
   const closeModal = () => {
     setOpen(false);
@@ -103,38 +105,51 @@ export function CreateFileModal({
           {trigger}
         </span>
       ) : (
-        <ActionButton variant="accent" onClick={() => setOpen(true)} className="w-fit flex-shrink-0 px-5 py-2.5 text-sm">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+        <Btn variant="primary" onClick={() => setOpen(true)}>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+          >
             <path d="M12 5v14M5 12h14" />
           </svg>
           Tạo file mới
-        </ActionButton>
+        </Btn>
       )}
 
-      <Modal open={open} onClose={closeModal} panelClassName="flex max-h-[88vh] w-full max-w-[820px] flex-col overflow-hidden p-6">
-        <ModalHeader title="Tạo file mới" subtitle="Chọn loại file, điền thông tin — tên file sẽ tự chuẩn hoá." onClose={closeModal} />
+      <Modal
+        open={open}
+        onClose={closeModal}
+        panelClassName="flex max-h-[88vh] w-full max-w-[820px] flex-col overflow-hidden p-6"
+      >
+        <ModalHeader
+          title="Tạo file mới"
+          subtitle="Tên file sẽ tự chuẩn hoá."
+          onClose={closeModal}
+        />
 
         <div className="flex min-h-0 flex-1 flex-col gap-5 sm:flex-row">
           <div className="flex flex-shrink-0 flex-col gap-1.5 sm:w-[220px]">
-            {TYPE_CARDS.map((card, i) => {
+            {TYPE_CARDS.map((card) => {
               const active = card.type === fileType;
               return (
                 <button
                   key={card.type}
                   type="button"
                   onClick={() => setFileType(card.type)}
-                  className={`flex cursor-pointer items-center gap-2.5 rounded-xl border p-2.5 text-left transition-colors duration-300 ease-soft ${
-                    active ? "border-accent bg-wash" : "border-line hover:border-accent/50 hover:bg-wash/60"
+                  className={`flex cursor-pointer items-center gap-2.5 rounded-xl border p-2.5 text-left transition-colors duration-150 ${
+                    active
+                      ? "border-accent bg-wash"
+                      : "border-line hover:border-ink/25 hover:bg-wash"
                   }`}
                 >
                   <span
-                    className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-[10.5px] font-bold ${
-                      active ? "bg-accent text-white" : "bg-line text-ink-2"
-                    }`}
+                    className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg ${card.badgeClassName}`}
                   >
-                    {i + 1}
-                  </span>
-                  <span className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full ${card.badgeClassName}`}>
                     <svg
                       width="17"
                       height="17"
@@ -149,8 +164,12 @@ export function CreateFileModal({
                     </svg>
                   </span>
                   <span className="flex min-w-0 flex-col">
-                    <span className="text-[13.5px] font-semibold text-ink">{LARK_FILE_TYPE_LABELS[card.type]}</span>
-                    <span className="truncate text-[11px] leading-snug text-ink-2">{card.description}</span>
+                    <span className="text-sm font-medium text-ink">
+                      {LARK_FILE_TYPE_LABELS[card.type]}
+                    </span>
+                    <span className="truncate text-[12px] leading-snug text-ink-2">
+                      {card.description}
+                    </span>
                   </span>
                 </button>
               );

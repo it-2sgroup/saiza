@@ -111,14 +111,14 @@ export function PeoplePicker({
             // whatever theme scope wraps the trigger) — this component is
             // also used from Nhân sự now, which has no reason to borrow the
             // Lark tab's zinc ink/radius instead of its own indigo theme.
-            className={`${larkScoped ? "lark-theme " : ""}z-[110] max-h-72 overflow-y-auto rounded-xl border border-line bg-card py-1.5 font-[family-name:var(--font-ibm-plex-sans)] shadow-[0_20px_45px_rgba(22,33,62,0.18)]`}
+            className={`${larkScoped ? "lark-theme " : ""}z-[110] max-h-72 overflow-y-auto rounded-xl border border-line bg-card py-1.5 shadow-[0_20px_45px_rgba(22,33,62,0.18)]`}
           >
             {matches.map((s) => (
               <button
                 key={s.id}
                 type="button"
                 onClick={() => pick(s)}
-                className="flex w-full cursor-pointer items-center gap-2.5 px-3 py-2 text-left transition-colors duration-300 ease-soft hover:bg-wash"
+                className="flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-left transition-colors duration-150 hover:bg-wash"
               >
                 <Avatar
                   fullName={s.full_name}

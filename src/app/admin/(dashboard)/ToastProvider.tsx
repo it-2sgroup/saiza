@@ -1,9 +1,20 @@
 "use client";
 
-import { createContext, useCallback, useContext, useRef, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useRef,
+  useState,
+} from "react";
 
 type ToastKind = "success" | "error";
-type ToastItem = { id: number; kind: ToastKind; message: string; leaving: boolean };
+type ToastItem = {
+  id: number;
+  kind: ToastKind;
+  message: string;
+  leaving: boolean;
+};
 
 type ToastContextValue = {
   success: (message: string) => void;
@@ -18,7 +29,10 @@ const AUTO_DISMISS_MS = 5000;
 // to play, otherwise it'd just vanish instead of sliding away.
 const EXIT_ANIMATION_MS = 250;
 
-const KIND_STYLES: Record<ToastKind, { badge: string; bar: string; icon: React.ReactNode }> = {
+const KIND_STYLES: Record<
+  ToastKind,
+  { badge: string; bar: string; icon: React.ReactNode }
+> = {
   success: {
     badge: "bg-emerald-50 text-emerald-600",
     bar: "bg-emerald-500",
@@ -76,7 +90,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
   const dismiss = useCallback(
     (id: number) => {
-      setToasts((prev) => prev.map((t) => (t.id === id ? { ...t, leaving: true } : t)));
+      setToasts((prev) =>
+        prev.map((t) => (t.id === id ? { ...t, leaving: true } : t)),
+      );
       setTimeout(() => remove(id), EXIT_ANIMATION_MS);
     },
     [remove],
@@ -115,17 +131,21 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               role="status"
               className={`pointer-events-auto overflow-hidden ${t.leaving ? "animate-toast-out" : "animate-toast-in"}`}
             >
-              <div className="relative overflow-hidden rounded-2xl border border-line bg-card shadow-[0_20px_45px_rgba(22,33,62,0.18)]">
+              <div className="relative overflow-hidden rounded-xl border border-line bg-card shadow-[0_20px_45px_rgba(22,33,62,0.18)]">
                 <div className="flex items-start gap-3 px-4 py-3.5">
-                  <span className={`mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full ${styles.badge}`}>
+                  <span
+                    className={`mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full ${styles.badge}`}
+                  >
                     {styles.icon}
                   </span>
-                  <p className="flex-1 pt-0.5 text-[13.5px] leading-snug font-medium text-ink">{t.message}</p>
+                  <p className="flex-1 pt-0.5 text-[13.5px] leading-snug font-medium text-ink">
+                    {t.message}
+                  </p>
                   <button
                     type="button"
                     onClick={() => dismiss(t.id)}
                     aria-label="Đóng thông báo"
-                    className="flex-shrink-0 cursor-pointer rounded-full p-1 text-ink-2/60 transition-colors duration-200 ease-soft hover:bg-wash hover:text-ink"
+                    className="flex-shrink-0 cursor-pointer rounded-md p-1 text-ink-2/60 transition-colors duration-150 hover:bg-wash hover:text-ink"
                   >
                     <svg
                       width="13"
@@ -144,7 +164,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                   <div className="absolute inset-x-0 bottom-0 h-[3px] bg-black/[0.06]">
                     <div
                       className={`h-full origin-left ${styles.bar}`}
-                      style={{ animation: `toastCountdown ${AUTO_DISMISS_MS}ms linear forwards` }}
+                      style={{
+                        animation: `toastCountdown ${AUTO_DISMISS_MS}ms linear forwards`,
+                      }}
                     />
                   </div>
                 )}

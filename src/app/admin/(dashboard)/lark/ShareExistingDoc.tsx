@@ -2,7 +2,12 @@
 
 import { useActionState, useState } from "react";
 import { shareExistingDocument, type ShareExistingState } from "./actions";
-import { StaffSharePicker, type StaffOption, type ShareRow } from "./StaffSharePicker";
+import {
+  StaffSharePicker,
+  type StaffOption,
+  type ShareRow,
+} from "./StaffSharePicker";
+import { Btn, cardClasses } from "../controls";
 import type { LarkFileType } from "@/lib/lark/client";
 import { useToastOnActionState } from "../useToastOnActionState";
 
@@ -23,7 +28,10 @@ export function ShareExistingDoc({
 }) {
   const [open, setOpen] = useState(false);
   const [shares, setShares] = useState<ShareRow[]>([]);
-  const [state, formAction, pending] = useActionState(shareExistingDocument.bind(null, documentId, fileType), initialState);
+  const [state, formAction, pending] = useActionState(
+    shareExistingDocument.bind(null, documentId, fileType),
+    initialState,
+  );
   useToastOnActionState(
     state,
     state.shareResults
@@ -33,15 +41,24 @@ export function ShareExistingDoc({
       : null,
   );
 
-  const triggerClassName =
-    variant === "button"
-      ? "w-fit cursor-pointer rounded-full border border-line px-3 py-1.5 text-xs font-medium text-ink-2 transition-colors duration-300 ease-soft hover:border-accent hover:text-accent"
-      : "w-fit cursor-pointer text-xs font-medium text-accent hover:text-ink";
+  // `variant` used to switch between a pill button and bare accent text; both
+  // are real buttons now, so it only picks the emphasis level.
+  const triggerVariant = variant === "button" ? "secondary" : "ghost";
 
   const form = (
-    <form action={formAction} className="flex flex-col gap-2.5 rounded-xl border border-line bg-paper p-3">
-      <StaffSharePicker staff={staff} hiddenFieldName="shares" value={shares} onChange={setShares} />
-      {state.error && <p className="text-xs font-medium text-red-600">{state.error}</p>}
+    <form
+      action={formAction}
+      className={`flex flex-col gap-2.5 p-3 ${cardClasses}`}
+    >
+      <StaffSharePicker
+        staff={staff}
+        hiddenFieldName="shares"
+        value={shares}
+        onChange={setShares}
+      />
+      {state.error && (
+        <p className="text-xs font-medium text-red-600">{state.error}</p>
+      )}
       {state.shareResults && (
         <div className="flex flex-col gap-0.5">
           {state.shareResults.map((r) => (
@@ -51,13 +68,15 @@ export function ShareExistingDoc({
           ))}
         </div>
       )}
-      <button
+      <Btn
         type="submit"
+        variant="primary"
+        size="sm"
         disabled={pending || shares.length === 0}
-        className="w-fit cursor-pointer rounded-full bg-accent px-4 py-2 text-xs font-semibold text-white transition-colors duration-300 ease-soft hover:bg-ink disabled:cursor-not-allowed disabled:opacity-60"
+        className="w-fit"
       >
         {pending ? "Đang chia sẻ..." : "Chia sẻ"}
-      </button>
+      </Btn>
     </form>
   );
 
@@ -65,9 +84,14 @@ export function ShareExistingDoc({
 
   return (
     <div className="flex flex-col gap-2.5">
-      <button type="button" onClick={() => setOpen((o) => !o)} className={triggerClassName}>
-        {open ? "Đóng" : variant === "button" ? "Chia sẻ" : "Chia sẻ thêm →"}
-      </button>
+      <Btn
+        variant={triggerVariant}
+        size="sm"
+        onClick={() => setOpen((o) => !o)}
+        className="w-fit"
+      >
+        {open ? "Đóng" : "Chia sẻ"}
+      </Btn>
       {open && form}
     </div>
   );
