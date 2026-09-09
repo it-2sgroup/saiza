@@ -7,7 +7,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { recordAuditLog } from "@/lib/admin/audit";
 import { getConfigLists } from "@/lib/admin/configLists";
 import { getRoles } from "@/lib/admin/roles";
-import { forceSyncTenantContacts } from "@/lib/lark/contactsCache";
+import {
+  forceSyncTenantContacts,
+  backfillAvatarsFromLark,
+} from "@/lib/lark/contactsCache";
 import { getLarkApps } from "@/lib/lark/client";
 import { friendlyError } from "@/lib/errors";
 import type { StaffRole } from "@/lib/supabase/profile";
@@ -56,6 +59,10 @@ export async function inviteStaffAccount(
   const larkOrg = getLarkApps().some((a) => a.key === larkOrgRaw)
     ? larkOrgRaw
     : null;
+  // Set only when picked from the Lark directory (StaffForm's hidden field) —
+  // typing an email by hand for someone not in Lark yet leaves this blank,
+  // same as anyone who signs up without a Lark avatar at all.
+  const avatarUrl = String(formData.get("avatar_url") ?? "").trim() || null;
 
   if (!fullName || !email) {
     return { error: "Nhập đầy đủ họ tên và email.", success: false };
@@ -92,6 +99,7 @@ export async function inviteStaffAccount(
     full_name: fullName,
     role,
     department: department || null,
+    avatar_url: avatarUrl,
     ...(larkOrg ? { lark_prefs: { activeApp: larkOrg } } : {}),
   });
 
@@ -240,6 +248,7 @@ export async function syncLarkContactsAction(
 
   try {
     const count = await forceSyncTenantContacts();
+    await backfillAvatarsFromLark();
     revalidatePath("/admin/nhan-su");
     revalidatePath("/admin/lark");
     return { error: null, count };

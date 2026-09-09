@@ -129,3 +129,44 @@ export async function forceSyncTenantContacts(): Promise<number> {
     .filter((a) => !NON_ORG_APP_KEYS.has(a.key))
     .reduce((sum, a) => sum + a.contacts.length, 0);
 }
+
+/**
+ * Fills in avatar_url for staff accounts that don't have one yet, matched to
+ * the (just-refreshed) Lark directory by login email — for anyone invited
+ * before this app started copying the Lark avatar at invite time (see
+ * inviteStaffAccount), or invited by typing an email Lark didn't recognize
+ * back then. Never overwrites an existing avatar_url: someone may have
+ * uploaded their own photo since (see the Settings modal's avatar upload),
+ * and Lark's copy must not silently replace a deliberate choice.
+ */
+export async function backfillAvatarsFromLark(): Promise<void> {
+  const admin = createAdminClient();
+  const [{ data: profiles }, { data: usersData }, contacts] =
+    await Promise.all([
+      admin.from("profiles").select("id").is("avatar_url", null),
+      admin.auth.admin.listUsers(),
+      listAllTenantContactsMerged(),
+    ]);
+  if (!profiles || profiles.length === 0) return;
+
+  const emailById = new Map(
+    usersData?.users.map((u) => [u.id, u.email?.toLowerCase()]) ?? [],
+  );
+  const avatarByEmail = new Map(
+    contacts
+      .filter((c) => c.avatar_url)
+      .map((c) => [c.email.toLowerCase(), c.avatar_url as string]),
+  );
+
+  await Promise.all(
+    profiles.map((p) => {
+      const email = emailById.get(p.id);
+      const avatarUrl = email ? avatarByEmail.get(email) : undefined;
+      if (!avatarUrl) return Promise.resolve();
+      return admin
+        .from("profiles")
+        .update({ avatar_url: avatarUrl })
+        .eq("id", p.id);
+    }),
+  );
+}

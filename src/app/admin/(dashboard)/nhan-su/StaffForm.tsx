@@ -87,6 +87,11 @@ export function StaffForm({
               name="lark_org"
               value={pickedFrom.orgKey ?? ""}
             />
+            <input
+              type="hidden"
+              name="avatar_url"
+              value={pickedFrom.avatar_url ?? ""}
+            />
             <button
               type="button"
               onClick={() => {
