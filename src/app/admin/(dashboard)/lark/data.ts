@@ -9,6 +9,7 @@ import type { StaffOption } from "./StaffSharePicker";
 import {
   getLarkApps,
   getDefaultAppKey,
+  getStorageAppKey,
   getAppRootFolderToken,
   type LarkFileType,
   type LarkDriveItem,
@@ -16,8 +17,10 @@ import {
 import {
   listLarkFolderTree,
   addFoldersToCache,
+  filterToSubtree,
   type FolderOption,
 } from "@/lib/lark/folders";
+import { getPersonalFolderToken } from "@/lib/lark/personalFolders";
 import { listTenantContactsCached } from "@/lib/lark/contactsCache";
 import { listFolderContentsCached } from "@/lib/lark/driveCache";
 import {
@@ -73,6 +76,14 @@ export type LarkPageData = {
   activeAppKey: string;
   foldersByOrg: Record<string, FolderOption[]>;
   flatFolderOptions: { value: string; label: string }[];
+  // Role-confined variant of foldersByOrg for the Create-file dialog only —
+  // for a "Nhân viên"-role profile (canManageAnyLarkDoc false), this is
+  // narrowed to just their own personal folder's subtree so they can't
+  // target anywhere else in the org Drive. Equal to foldersByOrg for anyone
+  // exempt from that confinement. See createLarkDocument's own server-side
+  // check in actions.ts — this is what makes the restriction real, not just
+  // hidden in the UI.
+  createFoldersByOrg: Record<string, FolderOption[]>;
   staff: StaffOption[];
   historyRows: HistoryRow[];
   overviewRows: OverviewRow[];
@@ -243,26 +254,66 @@ export async function getLarkPageData(profile: Profile): Promise<LarkPageData> {
     foldersByOrg[org] = tree;
     orgRootTokens[org] = root;
   }
-  const flatFolderOptions = [
-    { value: "", label: "— Chọn thư mục —" },
-    ...orgKeys.flatMap((org) => {
-      const rootToken = orgRootTokens[org];
-      const orgLabel = org || "Dùng chung";
-      const entries: { value: string; label: string }[] = [];
-      if (rootToken)
-        entries.push({
-          value: rootToken,
-          label: `[${orgLabel}] — Thư mục gốc —`,
-        });
-      for (const f of foldersByOrg[org] ?? []) {
-        entries.push({
-          value: f.token,
-          label: `[${orgLabel}] ${"　".repeat(f.depth - 1)}${f.name}`,
-        });
+
+  // "Nhân viên"-role confinement: every file/folder they create always
+  // lands in the storage tenant (getStorageAppKey — see createLarkDocument),
+  // which may differ from activeAppKey (whichever app this profile happens
+  // to be browsing right now). So this can't reuse foldersByOrg/
+  // orgRootTokens above, which are scoped to activeAppKey — it needs the
+  // storage tenant's own tree. Skipped entirely for roles exempt from the
+  // confinement (canManageOrgWide), who keep the existing free-pick
+  // behavior untouched.
+  let personalFolderToken: string | null = null;
+  let personalSubtree: FolderOption[] = [];
+  if (!canManageOrgWide) {
+    const storageAppKey = getStorageAppKey();
+    personalFolderToken = await getPersonalFolderToken(profile.id, storageAppKey);
+    if (personalFolderToken) {
+      try {
+        const storageRoot = await getAppRootFolderToken(storageAppKey);
+        const storageTree = await listLarkFolderTree(storageRoot, "", storageAppKey);
+        personalSubtree = filterToSubtree(storageTree, personalFolderToken);
+      } catch {
+        // Best-effort — confinement just falls back to "personal folder
+        // only, no subfolders listed yet" instead of breaking the page.
       }
-      return entries;
-    }),
-  ];
+    }
+  }
+
+  const createFoldersByOrg: Record<string, FolderOption[]> = canManageOrgWide
+    ? foldersByOrg
+    : { "": personalSubtree };
+
+  const flatFolderOptions = canManageOrgWide
+    ? [
+        { value: "", label: "— Chọn thư mục —" },
+        ...orgKeys.flatMap((org) => {
+          const rootToken = orgRootTokens[org];
+          const orgLabel = org || "Dùng chung";
+          const entries: { value: string; label: string }[] = [];
+          if (rootToken)
+            entries.push({
+              value: rootToken,
+              label: `[${orgLabel}] — Thư mục gốc —`,
+            });
+          for (const f of foldersByOrg[org] ?? []) {
+            entries.push({
+              value: f.token,
+              label: `[${orgLabel}] ${"　".repeat(f.depth - 1)}${f.name}`,
+            });
+          }
+          return entries;
+        }),
+      ]
+    : personalFolderToken
+      ? [
+          { value: personalFolderToken, label: "— Thư mục cá nhân của bạn —" },
+          ...personalSubtree.map((f) => ({
+            value: f.token,
+            label: "　".repeat(f.depth - 1) + f.name,
+          })),
+        ]
+      : [{ value: "", label: "— Chưa có thư mục cá nhân —" }];
 
   // Where a file currently lives — the latest move's target folder, falling
   // back to wherever it was created if it was never moved. Used to show a
@@ -539,6 +590,7 @@ export async function getLarkPageData(profile: Profile): Promise<LarkPageData> {
     activeAppKey,
     foldersByOrg,
     flatFolderOptions,
+    createFoldersByOrg,
     staff,
     historyRows,
     overviewRows,

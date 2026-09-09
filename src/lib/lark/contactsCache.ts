@@ -66,6 +66,21 @@ export async function listAllTenantContactsMerged(): Promise<LarkContact[]> {
   return merged;
 }
 
+// Decides whether a newly-created file's ownership auto-transfers to its
+// creator (see createLarkDocument in lark/actions.ts) — only when they're
+// really a member of the file's OWN storage tenant, never cross-tenant.
+// Transferring ownership physically relocates a Lark document into the new
+// owner's Drive; doing that across tenants would move the file's storage
+// footprint out of 2SGROUP (paid, ample space) into whichever other org the
+// person belongs to (several are on Lark's Free tier, capped small) —
+// exactly the leak the storage-centralization design (getStorageAppKey)
+// exists to prevent.
+export async function isTenantMember(email: string, appKey: string): Promise<boolean> {
+  const contacts = await listTenantContactsCached(appKey);
+  const needle = email.toLowerCase();
+  return contacts.some((c) => c.email.toLowerCase() === needle);
+}
+
 export type OrgContact = LarkContact & { orgKey: string; orgLabel: string };
 
 // koc-booking is a shared internal tool, not a real organization with its

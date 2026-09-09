@@ -155,7 +155,6 @@ export function LarkDocForm({
   );
   const [wip, setWip] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [transferOwnership, setTransferOwnership] = useState(false);
   const [dismissedUrl, setDismissedUrl] = useState<string | null>(null);
   const [namingOpen, setNamingOpen] = useState(false);
 
@@ -653,25 +652,6 @@ export function LarkDocForm({
               </p>
             )}
           </div>
-
-          <label className="flex items-center justify-between gap-3 rounded-lg border border-line px-3.5 py-2.5">
-            <span className="flex flex-col gap-0.5">
-              <span className="text-[13.5px] font-medium text-ink">
-                Chuyển quyền sở hữu cho tôi
-              </span>
-              <span className="text-xs text-ink-2">
-                Tự xoá/đổi tên được trong Lark, nhưng sẽ{" "}
-                <strong>biến mất khỏi tab Drive và ô chọn thư mục</strong>{" "}
-                trên trang này — app không còn quyền nhìn thấy nó nữa. Chỉ
-                bật khi chắc chắn không cần quản lý qua đây.
-              </span>
-            </span>
-            <Toggle
-              checked={transferOwnership}
-              onChange={setTransferOwnership}
-              name="transferOwnership"
-            />
-          </label>
 
           <div className="flex flex-col gap-2">
             <Btn

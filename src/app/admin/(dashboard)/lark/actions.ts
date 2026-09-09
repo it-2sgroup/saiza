@@ -11,6 +11,7 @@ import {
   transferLarkFileOwner,
   getDefaultAppKey,
   getStorageAppKey,
+  getAppRootFolderToken,
   getLarkApps,
   type LarkFileType,
 } from "@/lib/lark/client";
@@ -21,7 +22,16 @@ import {
 } from "@/lib/lark/shareRows";
 import { resolveRootFolderToken } from "@/lib/lark/orgFolders";
 import { getOrCreateDepartmentFolder } from "@/lib/lark/folderRegistry";
-import { addFolderToCache } from "@/lib/lark/folders";
+import {
+  getOrCreatePersonalFolder,
+  getPersonalFolderToken,
+} from "@/lib/lark/personalFolders";
+import {
+  addFolderToCache,
+  listLarkFolderTree,
+  isWithinSubtree,
+} from "@/lib/lark/folders";
+import { isTenantMember } from "@/lib/lark/contactsCache";
 import {
   addItemToDriveCache,
   invalidateDriveCache,
@@ -132,6 +142,29 @@ async function checkDocPermission(
   if (!isOwner && !(await canManageAnyLarkDoc(profile.role)))
     return deniedMessage;
   return null;
+}
+
+// True when candidateToken is personalFolderToken itself, or lives inside
+// its subtree — the check both createLarkDocument and moveLarkDocument run
+// against a submitted targetFolder for a "Nhân viên"-role caller before
+// trusting it. Re-crawls the storage tenant's tree (cached, same as the
+// picker's own data) rather than trusting anything client-supplied, since a
+// confined role's UI never offers a folder outside their own subtree in the
+// first place — reaching this with an out-of-bounds token means the value
+// was tampered with, not a real navigation choice.
+async function isWithinPersonalFolder(
+  candidateToken: string,
+  personalFolderToken: string,
+  appKey: string,
+): Promise<boolean> {
+  if (candidateToken === personalFolderToken) return true;
+  try {
+    const root = await getAppRootFolderToken(appKey);
+    const tree = await listLarkFolderTree(root, "", appKey);
+    return isWithinSubtree(tree, candidateToken, personalFolderToken);
+  } catch {
+    return false;
+  }
 }
 
 export type LarkDocFormState = {
@@ -260,15 +293,44 @@ export async function createLarkDocument(
   // brand-new file should actually be stored.
   const appKey = getStorageAppKey();
 
-  // No explicit folder picked → route into the canonical (org, department)
-  // folder, auto-provisioned on first use (see folderRegistry.ts), instead of
-  // always dropping into the bare org root.
-  const effectiveFolder =
-    targetFolder ||
-    (department
-      ? await getOrCreateDepartmentFolder(org, department, appKey)
-      : undefined) ||
-    resolveRootFolderToken(org || null, appKey);
+  const admin = createAdminClient();
+  const { data: userData } = await admin.auth.admin.getUserById(profile.id);
+  const email = userData?.user?.email;
+
+  // A "Nhân viên"-role caller (no canManageLarkOrgWide) is confined to their
+  // own personal folder and its subfolders — never the department/org-root
+  // targeting below. The Create-file dialog's own picker already only
+  // offers folders inside that subtree (see data.ts's createFoldersByOrg),
+  // so a mismatched targetFolder here means the value was tampered with,
+  // not a real choice — silently falling back to their own root rather than
+  // erroring keeps this from ever blocking the primary action.
+  const isOrgWideManager = await canManageAnyLarkDoc(profile.role);
+  let effectiveFolder: string | undefined;
+  if (isOrgWideManager) {
+    // No explicit folder picked → route into the canonical (org, department)
+    // folder, auto-provisioned on first use (see folderRegistry.ts), instead
+    // of always dropping into the bare org root.
+    effectiveFolder =
+      targetFolder ||
+      (department
+        ? await getOrCreateDepartmentFolder(org, department, appKey)
+        : undefined) ||
+      resolveRootFolderToken(org || null, appKey);
+  } else {
+    const personalFolder = await getOrCreatePersonalFolder(
+      profile.id,
+      profile.full_name,
+      profile.department,
+      email ?? null,
+      appKey,
+    );
+    effectiveFolder =
+      targetFolder &&
+      personalFolder &&
+      (await isWithinPersonalFolder(targetFolder, personalFolder, appKey))
+        ? targetFolder
+        : personalFolder;
+  }
 
   let documentId: string;
   let url: string;
@@ -309,20 +371,8 @@ export async function createLarkDocument(
     });
   }
 
-  // Transferring ownership makes the creator the real Lark owner instead of a
-  // full_access collaborator, which is what lets them delete/rename it straight
-  // from the Lark UI without hitting "Yêu cầu xoá — liên hệ 2SGROUP" (delete
-  // rights on a shared-space item are gated by the parent folder's settings for
-  // anyone but the owner). The tradeoff: once the app isn't the owner anymore,
-  // it also loses the ability to move/delete that item through this website's
-  // own buttons — so this is opt-in per file, not the default.
-  const wantsOwnershipTransfer = formData.get("transferOwnership") === "on";
-
   let shared = false;
   let ownerTransferred = false;
-  const admin = createAdminClient();
-  const { data: userData } = await admin.auth.admin.getUserById(profile.id);
-  const email = userData?.user?.email;
   if (email) {
     // Always grant full_access first — the guaranteed baseline, which works
     // even when the creator isn't an actual member of the storage tenant
@@ -330,11 +380,11 @@ export async function createLarkDocument(
     // app's own directory, not just 2sgroup's, so someone who only has a
     // SISMO/SAIZA/etc. Lark account still gets real, named access — not a
     // public "anyone with the link" grant. Doing this unconditionally, not
-    // only when ownership transfer is skipped, fixes a real lockout: files
-    // now always land in 2sgroup regardless of which org's Lark the
-    // creator belongs to, so "chuyển quyền sở hữu" below routinely fails
-    // for anyone outside 2sgroup — before this, that failure left the
-    // creator with zero access to a file they just made.
+    // only when the person isn't a 2sgroup member, fixes a real lockout:
+    // files now always land in 2sgroup regardless of which org's Lark the
+    // creator belongs to, so ownership transfer below routinely doesn't
+    // apply to anyone outside 2sgroup — before this, that left the creator
+    // with zero access to a file they just made.
     try {
       await shareLarkDocByEmail(
         documentId,
@@ -350,12 +400,21 @@ export async function createLarkDocument(
       // link, just may need manual access.
     }
 
-    if (wantsOwnershipTransfer) {
-      // Bonus on top of the share above, not a replacement for it — real
-      // ownership transfer only works when the creator's email is an actual
-      // member of the storage tenant (2sgroup). Failing here is the normal
-      // case for anyone from another org; they keep the full_access grant
-      // already made above instead of losing all access.
+    // Automatic, not a per-file choice (there used to be a "Chuyển quyền sở
+    // hữu cho tôi" toggle here) — and gated on real tenant membership rather
+    // than always attempting it. Ownership transfer makes the creator the
+    // real Lark owner (lets them delete/rename it straight from the Lark UI
+    // without hitting "Yêu cầu xoá — liên hệ 2SGROUP"), but it also
+    // physically relocates the document into the new owner's own Drive.
+    // Doing that for someone outside 2sgroup would move the file's storage
+    // out of the paid, centralized tenant into whichever other (often
+    // storage-capped) org they belong to — see isTenantMember's own doc
+    // comment. transferLarkFileOwner's own tenant-scoped resolution is a
+    // second, independent guard against that; this check just avoids even
+    // attempting (and logging) a transfer that can never succeed/apply for
+    // most creators, and lets a genuine 2sgroup member's files stay theirs
+    // without them ever having to think about a checkbox.
+    if (await isTenantMember(email, appKey)) {
       try {
         await transferLarkFileOwner(documentId, email, fileType, appKey);
         ownerTransferred = true;
@@ -666,6 +725,25 @@ export async function moveLarkDocument(
 
   const appKey = await resolveDocAppKey(admin, documentId);
   const sourceFolder = await resolveDocFolder(admin, documentId);
+
+  // A "Nhân viên"-role caller can only ever reach here as the file's owner
+  // (checkDocPermission above), never via canManageAnyLarkDoc — but that
+  // still lets them move their own file to anywhere the client is willing
+  // to submit, unless this is enforced server-side too. The Move dialog's
+  // own picker never offers anything outside their personal subtree (see
+  // data.ts's flatFolderOptions), so failing loudly here only ever fires on
+  // a tampered request, not a real navigation choice.
+  if (!(await canManageAnyLarkDoc(profile.role))) {
+    const personalFolder = await getPersonalFolderToken(profile.id, appKey);
+    if (
+      !personalFolder ||
+      !(await isWithinPersonalFolder(targetFolder, personalFolder, appKey))
+    ) {
+      return {
+        error: "Bạn chỉ có thể di chuyển file trong thư mục cá nhân của mình.",
+      };
+    }
+  }
 
   try {
     await moveLarkFile(documentId, targetFolder, fileType, appKey);

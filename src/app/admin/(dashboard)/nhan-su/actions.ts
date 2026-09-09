@@ -11,7 +11,11 @@ import {
   forceSyncTenantContacts,
   backfillAvatarsFromLark,
 } from "@/lib/lark/contactsCache";
-import { getLarkApps } from "@/lib/lark/client";
+import { getLarkApps, getStorageAppKey } from "@/lib/lark/client";
+import {
+  getOrCreatePersonalFolder,
+  provisionMissingPersonalFolders,
+} from "@/lib/lark/personalFolders";
 import { friendlyError } from "@/lib/errors";
 import type { StaffRole } from "@/lib/supabase/profile";
 
@@ -109,6 +113,18 @@ export async function inviteStaffAccount(
       success: false,
     };
   }
+
+  // Best-effort — a Lark hiccup here must not fail the invite itself. Every
+  // "Nhân viên"-role account is confined to this folder when creating files
+  // (see lark/actions.ts); other roles just get one as a convenience, since
+  // provisioning is uniform regardless of role.
+  await getOrCreatePersonalFolder(
+    invited.user.id,
+    fullName,
+    department || null,
+    email,
+    getStorageAppKey(),
+  ).catch(() => {});
 
   await recordAuditLog({
     actorId: profile.id,
@@ -249,6 +265,9 @@ export async function syncLarkContactsAction(
   try {
     const count = await forceSyncTenantContacts();
     await backfillAvatarsFromLark();
+    // Catches anyone invited before the personal-folder feature existed —
+    // same pairing as backfillAvatarsFromLark just above.
+    await provisionMissingPersonalFolders(getStorageAppKey());
     revalidatePath("/admin/nhan-su");
     revalidatePath("/admin/lark");
     return { error: null, count };

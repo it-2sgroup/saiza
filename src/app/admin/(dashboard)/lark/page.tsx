@@ -55,6 +55,7 @@ export default async function AdminLarkPage() {
     larkApps,
     activeAppKey,
     foldersByOrg,
+    createFoldersByOrg,
     flatFolderOptions,
     staff,
     historyRows,
@@ -106,7 +107,7 @@ export default async function AdminLarkPage() {
             key={t.type}
             defaultDepartment={profile.department}
             staff={staff}
-            foldersByOrg={foldersByOrg}
+            foldersByOrg={createFoldersByOrg}
             prefs={profile.lark_prefs}
             initialType={t.type}
             departments={departments}
@@ -276,7 +277,7 @@ export default async function AdminLarkPage() {
           <CreateFileModal
             defaultDepartment={profile.department}
             staff={staff}
-            foldersByOrg={foldersByOrg}
+            foldersByOrg={createFoldersByOrg}
             prefs={profile.lark_prefs}
             departments={departments}
             orgCodes={orgCodes}

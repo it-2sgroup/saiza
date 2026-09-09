@@ -114,6 +114,48 @@ export async function addFoldersToCache(
   }
 }
 
+// Pure — no I/O. Given the already-fetched flat list for an org (as
+// returned by listLarkFolderTree), returns only the entries reachable by
+// walking parentToken edges down from rootToken — i.e. rootToken's own
+// descendants, NOT including rootToken itself (same convention as the flat
+// list already excludes the org root it was crawled from). Used to confine
+// a "Nhân viên"-role staff member's folder picker to their own personal
+// folder's subtree, and to validate a submitted targetFolder server-side
+// actually lives inside it (see the confinement checks in lark/actions.ts).
+export function filterToSubtree(entries: FolderOption[], rootToken: string): FolderOption[] {
+  const childrenByParent = new Map<string, FolderOption[]>();
+  for (const f of entries) {
+    const list = childrenByParent.get(f.parentToken);
+    if (list) list.push(f);
+    else childrenByParent.set(f.parentToken, [f]);
+  }
+
+  const result: FolderOption[] = [];
+  const queue = [rootToken];
+  while (queue.length > 0) {
+    const token = queue.shift()!;
+    for (const child of childrenByParent.get(token) ?? []) {
+      result.push(child);
+      queue.push(child.token);
+    }
+  }
+  return result;
+}
+
+// True when candidateToken IS rootToken, or lives somewhere inside its
+// subtree — the check createLarkDocument/moveLarkDocument run against a
+// submitted targetFolder before trusting it, so a "Nhân viên"-role caller
+// can't escape their own folder by posting an arbitrary token the UI never
+// actually offered them.
+export function isWithinSubtree(
+  entries: FolderOption[],
+  candidateToken: string,
+  rootToken: string,
+): boolean {
+  if (candidateToken === rootToken) return true;
+  return filterToSubtree(entries, rootToken).some((f) => f.token === candidateToken);
+}
+
 export async function addFolderToCache(
   orgKey: string,
   entry: { token: string; name: string; parentToken: string },

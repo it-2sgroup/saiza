@@ -469,8 +469,17 @@ export async function deleteLarkFile(
 // exactly what Lark's "External Collaboration" feature is for. That grants
 // real, scoped, named access (shows up as exactly that one person in the
 // file's member list) — nothing like "anyone with the link".
-async function resolveEmailToOpenId(email: string): Promise<string | null> {
-  for (const app of getLarkApps()) {
+// restrictToAppKey narrows the scan to one tenant instead of every
+// connected app — see transferLarkFileOwner's own comment for why ownership
+// transfer (unlike sharing) must never resolve cross-tenant.
+async function resolveEmailToOpenId(
+  email: string,
+  restrictToAppKey?: string,
+): Promise<string | null> {
+  const apps = restrictToAppKey
+    ? getLarkApps().filter((a) => a.key === restrictToAppKey)
+    : getLarkApps();
+  for (const app of apps) {
     const contacts = await listTenantContacts(app.key).catch(() => []);
     const match = contacts.find((c) => c.email === email);
     if (match) return match.id;
@@ -492,9 +501,19 @@ export async function transferLarkFileOwner(
   type: LarkFileType = "docx",
   appKey?: string,
 ): Promise<void> {
-  const token = await getTenantAccessToken(appKey);
+  const app = getLarkAppConfig(appKey);
+  const token = await getTenantAccessToken(app.key);
 
-  const openId = await resolveEmailToOpenId(email);
+  // Deliberately scoped to this file's OWN tenant only — unlike sharing
+  // (shareLarkDocByEmail below), which deliberately reaches across every
+  // connected org. Transferring ownership physically relocates the document
+  // into the new owner's own Drive; doing that cross-tenant would move it
+  // out of the storage tenant (2SGROUP) into whichever other org the person
+  // belongs to — several of which are on Lark's Free tier with a small
+  // storage cap. createLarkDocument already checks isTenantMember before
+  // ever calling this; this is a second, independent guard so the function
+  // stays safe to call on its own.
+  const openId = await resolveEmailToOpenId(email, app.key);
   if (!openId) {
     throw new Error(
       `Không chuyển được quyền sở hữu cho ${email}: không tìm thấy tài khoản Lark tương ứng.`,
