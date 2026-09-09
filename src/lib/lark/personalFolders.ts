@@ -148,3 +148,40 @@ export async function provisionMissingPersonalFolders(appKey: string): Promise<v
     ).catch(() => {});
   }
 }
+
+/**
+ * Re-applies full_access sharing for EVERY existing personal folder — run as
+ * part of "Đồng bộ nhân viên Lark" right after provisionMissingPersonalFolders
+ * above. getOrCreatePersonalFolder only ever shares once, at the moment a
+ * folder is first created; if that single attempt failed silently (a
+ * transient Lark error, or the person's contact record not cached yet), the
+ * folder exists but they never got access, and nothing would ever notice or
+ * retry short of someone manually checking Lark's own member list (as
+ * happened once already). Re-sharing is a safe no-op for anyone already
+ * shared — Lark's own add-member call just re-confirms the same grant.
+ */
+export async function reshareAllPersonalFolders(appKey: string): Promise<void> {
+  const admin = createAdminClient();
+  const [{ data: folders }, { data: usersData }] = await Promise.all([
+    admin
+      .from("lark_personal_folders")
+      .select("profile_id, lark_token")
+      .eq("app_key", appKey),
+    admin.auth.admin.listUsers(),
+  ]);
+  if (!folders || folders.length === 0) return;
+
+  const emailById = new Map(usersData?.users.map((u) => [u.id, u.email]) ?? []);
+
+  for (const f of folders) {
+    const email = emailById.get(f.profile_id as string);
+    if (!email) continue;
+    await shareLarkDocByEmail(
+      f.lark_token as string,
+      email,
+      "full_access",
+      "folder",
+      appKey,
+    ).catch(() => {});
+  }
+}

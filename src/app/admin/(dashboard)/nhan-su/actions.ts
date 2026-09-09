@@ -15,6 +15,7 @@ import { getLarkApps, getStorageAppKey } from "@/lib/lark/client";
 import {
   getOrCreatePersonalFolder,
   provisionMissingPersonalFolders,
+  reshareAllPersonalFolders,
 } from "@/lib/lark/personalFolders";
 import { friendlyError } from "@/lib/errors";
 import type { StaffRole } from "@/lib/supabase/profile";
@@ -267,7 +268,13 @@ export async function syncLarkContactsAction(
     await backfillAvatarsFromLark();
     // Catches anyone invited before the personal-folder feature existed —
     // same pairing as backfillAvatarsFromLark just above.
-    await provisionMissingPersonalFolders(getStorageAppKey());
+    const storageAppKey = getStorageAppKey();
+    await provisionMissingPersonalFolders(storageAppKey);
+    // Re-confirms sharing for every personal folder, not just newly-created
+    // ones — a silent share failure otherwise has no way to self-heal short
+    // of someone manually checking Lark's member list (see
+    // reshareAllPersonalFolders' own doc comment).
+    await reshareAllPersonalFolders(storageAppKey);
     revalidatePath("/admin/nhan-su");
     revalidatePath("/admin/lark");
     return { error: null, count };
