@@ -115,6 +115,7 @@ export async function getLarkPageData(profile: Profile): Promise<LarkPageData> {
     { data: ownRows },
     { data: allCreatedRows },
     trashRowsRaw,
+    { data: purgedRows },
     { data: movedRows },
     { data: profilesData },
     { data: usersData },
@@ -141,6 +142,16 @@ export async function getLarkPageData(profile: Profile): Promise<LarkPageData> {
     // item, which a write-once, ever-growing action log can't cleanly do
     // without also reasoning about event ordering.
     listTrashRows(activeAppKey),
+    // But a PERMANENT delete removes the lark_trash row entirely (it's no
+    // longer "in trash" — it's gone), so relying on lark_trash alone to hide
+    // a file would let it reappear in every list the moment it's purged,
+    // right when it should disappear for good. lark_doc_purged is the only
+    // remaining record that it ever existed and was removed; merged into
+    // hiddenIds below alongside the currently-trashed set.
+    admin
+      .from("audit_log")
+      .select("target_id")
+      .eq("action", "lark_doc_purged"),
     // Newest-first so the folder a file currently lives in is whichever move
     // (or creation, if never moved) has the most recent timestamp per target.
     admin
@@ -266,9 +277,13 @@ export async function getLarkPageData(profile: Profile): Promise<LarkPageData> {
     return token ? (folderNameByToken.get(token) ?? null) : null;
   };
 
-  const deletedIds = new Set<string | null>(
-    trashRowsRaw.map((r) => r.documentId),
-  );
+  // Everything that must never show up as a live file again: currently
+  // trashed (recoverable) AND permanently purged (gone for good) — see the
+  // lark_doc_purged query above for why trash presence alone isn't enough.
+  const hiddenIds = new Set<string | null>([
+    ...trashRowsRaw.map((r) => r.documentId),
+    ...(purgedRows ?? []).map((r) => r.target_id as string | null),
+  ]);
   const emailById = new Map(usersData?.users.map((u) => [u.id, u.email]) ?? []);
   const profileById = new Map(
     (profilesData ?? []).map((p) => [
@@ -336,7 +351,7 @@ export async function getLarkPageData(profile: Profile): Promise<LarkPageData> {
     (r.metadata?.appKey ?? getDefaultAppKey()) === activeAppKey;
 
   const ownAll = ((ownRows ?? []) as AuditRow[]).filter(
-    (r) => !deletedIds.has(r.target_id) && belongsToActiveApp(r),
+    (r) => !hiddenIds.has(r.target_id) && belongsToActiveApp(r),
   );
   const historyRows: HistoryRow[] = ownAll
     .filter((r) => r.target_id)
@@ -357,7 +372,7 @@ export async function getLarkPageData(profile: Profile): Promise<LarkPageData> {
         .filter(
           (r) =>
             r.target_id &&
-            !deletedIds.has(r.target_id) &&
+            !hiddenIds.has(r.target_id) &&
             belongsToActiveApp(r),
         )
         .map((r) => {
@@ -383,7 +398,7 @@ export async function getLarkPageData(profile: Profile): Promise<LarkPageData> {
         const createdRows = ((allCreatedRows ?? []) as AuditRow[]).filter(
           (r) =>
             r.target_id &&
-            !deletedIds.has(r.target_id) &&
+            !hiddenIds.has(r.target_id) &&
             belongsToActiveApp(r),
         );
         const now = Date.now();

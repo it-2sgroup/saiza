@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Pagination } from "../Pagination";
 import { TypeBadge, fileTypeLabel } from "./TypeBadge";
 import { TrashRowActions } from "./TrashRowActions";
+import { StatusBadge } from "./StatusBadge";
 import { cardClasses } from "../controls";
 import type { TrashUiRow } from "./data";
 
@@ -55,15 +56,18 @@ export function TrashTab({ rows }: { rows: TrashUiRow[] }) {
                       {new Date(row.deletedAt).toLocaleDateString("vi-VN")}
                     </span>
                   </div>
-                  <span
-                    className={`flex-shrink-0 rounded-lg px-2.5 py-1 text-xs font-medium whitespace-nowrap ${
-                      left <= 3
-                        ? "bg-red-50 text-red-600"
-                        : "bg-wash text-ink-2"
-                    }`}
-                  >
-                    {left === 0 ? "Xoá hôm nay" : `Còn ${left} ngày`}
-                  </span>
+                  <div className="flex flex-shrink-0 flex-col items-end gap-1">
+                    <StatusBadge status="trashed" />
+                    <span
+                      className={`rounded-lg px-2.5 py-1 text-xs font-medium whitespace-nowrap ${
+                        left <= 3
+                          ? "bg-red-50 text-red-600"
+                          : "bg-wash text-ink-2"
+                      }`}
+                    >
+                      {left === 0 ? "Xoá hôm nay" : `Còn ${left} ngày`}
+                    </span>
+                  </div>
                   <TrashRowActions
                     documentId={row.documentId}
                     canManage={row.canManage}

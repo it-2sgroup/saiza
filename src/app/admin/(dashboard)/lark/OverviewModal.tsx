@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Modal, ModalHeader } from "../Modal";
 import { Btn, cardClasses, inputClasses } from "../controls";
 import { ItemActionsMenu } from "./ItemActionsMenu";
+import { StatusBadge } from "./StatusBadge";
 import type { StaffOption } from "./StaffSharePicker";
 import {
   resolveConfigLabel,
@@ -202,13 +203,16 @@ export function OverviewModal({
                     {new Date(row.createdAt).toLocaleDateString("vi-VN")}
                   </span>
                 </div>
-                <ItemActionsMenu
-                  documentId={row.targetId}
-                  fileType={row.fileType}
-                  url={row.url}
-                  staff={staff}
-                  folderOptions={folderOptions}
-                />
+                <div className="flex flex-shrink-0 items-center gap-2">
+                  <StatusBadge status="active" />
+                  <ItemActionsMenu
+                    documentId={row.targetId}
+                    fileType={row.fileType}
+                    url={row.url}
+                    staff={staff}
+                    folderOptions={folderOptions}
+                  />
+                </div>
               </div>
             ))}
           </div>

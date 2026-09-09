@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Pagination } from "../Pagination";
 import { TypeBadge } from "./TypeBadge";
+import { StatusBadge } from "./StatusBadge";
 import { ItemActionsMenu } from "./ItemActionsMenu";
 import type { StaffOption } from "./StaffSharePicker";
 import type { LarkFileType } from "@/lib/lark/fileTypes";
@@ -57,6 +58,7 @@ export function RecentFilesList({
             <span className="flex-shrink-0 text-xs whitespace-nowrap text-ink-2">
               {new Date(row.createdAt).toLocaleDateString("vi-VN")}
             </span>
+            <StatusBadge status="active" />
             <ItemActionsMenu
               documentId={row.targetId}
               fileType={row.fileType}

@@ -5,6 +5,7 @@ import { Modal, ModalHeader } from "../Modal";
 import { Pagination } from "../Pagination";
 import { Btn, cardClasses, inputClasses } from "../controls";
 import { ItemActionsMenu } from "./ItemActionsMenu";
+import { StatusBadge } from "./StatusBadge";
 import {
   resolveConfigLabel,
   type ConfigOption,
@@ -184,6 +185,7 @@ export function HistoryModal({
                   <th className="px-4 py-2.5">Phòng ban</th>
                   <th className="px-4 py-2.5">Người tạo</th>
                   <th className="px-4 py-2.5">Tạo lúc</th>
+                  <th className="px-4 py-2.5">Trạng thái</th>
                   <th className="px-2 py-2.5" />
                 </tr>
               </thead>
@@ -211,6 +213,9 @@ export function HistoryModal({
                     </td>
                     <td className="px-4 py-2.5 whitespace-nowrap text-ink-2">
                       {new Date(row.createdAt).toLocaleString("vi-VN")}
+                    </td>
+                    <td className="px-4 py-2.5">
+                      <StatusBadge status="active" />
                     </td>
                     <td className="px-2 py-2.5 text-right">
                       <ItemActionsMenu

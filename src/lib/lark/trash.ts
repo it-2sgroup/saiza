@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createLarkFile, deleteLarkFile, moveLarkFile, getAppRootFolderToken, listFolderChildren, type LarkFileType } from "./client";
 import { invalidateDriveCache } from "./driveCache";
 import { recordAuditLog } from "@/lib/admin/audit";
+import { notifyLarkChanged } from "./broadcast";
 
 const RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 
@@ -263,6 +264,7 @@ export function purgeExpiredTrash(appKey: string) {
           targetId: row.document_id,
           metadata: { fileType: row.file_type, manual: false },
         });
+        await notifyLarkChanged(appKey);
       } catch {
         // Leave the row for the next sweep rather than losing track of it —
         // e.g. a transient Lark API error shouldn't silently drop the record.

@@ -32,6 +32,7 @@ import {
   permanentlyDelete,
   getTrashRow,
 } from "@/lib/lark/trash";
+import { notifyLarkChanged } from "@/lib/lark/broadcast";
 import { friendlyError } from "@/lib/errors";
 
 import {
@@ -397,6 +398,7 @@ export async function createLarkDocument(
   });
 
   revalidatePath("/admin/lark");
+  await notifyLarkChanged(appKey);
   return { error: null, url, title, shareResults };
 }
 
@@ -690,6 +692,7 @@ export async function moveLarkDocument(
   });
 
   revalidatePath("/admin/lark");
+  await notifyLarkChanged(appKey);
   return { error: null, done: true };
 }
 
@@ -750,6 +753,7 @@ export async function deleteLarkDocument(
   });
 
   revalidatePath("/admin/lark");
+  await notifyLarkChanged(appKey);
   return { error: null, done: true };
 }
 
@@ -797,6 +801,7 @@ export async function restoreLarkDocument(
   });
 
   revalidatePath("/admin/lark");
+  await notifyLarkChanged(row.appKey);
   return { error: null, done: true, restoredTo };
 }
 
@@ -843,6 +848,7 @@ export async function permanentlyDeleteLarkDocument(
   });
 
   revalidatePath("/admin/lark");
+  await notifyLarkChanged(row.appKey);
   return { error: null, done: true };
 }
 

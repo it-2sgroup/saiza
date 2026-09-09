@@ -12,6 +12,7 @@ import { ADOPTION_COLORS } from "./chartColors";
 import { AppSwitcher } from "./AppSwitcher";
 import { DriveExplorer } from "./DriveExplorer";
 import { LarkTabs, LarkTabPanel } from "./LarkTabs";
+import { LarkRealtimeSync } from "./LarkRealtimeSync";
 import { RecentFilesList } from "./RecentFilesList";
 import { TrashTab } from "./TrashTab";
 import { StatTile } from "../StatTile";
@@ -244,6 +245,7 @@ export default async function AdminLarkPage() {
 
   return (
     <div className="lark-theme flex w-full flex-col gap-6">
+      <LarkRealtimeSync appKey={activeAppKey} />
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <Avatar
