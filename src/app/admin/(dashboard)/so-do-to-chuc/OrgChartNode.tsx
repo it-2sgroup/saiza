@@ -29,7 +29,10 @@ export type OrgFlowNode = Node<OrgNodeData, "orgNode">;
 // via ResizeObserver, so edges reroute on their own without any manual
 // "tell React Flow this node resized" call.
 export function OrgChartNode({ id, data, selected }: NodeProps<OrgFlowNode>) {
-  const [expanded, setExpanded] = useState(false);
+  // Always open by default — a box with its member list hidden reads as
+  // "empty" at a glance, which defeats the point of an org chart. Still
+  // collapsible per-box for anyone who wants to declutter their own view.
+  const [expanded, setExpanded] = useState(true);
   const [editing, setEditing] = useState(false);
   const [labelDraft, setLabelDraft] = useState(data.label);
   const [addingMember, setAddingMember] = useState(false);
