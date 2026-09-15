@@ -1,7 +1,7 @@
 import { getCurrentProfile } from "@/lib/supabase/profile";
 import { canManageStaff } from "@/lib/admin/permissions";
-import { getOrgChartData } from "./data";
-import { OrgChartEditor } from "./OrgChartEditor";
+import { ORG_CHARTS, getOrgChartData } from "./data";
+import { OrgChartTabs } from "./OrgChartTabs";
 
 export default async function OrgChartPage() {
   const profile = await getCurrentProfile();
@@ -16,7 +16,9 @@ export default async function OrgChartPage() {
   // uses — maintaining the company structure is an HR/admin function, not
   // something every viewer should be able to rearrange.
   const canEdit = await canManageStaff(profile.role);
-  const data = await getOrgChartData();
+  const charts = await Promise.all(
+    ORG_CHARTS.map(async (c) => ({ ...c, data: await getOrgChartData(c.key) })),
+  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -28,7 +30,7 @@ export default async function OrgChartPage() {
             : "Bấm mũi tên dưới mỗi ô để xem thành viên."}
         </p>
       </div>
-      <OrgChartEditor data={data} canEdit={canEdit} />
+      <OrgChartTabs charts={charts} canEdit={canEdit} />
     </div>
   );
 }

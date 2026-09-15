@@ -19,6 +19,7 @@ async function requireEdit(): Promise<{ error: string } | null> {
 }
 
 export async function createNodeAction(
+  chartKey: string,
   label: string,
   color: string,
   x: number,
@@ -30,7 +31,7 @@ export async function createNodeAction(
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("org_chart_nodes")
-    .insert({ label, color, position_x: x, position_y: y })
+    .insert({ chart_key: chartKey, label, color, position_x: x, position_y: y })
     .select("id")
     .single();
   if (error || !data) return { error: "Không tạo được ô." };

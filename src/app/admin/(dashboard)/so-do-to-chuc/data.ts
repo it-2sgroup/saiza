@@ -5,6 +5,18 @@ import {
   type OrgContact,
 } from "@/lib/lark/contactsCache";
 
+// Each chart is a fully separate canvas — SISMO and SAIZA are different
+// companies with different structures, not two branches of one tree. Keyed
+// by a short slug (also what org_chart_nodes.chart_key stores), not the
+// Lark app key: a chart's boxes don't have to line up 1:1 with a Lark
+// tenant (SAIZA's chart already draws members from 2sgroup/saiza-user/
+// 2s-ctv/zensip all at once).
+export const ORG_CHARTS = [
+  { key: "sismo", label: "SISMO" },
+  { key: "saiza", label: "SAIZA" },
+] as const;
+export type OrgChartKey = (typeof ORG_CHARTS)[number]["key"];
+
 export type OrgChartNode = {
   id: string;
   label: string;
@@ -35,23 +47,41 @@ export type OrgChartData = {
   // Every real Lark account across all 5 connected orgs — the pool the
   // "add member to this box" picker searches. Not scoped to people who have
   // a website login (nhan-su's `profiles`): most names on a real org chart
-  // never get one at all.
+  // never get one at all. Shared across every chart tab — SISMO's canvas
+  // can still pull in someone whose account happens to live in a different
+  // Lark tenant.
   contacts: OrgContact[];
 };
 
-export async function getOrgChartData(): Promise<OrgChartData> {
+export async function getOrgChartData(chartKey: OrgChartKey): Promise<OrgChartData> {
   const admin = createAdminClient();
-  const [{ data: nodesRaw }, { data: edgesRaw }, { data: membersRaw }, contacts] =
-    await Promise.all([
-      admin
-        .from("org_chart_nodes")
-        .select("id, label, color, position_x, position_y"),
-      admin.from("org_chart_edges").select("id, source_node_id, target_node_id"),
-      admin
-        .from("org_chart_node_members")
-        .select("id, node_id, lark_email, full_name, avatar_url, org_label"),
-      listOrgContactsForStaffPicker().catch(() => []),
-    ]);
+  const [{ data: nodesRaw }, contacts] = await Promise.all([
+    admin
+      .from("org_chart_nodes")
+      .select("id, label, color, position_x, position_y")
+      .eq("chart_key", chartKey),
+    listOrgContactsForStaffPicker().catch(() => []),
+  ]);
+
+  const nodeIds = (nodesRaw ?? []).map((n) => n.id as string);
+  const [{ data: edgesRaw }, { data: membersRaw }] =
+    nodeIds.length === 0
+      ? [{ data: [] }, { data: [] }]
+      : await Promise.all([
+          // Edges have no chart_key of their own — scoped by only keeping
+          // ones whose ends both belong to a node we just fetched for this
+          // chart. Two .in() filters (not a join) since source/target can't
+          // both be expressed in one PostgREST filter.
+          admin
+            .from("org_chart_edges")
+            .select("id, source_node_id, target_node_id")
+            .in("source_node_id", nodeIds)
+            .in("target_node_id", nodeIds),
+          admin
+            .from("org_chart_node_members")
+            .select("id, node_id, lark_email, full_name, avatar_url, org_label")
+            .in("node_id", nodeIds),
+        ]);
 
   return {
     nodes: (nodesRaw ?? []).map((n) => ({

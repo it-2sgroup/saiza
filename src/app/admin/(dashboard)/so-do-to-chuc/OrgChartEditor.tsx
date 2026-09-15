@@ -60,7 +60,15 @@ function buildFlowNode(
   };
 }
 
-function OrgChartCanvas({ data, canEdit }: { data: OrgChartData; canEdit: boolean }) {
+function OrgChartCanvas({
+  chartKey,
+  data,
+  canEdit,
+}: {
+  chartKey: string;
+  data: OrgChartData;
+  canEdit: boolean;
+}) {
   const [edges, setEdges] = useState<Edge[]>(() =>
     data.edges.map((e) => ({
       id: e.id,
@@ -164,7 +172,7 @@ function OrgChartCanvas({ data, canEdit }: { data: OrgChartData; canEdit: boolea
   const addNode = useCallback(async () => {
     const x = 80 + Math.random() * 300;
     const y = 60 + Math.random() * 200;
-    const res = await createNodeAction("Ô mới", NODE_COLOR_PRESETS[3], x, y);
+    const res = await createNodeAction(chartKey, "Ô mới", NODE_COLOR_PRESETS[3], x, y);
     if ("error" in res) return;
     setNodes((nds) => [
       ...nds,
@@ -176,7 +184,7 @@ function OrgChartCanvas({ data, canEdit }: { data: OrgChartData; canEdit: boolea
         handlers,
       ),
     ]);
-  }, [canEdit, data.contacts, handlers]);
+  }, [chartKey, canEdit, data.contacts, handlers]);
 
   return (
     <div className="relative h-[calc(100vh-190px)] w-full overflow-hidden rounded-2xl border border-line bg-wash">
@@ -211,7 +219,11 @@ function OrgChartCanvas({ data, canEdit }: { data: OrgChartData; canEdit: boolea
 // ReactFlowProvider is required for hooks like useReactFlow elsewhere in the
 // tree — not used directly here yet, but every React Flow example wraps at
 // this boundary, and adding it later would remount (losing viewport/zoom).
-export function OrgChartEditor(props: { data: OrgChartData; canEdit: boolean }) {
+export function OrgChartEditor(props: {
+  chartKey: string;
+  data: OrgChartData;
+  canEdit: boolean;
+}) {
   return (
     <ReactFlowProvider>
       <OrgChartCanvas {...props} />
