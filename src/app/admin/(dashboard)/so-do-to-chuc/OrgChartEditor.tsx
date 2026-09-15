@@ -169,6 +169,18 @@ function OrgChartCanvas({
     void updateNodePositionAction(node.id, node.position.x, node.position.y);
   }, []);
 
+  // Click-to-delete instead of select-then-press-Backspace — the keyboard
+  // shortcut needs the flow pane to actually hold DOM focus at the moment
+  // Backspace is pressed, which is easy to lose without realizing (and easy
+  // to confuse with the browser's own "Backspace = go back" on some setups).
+  // A direct click with a confirm is the same pattern already used for
+  // deleting a box.
+  const onEdgeClick = useCallback((_: unknown, edge: Edge) => {
+    if (!confirm("Xoá đường nối này?")) return;
+    setEdges((eds) => eds.filter((e) => e.id !== edge.id));
+    void deleteEdgeAction(edge.id);
+  }, []);
+
   // Same leaf-first tree layout as the one-off seed script, but using each
   // box's REAL rendered width (React Flow measures every node via
   // ResizeObserver and feeds it back through onNodesChange's "dimensions"
@@ -267,6 +279,8 @@ function OrgChartCanvas({
         onEdgesChange={canEdit ? onEdgesChange : undefined}
         onConnect={canEdit ? onConnect : undefined}
         onNodeDragStop={canEdit ? onNodeDragStop : undefined}
+        onEdgeClick={canEdit ? onEdgeClick : undefined}
+        defaultEdgeOptions={{ interactionWidth: 24 }}
         nodesDraggable={canEdit}
         nodesConnectable={canEdit}
         elementsSelectable={canEdit}
