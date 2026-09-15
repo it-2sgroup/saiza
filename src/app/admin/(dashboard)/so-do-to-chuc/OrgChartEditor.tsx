@@ -169,6 +169,62 @@ function OrgChartCanvas({
     void updateNodePositionAction(node.id, node.position.x, node.position.y);
   }, []);
 
+  // Same leaf-first tree layout as the one-off seed script, but using each
+  // box's REAL rendered width (React Flow measures every node via
+  // ResizeObserver and feeds it back through onNodesChange's "dimensions"
+  // changes into node.measured) instead of a guess — the guess is what
+  // caused boxes with long names/many members to overlap their neighbors
+  // in the first place. Safe to re-run anytime content changes size.
+  const AUTO_MARGIN = 70;
+  const AUTO_LEVEL_HEIGHT = 460;
+  const autoArrange = useCallback(() => {
+    const childrenOf = new Map<string, string[]>();
+    const hasParent = new Set<string>();
+    for (const e of edges) {
+      if (!e.source || !e.target) continue;
+      if (!childrenOf.has(e.source)) childrenOf.set(e.source, []);
+      childrenOf.get(e.source)!.push(e.target);
+      hasParent.add(e.target);
+    }
+    const roots = nodes.map((n) => n.id).filter((id) => !hasParent.has(id));
+    const widthOf = new Map(nodes.map((n) => [n.id, n.measured?.width ?? 220]));
+
+    let cursor = 0;
+    const posX = new Map<string, number>();
+    const posY = new Map<string, number>();
+    function place(id: string, depth: number): number {
+      posY.set(id, depth * AUTO_LEVEL_HEIGHT);
+      const kids = childrenOf.get(id) ?? [];
+      const w = widthOf.get(id) ?? 220;
+      if (kids.length === 0) {
+        const x = cursor + w / 2;
+        posX.set(id, x);
+        cursor += w + AUTO_MARGIN;
+        return x;
+      }
+      const childXs = kids.map((k) => place(k, depth + 1));
+      const avg = (Math.min(...childXs) + Math.max(...childXs)) / 2;
+      posX.set(id, avg);
+      return avg;
+    }
+    for (const r of roots) place(r, 0);
+    for (const n of nodes) {
+      if (!posX.has(n.id)) {
+        const w = widthOf.get(n.id) ?? 220;
+        posX.set(n.id, cursor + w / 2);
+        posY.set(n.id, 0);
+        cursor += w + AUTO_MARGIN;
+      }
+    }
+
+    setNodes((nds) =>
+      nds.map((n) => ({ ...n, position: { x: posX.get(n.id)!, y: posY.get(n.id)! } })),
+    );
+    for (const n of nodes) {
+      void updateNodePositionAction(n.id, posX.get(n.id)!, posY.get(n.id)!);
+    }
+  }, [nodes, edges]);
+
   const addNode = useCallback(async () => {
     const x = 80 + Math.random() * 300;
     const y = 60 + Math.random() * 200;
@@ -189,9 +245,17 @@ function OrgChartCanvas({
   return (
     <div className="relative h-[calc(100vh-190px)] w-full overflow-hidden rounded-2xl border border-line bg-wash">
       {canEdit && (
-        <div className="absolute top-3 left-3 z-10">
+        <div className="absolute top-3 left-3 z-10 flex gap-2">
           <Btn size="sm" variant="primary" onClick={() => void addNode()}>
             + Thêm ô
+          </Btn>
+          <Btn
+            size="sm"
+            variant="secondary"
+            onClick={autoArrange}
+            title="Xếp lại toàn bộ ô theo cây, tự né chồng lấn dựa trên kích thước thật"
+          >
+            Tự sắp xếp
           </Btn>
         </div>
       )}
