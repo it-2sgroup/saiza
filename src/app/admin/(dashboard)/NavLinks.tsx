@@ -81,6 +81,14 @@ const ICONS = {
       <circle cx="7.5" cy="7.5" r="1.5" />
     </>
   ),
+  orgchart: (
+    <>
+      <rect x="9" y="3" width="6" height="4" rx="1" />
+      <rect x="3" y="17" width="6" height="4" rx="1" />
+      <rect x="15" y="17" width="6" height="4" rx="1" />
+      <path d="M12 7v4M12 11H6v6M12 11h6v6" />
+    </>
+  ),
 } as const;
 
 export type NavIconName = keyof typeof ICONS;

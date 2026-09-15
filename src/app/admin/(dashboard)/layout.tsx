@@ -52,6 +52,7 @@ export default async function DashboardLayout({
   // don't exist. Locked (not hidden) tabs show visibly, just non-clickable.
   const navItems: NavItem[] = [
     { href: "/admin", label: "Tổng quan", icon: "overview" },
+    { href: "/admin/so-do-to-chuc", label: "Sơ đồ tổ chức", icon: "orgchart" },
     {
       href: "/admin/tin-tuc",
       label: "Tin tức",
