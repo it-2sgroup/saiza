@@ -47,7 +47,12 @@ export function OrgChartNode({ id, data, selected }: NodeProps<OrgFlowNode>) {
       }`}
       style={{ background: data.color, color: textColor }}
     >
-      <Handle type="target" position={Position.Top} className="!bg-ink-2" />
+      <Handle
+        type="target"
+        position={Position.Top}
+        title="Kéo từ ô khác vào đây để nối"
+        className="!h-3 !w-3 !border-2 !border-white !bg-ink-2 hover:!bg-accent"
+      />
 
       <div className="flex items-start gap-2 px-3.5 py-2.5">
         {editing ? (
@@ -225,7 +230,12 @@ export function OrgChartNode({ id, data, selected }: NodeProps<OrgFlowNode>) {
         </div>
       )}
 
-      <Handle type="source" position={Position.Bottom} className="!bg-ink-2" />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        title="Kéo ra để nối tới ô khác"
+        className="!h-3 !w-3 !cursor-crosshair !border-2 !border-white !bg-ink-2 hover:!bg-accent"
+      />
     </div>
   );
 }

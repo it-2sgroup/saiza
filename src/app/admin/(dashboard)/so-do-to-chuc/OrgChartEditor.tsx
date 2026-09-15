@@ -175,8 +175,8 @@ function OrgChartCanvas({
   // changes into node.measured) instead of a guess — the guess is what
   // caused boxes with long names/many members to overlap their neighbors
   // in the first place. Safe to re-run anytime content changes size.
-  const AUTO_MARGIN = 70;
-  const AUTO_LEVEL_HEIGHT = 460;
+  const AUTO_MARGIN = 32;
+  const AUTO_LEVEL_HEIGHT = 260;
   const autoArrange = useCallback(() => {
     const childrenOf = new Map<string, string[]>();
     const hasParent = new Set<string>();
