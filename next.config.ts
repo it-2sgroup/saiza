@@ -31,6 +31,23 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async redirects() {
+    return [
+      {
+        // URL ngắn để in mã QR lên thẻ cào / bao bì. QR mã hoá chuỗi càng ngắn
+        // thì lưới càng ít ô, in cỡ nhỏ vẫn quét được:
+        //   /the-le                                → 23 ký tự, lưới 29×29
+        //   /hoat-dong/cao-nhanh-tay-trung-ngay-500k → 55 ký tự, lưới 41×41
+        // permanent: false (307) là cố ý — mã QR đã in ra giấy thì không sửa
+        // được nữa, nên khi đổi sang chương trình khác ta chỉ cần trỏ lại
+        // destination ở đây. Dùng 308 thì trình duyệt cache vĩnh viễn và
+        // những người đã quét một lần sẽ mắc kẹt ở chương trình cũ.
+        source: "/the-le",
+        destination: "/hoat-dong/cao-nhanh-tay-trung-ngay-500k",
+        permanent: false,
+      },
+    ];
+  },
   async headers() {
     return [
       {

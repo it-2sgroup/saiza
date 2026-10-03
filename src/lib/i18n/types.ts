@@ -25,6 +25,7 @@ export type Dictionary = {
     about: string;
     partners: string;
     news: string;
+    activities: string;
     careers: string;
     contact: string;
     cta: string;
@@ -121,6 +122,50 @@ export type Dictionary = {
     title: string;
     empty: string;
     postFallbackTitle: string;
+  };
+  activitiesPage: {
+    eyebrow: string;
+    title: string;
+    subtitle: string;
+    empty: string;
+    statusRunning: string;
+    statusUpcoming: string;
+    statusEnded: string;
+    viewDetails: string;
+    topPrizeLabel: string;
+    periodLabel: string;
+  };
+  campaignPage: {
+    backToList: string;
+    topPrizeLabel: string;
+    payoutLabel: string;
+    payoutValue: string;
+    periodLabel: string;
+    redeemLabel: string;
+    organizerLabel: string;
+    ctaBuy: string;
+    ctaRules: string;
+    scratchTitle: string;
+    scratchHint: string;
+    scratchRevealed: string;
+    scratchAgain: string;
+    scratchDemoNote: string;
+    stepsEyebrow: string;
+    stepsTitle: string;
+    prizesEyebrow: string;
+    prizesTitle: string;
+    prizeTopBadge: string;
+    comboEyebrow: string;
+    comboTitle: string;
+    comboCardsUnit: string;
+    comboBestBadge: string;
+    rulesEyebrow: string;
+    rulesTitle: string;
+    rulesSubtitle: string;
+    rulesExpandAll: string;
+    rulesCollapseAll: string;
+    legalPrevail: string;
+    notFound: string;
   };
   careersPage: {
     eyebrow: string;

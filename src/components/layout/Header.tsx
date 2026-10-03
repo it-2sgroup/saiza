@@ -27,7 +27,7 @@ export function Header({ logoSrc, phone }: { logoSrc?: string; phone: string }) 
     <header className="fixed inset-x-0 top-0 z-50">
       <Container className={`transition-[padding] duration-300 ${scrolled ? "py-3" : "py-5"}`}>
         <div
-          className={`flex items-center gap-7 rounded-full border border-white/50 bg-white/70 px-5 py-2.5 shadow-[0_8px_30px_rgba(22,33,62,0.10)] backdrop-blur-xl transition-shadow duration-300 ${
+          className={`flex items-center gap-4 rounded-full border border-white/50 bg-white/70 px-5 py-2.5 shadow-[0_8px_30px_rgba(22,33,62,0.10)] backdrop-blur-xl transition-shadow duration-300 ${
             scrolled ? "shadow-[0_12px_36px_rgba(22,33,62,0.16)]" : ""
           }`}
         >
@@ -43,7 +43,7 @@ export function Header({ logoSrc, phone }: { logoSrc?: string; phone: string }) 
             onClick={() => setNavOpen((open) => !open)}
             aria-label="Toggle menu"
             aria-expanded={navOpen}
-            className="ml-auto flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full hover:bg-wash min-[1180px]:hidden"
+            className="ml-auto flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full hover:bg-wash min-[1280px]:hidden"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <line x1="4" y1="7" x2="20" y2="7" />
@@ -52,14 +52,17 @@ export function Header({ logoSrc, phone }: { logoSrc?: string; phone: string }) 
             </svg>
           </button>
 
-          <nav className="ml-auto hidden flex-wrap items-center gap-1 text-[14px] font-medium min-[1180px]:flex">
+          {/* gap/padding bó sát: 8 mục nav tiếng Việt vừa khít trong thanh
+              max-w-1280 — nới rộng hơn là nav xuống 2 dòng và thanh header cao
+              gấp đôi. Thêm mục mới thì phải đo lại hoặc nâng ngưỡng hamburger. */}
+          <nav className="ml-auto hidden flex-wrap items-center gap-0.5 text-[13.5px] font-medium min-[1280px]:flex">
             {NAV_ITEMS.map((item) => {
               const active = pathname === item.href;
               return (
                 <Link
                   key={item.key}
                   href={item.href}
-                  className={`rounded-full px-3.5 py-2 transition-colors duration-200 ${
+                  className={`rounded-full px-2.5 py-2 transition-colors duration-200 ${
                     active ? "bg-wash text-accent" : "text-ink hover:bg-wash/70"
                   }`}
                 >
@@ -69,16 +72,16 @@ export function Header({ logoSrc, phone }: { logoSrc?: string; phone: string }) 
             })}
           </nav>
 
-          <div className="hidden flex-shrink-0 items-center gap-3 min-[1180px]:flex">
+          <div className="hidden flex-shrink-0 items-center gap-3 min-[1280px]:flex">
             <LanguageToggle locale={locale} setLocale={setLocale} />
-            <LinkButton href="/lien-he" shake className="px-5 py-[10px] text-sm">
+            <LinkButton href="/lien-he" shake className="px-4 py-[10px] text-sm">
               {t.nav.cta}
             </LinkButton>
           </div>
         </div>
 
         {navOpen && (
-          <div className="mt-2 flex flex-col gap-1 rounded-3xl border border-white/50 bg-white/85 p-3 shadow-[0_12px_36px_rgba(22,33,62,0.16)] backdrop-blur-xl min-[1180px]:hidden">
+          <div className="mt-2 flex flex-col gap-1 rounded-3xl border border-white/50 bg-white/85 p-3 shadow-[0_12px_36px_rgba(22,33,62,0.16)] backdrop-blur-xl min-[1280px]:hidden">
             {NAV_ITEMS.map((item) => {
               const active = pathname === item.href;
               return (

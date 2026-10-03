@@ -154,6 +154,9 @@ export function Footer({
           <Link href="/tin-tuc" className="w-fit text-sm transition-all hover:translate-x-[3px] hover:text-accent-2">
             {t.nav.news}
           </Link>
+          <Link href="/hoat-dong" className="w-fit text-sm transition-all hover:translate-x-[3px] hover:text-accent-2">
+            {t.nav.activities}
+          </Link>
           <Link href="/tuyen-dung" className="w-fit text-sm transition-all hover:translate-x-[3px] hover:text-accent-2">
             {t.nav.careers}
           </Link>

@@ -2,7 +2,7 @@ import type { Dictionary } from "@/lib/i18n/types";
 
 export type NavKey = keyof Pick<
   Dictionary["nav"],
-  "home" | "products" | "about" | "partners" | "news" | "careers" | "contact"
+  "home" | "products" | "about" | "partners" | "news" | "activities" | "careers" | "contact"
 >;
 
 export const NAV_ITEMS: { key: NavKey; href: string }[] = [
@@ -11,6 +11,7 @@ export const NAV_ITEMS: { key: NavKey; href: string }[] = [
   { key: "about", href: "/gioi-thieu" },
   { key: "partners", href: "/doi-tac-dai-ly" },
   { key: "news", href: "/tin-tuc" },
+  { key: "activities", href: "/hoat-dong" },
   { key: "careers", href: "/tuyen-dung" },
   { key: "contact", href: "/lien-he" },
 ];
