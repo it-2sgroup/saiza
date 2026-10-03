@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getSortedCampaigns } from "@/lib/content/campaigns";
+import { getSortedCampaigns, toPublicCampaign } from "@/lib/content/campaigns";
 import { ActivitiesPageContent } from "./ActivitiesPageContent";
 
 export const metadata: Metadata = {
@@ -9,5 +9,5 @@ export const metadata: Metadata = {
 };
 
 export default function ActivitiesPage() {
-  return <ActivitiesPageContent campaigns={getSortedCampaigns()} />;
+  return <ActivitiesPageContent campaigns={getSortedCampaigns().map(toPublicCampaign)} />;
 }

@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { Container } from "@/components/ui/Container";
-import { formatVnd, type Campaign, type CampaignStatus } from "@/lib/content/campaigns";
+import { formatVnd, type PublicCampaign, type CampaignStatus } from "@/lib/content/campaigns";
 
-export function ActivitiesPageContent({ campaigns }: { campaigns: Campaign[] }) {
+export function ActivitiesPageContent({ campaigns }: { campaigns: PublicCampaign[] }) {
   const { t, locale } = useLanguage();
 
   return (
@@ -76,7 +76,7 @@ export function ActivitiesPageContent({ campaigns }: { campaigns: Campaign[] }) 
 
 /** Mệnh giá của giải cao nhất — thay cho tổng giá trị giải thưởng, vốn đã bỏ
  *  khỏi phần hiển thị (xem ghi chú ở Campaign.totalPrizeValue). */
-function topPrizeAmount(c: Campaign): number {
+function topPrizeAmount(c: PublicCampaign): number {
   return c.prizes.find((p) => p.tone === "top")?.amount ?? 0;
 }
 

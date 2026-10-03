@@ -7,7 +7,7 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 import { WaveDivider } from "@/components/ui/WaveDivider";
 import { ScratchCard } from "@/components/campaigns/ScratchCard";
 import { RulesAccordion } from "@/components/campaigns/RulesAccordion";
-import { formatVnd, type Campaign, type CampaignStatus } from "@/lib/content/campaigns";
+import { formatVnd, type PublicCampaign, type CampaignStatus } from "@/lib/content/campaigns";
 
 const RULES_ANCHOR = "the-le";
 
@@ -17,7 +17,7 @@ const RULES_ANCHOR = "the-le";
 const CTA_BASE =
   "inline-flex cursor-pointer items-center justify-center gap-2 rounded-full px-7 py-[15px] text-[15px] font-semibold whitespace-nowrap transition-all duration-300 hover:-translate-y-[3px] active:translate-y-0 active:scale-[0.97]";
 
-export function CampaignDetailContent({ campaign }: { campaign: Campaign }) {
+export function CampaignDetailContent({ campaign }: { campaign: PublicCampaign }) {
   const { t, locale } = useLanguage();
   const c = campaign;
 
@@ -30,9 +30,8 @@ export function CampaignDetailContent({ campaign }: { campaign: Campaign }) {
 
   const topPrize = c.prizes.find((p) => p.tone === "top");
   const otherCash = c.prizes.filter((p) => p.tone === "cash");
-  // Các dòng tone "muted" (thẻ hiện kim >1000, "chúc may mắn lần sau" >814)
-  // cố ý không render: chúng chỉ tồn tại để thống kê số lượng, mà số lượng là
-  // thứ đã bỏ khỏi trang theo yêu cầu marketing.
+  // Các dòng tone "muted" và toàn bộ số lượng giải đã bị toPublicCampaign cắt
+  // từ phía server — không chỉ ẩn khỏi giao diện mà còn không có trong HTML.
 
   return (
     <>

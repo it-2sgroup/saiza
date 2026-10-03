@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { CAMPAIGNS, getCampaignBySlug } from "@/lib/content/campaigns";
+import { CAMPAIGNS, getCampaignBySlug, toPublicCampaign } from "@/lib/content/campaigns";
 import { CampaignDetailContent } from "./CampaignDetailContent";
 
 export function generateStaticParams() {
@@ -26,5 +26,5 @@ export default async function CampaignPage({ params }: { params: Promise<{ slug:
   const campaign = getCampaignBySlug(slug);
   if (!campaign) notFound();
 
-  return <CampaignDetailContent campaign={campaign} />;
+  return <CampaignDetailContent campaign={toPublicCampaign(campaign)} />;
 }

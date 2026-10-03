@@ -397,6 +397,52 @@ export const CAMPAIGNS: Campaign[] = [
   },
 ];
 
+/* ———————————— Bản rút gọn để gửi xuống trình duyệt ———————————— */
+
+export type PublicPrizeTier = Omit<PrizeTier, "quantity">;
+export type PublicCampaign = Omit<Campaign, "totalPrizeValue" | "cashPrizeCount" | "prizes"> & {
+  prizes: PublicPrizeTier[];
+};
+
+/**
+ * Cắt bỏ số lượng giải / tổng giá trị trước khi dữ liệu rời server.
+ *
+ * KHÔNG được truyền thẳng `Campaign` xuống client component: Next serialize
+ * toàn bộ props vào RSC payload nhúng trong HTML, nên dù không render ra màn
+ * hình thì `totalPrizeValue`, `cashPrizeCount`, `quantity` từng giải và dòng
+ * "Chúc bạn may mắn lần sau" vẫn đọc được bằng Xem nguồn trang — đúng những
+ * con số marketing yêu cầu không công bố (xem ghi chú ở `totalPrizeValue`).
+ *
+ * Cố ý liệt kê từng trường thay vì dùng destructuring-omit: thêm trường nhạy
+ * cảm mới vào `Campaign` sau này sẽ KHÔNG tự động lọt ra ngoài, mà phải khai
+ * báo ở đây một cách có ý thức.
+ */
+export function toPublicCampaign(c: Campaign): PublicCampaign {
+  return {
+    slug: c.slug,
+    status: c.status,
+    eyebrow: c.eyebrow,
+    name: c.name,
+    nameAccent: c.nameAccent,
+    tagline: c.tagline,
+    summary: c.summary,
+    period: c.period,
+    redeemWindow: c.redeemWindow,
+    productUrl: c.productUrl,
+    organizer: c.organizer,
+    steps: c.steps,
+    // tone "muted" = các dòng chỉ dùng để thống kê số lượng (>1000 thẻ hiện
+    // kim, >814 "chúc may mắn"), không hiển thị nên cũng không gửi đi.
+    prizes: c.prizes
+      .filter((p) => p.tone !== "muted")
+      .map((p) => ({ amount: p.amount, label: p.label, tone: p.tone })),
+    prizeNote: c.prizeNote,
+    comboTiers: c.comboTiers,
+    comboNote: c.comboNote,
+    rules: c.rules,
+  };
+}
+
 export function getCampaignBySlug(slug: string): Campaign | undefined {
   return CAMPAIGNS.find((c) => c.slug === slug);
 }
