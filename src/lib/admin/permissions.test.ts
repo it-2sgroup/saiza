@@ -20,6 +20,7 @@ const ROLES: RoleOption[] = [
     canViewLarkStats: true,
     canViewInbox: true,
     canManageStaff: true,
+    canViewSalesAnalytics: true,
   },
   {
     code: "editor",
@@ -32,6 +33,7 @@ const ROLES: RoleOption[] = [
     canViewLarkStats: false,
     canViewInbox: true,
     canManageStaff: false,
+    canViewSalesAnalytics: false,
   },
   {
     code: "contributor",
@@ -44,6 +46,7 @@ const ROLES: RoleOption[] = [
     canViewLarkStats: false,
     canViewInbox: false,
     canManageStaff: false,
+    canViewSalesAnalytics: false,
   },
 ];
 

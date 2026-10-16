@@ -55,6 +55,11 @@ const CAP_FIELDS: {
     label: "Xem hộp thư liên hệ",
     hint: "Xem form liên hệ khách hàng gửi từ website.",
   },
+  {
+    key: "canViewSalesAnalytics",
+    label: "Xem phân tích doanh số",
+    hint: "Xem trang Phân tích doanh số (dữ liệu đơn hàng TikTok Shop/Shopee).",
+  },
 ];
 
 function CapFields({ defaults }: { defaults?: RoleOption }) {

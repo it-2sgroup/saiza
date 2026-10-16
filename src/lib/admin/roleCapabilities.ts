@@ -13,6 +13,7 @@ export type RoleOption = {
   canViewLarkStats: boolean;
   canViewInbox: boolean;
   canManageStaff: boolean;
+  canViewSalesAnalytics: boolean;
 };
 
 // Returned for a role code that no longer exists (renamed/deleted after a
@@ -28,6 +29,7 @@ const NONE: Omit<RoleOption, "code" | "label"> = {
   canViewLarkStats: false,
   canViewInbox: false,
   canManageStaff: false,
+  canViewSalesAnalytics: false,
 };
 
 export function resolveRole(

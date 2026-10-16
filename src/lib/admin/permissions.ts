@@ -69,3 +69,13 @@ export async function isSuperAdmin(role: string): Promise<boolean> {
   const roles = await getRoles();
   return resolveRole(role, roles).isSuperAdmin;
 }
+
+// Gate for "Phân tích doanh số" — reads order data from a separate Supabase
+// project (see src/lib/supabase/salesAdmin.ts), not from any table in this
+// database. Kept as its own capability (not folded into canViewLarkStats or
+// canManageStaff) so a narrow reviewer-only role (e.g. for a Shopee ISV
+// application demo login) can hold exactly this and nothing else.
+export async function canViewSalesAnalytics(role: string): Promise<boolean> {
+  const roles = await getRoles();
+  return resolveRole(role, roles).canViewSalesAnalytics;
+}

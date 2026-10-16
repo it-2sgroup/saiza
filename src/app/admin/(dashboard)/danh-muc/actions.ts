@@ -132,6 +132,7 @@ function parseRoleCaps(formData: FormData) {
     canViewLarkStats: formData.get("canViewLarkStats") === "on",
     canViewInbox: formData.get("canViewInbox") === "on",
     canManageStaff: formData.get("canManageStaff") === "on",
+    canViewSalesAnalytics: formData.get("canViewSalesAnalytics") === "on",
   };
 }
 

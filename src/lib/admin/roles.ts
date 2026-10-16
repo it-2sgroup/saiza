@@ -24,6 +24,7 @@ const FALLBACK: RoleOption[] = [
     canViewLarkStats: true,
     canViewInbox: true,
     canManageStaff: true,
+    canViewSalesAnalytics: true,
   },
   {
     code: "editor",
@@ -36,6 +37,7 @@ const FALLBACK: RoleOption[] = [
     canViewLarkStats: false,
     canViewInbox: true,
     canManageStaff: false,
+    canViewSalesAnalytics: false,
   },
   {
     code: "contributor",
@@ -48,6 +50,7 @@ const FALLBACK: RoleOption[] = [
     canViewLarkStats: false,
     canViewInbox: false,
     canManageStaff: false,
+    canViewSalesAnalytics: false,
   },
 ];
 
@@ -62,6 +65,7 @@ type RoleRow = {
   can_view_lark_stats: boolean;
   can_view_inbox: boolean;
   can_manage_staff: boolean;
+  can_view_sales_analytics: boolean;
 };
 
 function fromRow(r: RoleRow): RoleOption {
@@ -76,6 +80,7 @@ function fromRow(r: RoleRow): RoleOption {
     canViewLarkStats: r.can_view_lark_stats,
     canViewInbox: r.can_view_inbox,
     canManageStaff: r.can_manage_staff,
+    canViewSalesAnalytics: r.can_view_sales_analytics,
   };
 }
 
@@ -85,7 +90,7 @@ export async function getRoles(): Promise<RoleOption[]> {
   const { data, error } = await admin
     .from("roles")
     .select(
-      "code, label, is_super_admin, can_manage_content, can_draft_content, can_access_lark, can_manage_lark_org_wide, can_view_lark_stats, can_view_inbox, can_manage_staff",
+      "code, label, is_super_admin, can_manage_content, can_draft_content, can_access_lark, can_manage_lark_org_wide, can_view_lark_stats, can_view_inbox, can_manage_staff, can_view_sales_analytics",
     )
     .order("sort_order");
   if (error || !data || data.length === 0) return FALLBACK;
@@ -103,6 +108,7 @@ export type RoleCapabilitiesInput = {
   canViewLarkStats: boolean;
   canViewInbox: boolean;
   canManageStaff: boolean;
+  canViewSalesAnalytics: boolean;
 };
 
 function toRow(caps: RoleCapabilitiesInput) {
@@ -115,6 +121,7 @@ function toRow(caps: RoleCapabilitiesInput) {
     can_view_lark_stats: caps.canViewLarkStats,
     can_view_inbox: caps.canViewInbox,
     can_manage_staff: caps.canManageStaff,
+    can_view_sales_analytics: caps.canViewSalesAnalytics,
   };
 }
 

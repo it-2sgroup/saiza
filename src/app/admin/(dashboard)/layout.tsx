@@ -4,6 +4,7 @@ import {
   canManageStaff,
   canPublish,
   canViewInbox,
+  canViewSalesAnalytics,
 } from "@/lib/admin/permissions";
 import { getRoles, resolveRole } from "@/lib/admin/roles";
 import { Sidebar } from "./Sidebar";
@@ -33,14 +34,21 @@ export default async function DashboardLayout({
     );
   }
 
-  const [allowPublish, allowInbox, allowManageStaff, allowLark, roles] =
-    await Promise.all([
-      canPublish(profile.role),
-      canViewInbox(profile.role),
-      canManageStaff(profile.role),
-      canAccessLark(profile.role),
-      getRoles(),
-    ]);
+  const [
+    allowPublish,
+    allowInbox,
+    allowManageStaff,
+    allowLark,
+    allowSalesAnalytics,
+    roles,
+  ] = await Promise.all([
+    canPublish(profile.role),
+    canViewInbox(profile.role),
+    canManageStaff(profile.role),
+    canAccessLark(profile.role),
+    canViewSalesAnalytics(profile.role),
+    getRoles(),
+  ]);
   // canPublish only covers "can manage/delete this site's own content"
   // (canManageContent) — a contributor-tier role that can only draft/save,
   // not publish, should still see these tabs unlocked to work on drafts.
@@ -116,6 +124,12 @@ export default async function DashboardLayout({
       label: "Danh mục",
       icon: "tags",
       locked: !allowManageStaff,
+    },
+    {
+      href: "/admin/phan-tich-doanh-so",
+      label: "Phân tích doanh số",
+      icon: "sales",
+      locked: !allowSalesAnalytics,
     },
   ];
 
