@@ -131,6 +131,12 @@ export default async function DashboardLayout({
       icon: "sales",
       locked: !allowSalesAnalytics,
     },
+    {
+      href: "/admin/don-hang",
+      label: "Đơn hàng ZENSIP",
+      icon: "orders",
+      locked: !allowSalesAnalytics,
+    },
   ];
 
   return (

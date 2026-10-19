@@ -95,6 +95,13 @@ const ICONS = {
       <path d="m19 9-5 5-4-4-4 4" />
     </>
   ),
+  orders: (
+    <>
+      <rect x="2" y="7" width="20" height="14" rx="2" />
+      <path d="M16 7V5a4 4 0 0 0-8 0v2" />
+      <path d="M2 11h20" />
+    </>
+  ),
 } as const;
 
 export type NavIconName = keyof typeof ICONS;

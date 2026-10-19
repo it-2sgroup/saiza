@@ -264,6 +264,40 @@ body {
   }
 }
 
+/* Trang Đơn hàng ZENSIP (/admin/don-hang) — thẻ đơn mới chèn vào đầu danh sách */
+@keyframes saiza-slide-in-top {
+  from {
+    opacity: 0;
+    transform: translateY(-16px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Nhân vật "hộp hàng" nhảy lên khi có đơn mới, trang Đơn hàng ZENSIP */
+@keyframes saiza-mascot-jump {
+  0% {
+    transform: translateY(0) scale(1, 1);
+  }
+  15% {
+    transform: translateY(2px) scale(1.08, 0.9);
+  }
+  45% {
+    transform: translateY(-34px) scale(0.96, 1.05);
+  }
+  65% {
+    transform: translateY(-34px) scale(0.96, 1.05);
+  }
+  85% {
+    transform: translateY(2px) scale(1.08, 0.9);
+  }
+  100% {
+    transform: translateY(0) scale(1, 1);
+  }
+}
+
 .scrollbar-hide {
   scrollbar-width: none;
 }
