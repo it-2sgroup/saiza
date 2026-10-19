@@ -1,0 +1,212 @@
+/* CSS thuần tay viết cho nhánh /display/* — KHÔNG qua Tailwind, không
+   custom property, không nesting, không flexbox `gap`, không CSS Grid —
+   chỉ dùng các thuộc tính CSS2.1/CSS3 cơ bản mà trình duyệt tích hợp sẵn
+   trên Smart TV/box Android đời cũ (~2015 trở lên) chắc chắn hiểu được. */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #f7f8fa;
+  color: #16213e;
+  font-family: Arial, Helvetica, "Segoe UI", sans-serif;
+}
+
+.dpo-page {
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.dpo-header {
+  margin-bottom: 20px;
+}
+
+.dpo-title {
+  font-size: 28px;
+  font-weight: bold;
+  margin: 0 0 6px 0;
+  color: #16213e;
+}
+
+.dpo-subtitle {
+  font-size: 15px;
+  color: #4a5b78;
+  margin: 0;
+}
+
+.dpo-status-row {
+  margin-bottom: 20px;
+  font-size: 14px;
+  color: #4a5b78;
+}
+
+.dpo-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 10px;
+  margin-right: 8px;
+  background-color: #9aa5b1;
+}
+
+.dpo-dot-ok {
+  background-color: #059669;
+}
+
+.dpo-dot-err {
+  background-color: #dc2626;
+}
+
+.dpo-stats {
+  margin: 0 0 28px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dpo-stats-item {
+  display: inline-block;
+  width: 18%;
+  min-width: 190px;
+  vertical-align: top;
+  margin-right: 1.5%;
+  margin-bottom: 14px;
+}
+
+.dpo-stat-card {
+  background-color: #ffffff;
+  border: 1px solid rgba(22, 33, 62, 0.12);
+  border-radius: 14px;
+  padding: 20px;
+}
+
+.dpo-stat-label {
+  font-size: 14px;
+  color: #4a5b78;
+  margin: 0 0 8px 0;
+}
+
+.dpo-stat-value {
+  font-size: 40px;
+  font-weight: bold;
+  color: #16213e;
+  margin: 0;
+  line-height: 1;
+}
+
+.dpo-section-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #4a5b78;
+  margin: 0 0 14px 0;
+}
+
+.dpo-order-row {
+  background-color: #ffffff;
+  border: 1px solid rgba(22, 33, 62, 0.12);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+
+.dpo-order-id {
+  display: inline-block;
+  min-width: 140px;
+  font-weight: bold;
+  font-size: 15px;
+  color: #16213e;
+}
+
+.dpo-order-product {
+  display: inline-block;
+  min-width: 220px;
+  font-size: 15px;
+  color: #4a5b78;
+}
+
+.dpo-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: bold;
+  margin-right: 10px;
+}
+
+.dpo-badge-awaiting {
+  background-color: #fff7ed;
+  color: #b45309;
+}
+
+.dpo-badge-transit {
+  background-color: #dceefa;
+  color: #1d5fb8;
+}
+
+.dpo-badge-delivered {
+  background-color: #ecfdf5;
+  color: #047857;
+}
+
+.dpo-badge-cancelled {
+  background-color: #fef2f2;
+  color: #dc2626;
+}
+
+.dpo-badge-neutral {
+  background-color: #dceefa;
+  color: #4a5b78;
+}
+
+.dpo-order-amount {
+  float: right;
+  font-size: 16px;
+  font-weight: bold;
+  color: #047857;
+}
+
+.dpo-order-time {
+  display: block;
+  margin-top: 6px;
+  font-size: 13px;
+  color: #4a5b78;
+}
+
+.dpo-tag-new {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background-color: #f5ab00;
+  color: #6b4600;
+  font-size: 12px;
+  font-weight: bold;
+  margin-right: 10px;
+}
+
+.dpo-tag-cancelled {
+  background-color: #e5484d;
+  color: #ffffff;
+}
+
+.dpo-empty {
+  text-align: center;
+  color: #4a5b78;
+  padding: 40px 0;
+}
+
+.dpo-flash {
+  animation: dpo-flash-bg 1.6s ease-out 1;
+}
+
+@keyframes dpo-flash-bg {
+  0% {
+    background-color: #fff7cc;
+  }
+  100% {
+    background-color: #ffffff;
+  }
+}
