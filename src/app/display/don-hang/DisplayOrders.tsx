@@ -171,7 +171,6 @@ export function DisplayOrders({
             const isCancelled = (o.status ?? "").toUpperCase() === "CANCELLED";
             return (
               <div key={o.tiktok_order_id} className={`dpo-order-row ${justArrived ? "dpo-flash" : ""}`}>
-                <span className="dpo-order-amount">{fmtAmount(o.total_amount, o.currency)}</span>
                 {showNewTag && (
                   <span className={`dpo-tag-new ${isCancelled ? "dpo-tag-cancelled" : ""}`}>
                     {isCancelled ? "Đơn bị hủy" : "Đơn mới"}
@@ -180,6 +179,7 @@ export function DisplayOrders({
                 <span className="dpo-order-id">#{o.tiktok_order_id}</span>
                 <span className="dpo-order-product">{productSummary(o.line_items)}</span>
                 <span className={statusBadgeClass(o.status)}>{statusLabel(o.status)}</span>
+                <span className="dpo-order-amount">{fmtAmount(o.total_amount, o.currency)}</span>
                 <span className="dpo-order-time">
                   {o.created_at_tiktok ? new Date(o.created_at_tiktok).toLocaleString("vi-VN") : "—"}
                 </span>

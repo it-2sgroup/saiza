@@ -105,25 +105,27 @@ body {
 }
 
 .dpo-order-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   background-color: #ffffff;
   border: 1px solid rgba(22, 33, 62, 0.12);
   border-radius: 12px;
   padding: 14px 16px;
   margin-bottom: 10px;
-  overflow: hidden;
 }
 
 .dpo-order-id {
-  display: inline-block;
-  min-width: 140px;
+  min-width: 150px;
+  margin-right: 16px;
   font-weight: bold;
   font-size: 15px;
   color: #16213e;
 }
 
 .dpo-order-product {
-  display: inline-block;
   min-width: 220px;
+  margin-right: 16px;
   font-size: 15px;
   color: #4a5b78;
 }
@@ -163,15 +165,18 @@ body {
 }
 
 .dpo-order-amount {
-  float: right;
+  margin-left: auto;
+  min-width: 120px;
+  text-align: right;
   font-size: 16px;
   font-weight: bold;
   color: #047857;
 }
 
 .dpo-order-time {
-  display: block;
-  margin-top: 6px;
+  min-width: 150px;
+  margin-left: 16px;
+  text-align: right;
   font-size: 13px;
   color: #4a5b78;
 }
