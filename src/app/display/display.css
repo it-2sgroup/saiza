@@ -106,7 +106,6 @@ body {
 
 .dpo-order-row {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   background-color: #ffffff;
   border: 1px solid rgba(22, 33, 62, 0.12);
@@ -115,19 +114,43 @@ body {
   margin-bottom: 10px;
 }
 
+/* Mỗi "cột" có chiều rộng cố định (không co giãn theo nội dung) để các
+   dòng thẳng hàng với nhau — kể cả cột tag "Đơn mới" luôn chiếm chỗ dù
+   trống, để cột mã đơn không bị xê dịch tuỳ dòng có tag hay không. */
+.dpo-tag-cell {
+  display: inline-block;
+  width: 104px;
+  flex: 0 0 104px;
+  margin-right: 10px;
+}
+
 .dpo-order-id {
-  min-width: 150px;
+  width: 150px;
+  flex: 0 0 150px;
   margin-right: 16px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   font-weight: bold;
   font-size: 15px;
   color: #16213e;
 }
 
 .dpo-order-product {
-  min-width: 220px;
+  flex: 1 1 auto;
+  min-width: 0;
   margin-right: 16px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   font-size: 15px;
   color: #4a5b78;
+}
+
+.dpo-status-cell {
+  width: 160px;
+  flex: 0 0 160px;
+  margin-right: 16px;
 }
 
 .dpo-badge {
@@ -136,7 +159,7 @@ body {
   border-radius: 999px;
   font-size: 13px;
   font-weight: bold;
-  margin-right: 10px;
+  white-space: nowrap;
 }
 
 .dpo-badge-awaiting {
@@ -165,8 +188,9 @@ body {
 }
 
 .dpo-order-amount {
-  margin-left: auto;
-  min-width: 120px;
+  width: 130px;
+  flex: 0 0 130px;
+  margin-right: 16px;
   text-align: right;
   font-size: 16px;
   font-weight: bold;
@@ -174,8 +198,8 @@ body {
 }
 
 .dpo-order-time {
-  min-width: 150px;
-  margin-left: 16px;
+  width: 150px;
+  flex: 0 0 150px;
   text-align: right;
   font-size: 13px;
   color: #4a5b78;
