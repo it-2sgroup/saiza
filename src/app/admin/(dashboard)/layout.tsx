@@ -126,6 +126,12 @@ export default async function DashboardLayout({
       locked: !allowManageStaff,
     },
     {
+      href: "/admin/ket-noi-shop",
+      label: "Kết nối shop",
+      icon: "link",
+      locked: !allowSalesAnalytics,
+    },
+    {
       href: "/admin/phan-tich-doanh-so",
       label: "Phân tích doanh số",
       icon: "sales",
