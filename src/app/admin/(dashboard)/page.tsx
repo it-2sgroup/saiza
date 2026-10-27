@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getCurrentProfile } from "@/lib/supabase/profile";
 import { createClient } from "@/lib/supabase/server";
 import { canManageStaff, canViewInbox } from "@/lib/admin/permissions";
@@ -35,6 +36,10 @@ function buildTrend(rows: { created_at: string }[] | null) {
 export default async function AdminDashboardPage() {
   const profile = await getCurrentProfile();
   if (!profile) return null;
+
+  // The Shopee review account has nothing useful on the overview page —
+  // send it straight to the page that shows the shop integrations.
+  if (profile.role === "shopee_reviewer") redirect("/admin/ket-noi-shop");
 
   const supabase = await createClient();
 
